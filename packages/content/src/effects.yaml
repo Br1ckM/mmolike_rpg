@@ -1,0 +1,22 @@
+- id: "effect_attack_up_t1"
+  components:
+    definition:
+      name: "Attack Up"
+      description: "Increases Attack by 10%."
+      type: "BUFF"
+      baseDuration: 3
+      statModifier:
+        stat: "attack"
+        value: 0.10
+        valueType: "PERCENT"
+
+- id: "effect_poison_t1"
+  components:
+    definition:
+      name: "Poison"
+      description: "Deals a small amount of damage at the start of each turn."
+      type: "DOT"
+      baseDuration: 3
+      tickEffect:
+        type: "DAMAGE"
+        power: 5

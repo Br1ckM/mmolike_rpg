@@ -1,0 +1,13 @@
+- id: "baseitem_goblin_ear"
+  components:
+    info:
+      name: "Goblin Ear"
+      description: "Proof of a slain goblin. The Town Guard pays for these."
+      itemType: "collectible"
+      rarity: "Junk"
+    stackable:
+      maxStack: 50
+    # A new component to define its turn-in value
+    reputation:
+      factionId: "faction_town_guard"
+      value: 5

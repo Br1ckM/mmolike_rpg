@@ -1,0 +1,18 @@
+- id: "baseitem_broken_sword_hilt"
+  components:
+    info:
+      name: "Broken Sword Hilt"
+      description: "Completely useless, but a merchant might give you a few coins for it."
+      itemType: "junk"
+      rarity: "Junk"
+    # A new component to define its sell price
+    vendorValue:
+      gold: 2
+
+- id: "baseitem_shiny_rock"
+  components:
+    info:
+      name: "Shiny Rock"
+      description: "A rock that looks kind of shiny."
+      itemType: "misc"
+      rarity: "Common"

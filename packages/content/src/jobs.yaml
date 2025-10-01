@@ -1,0 +1,17 @@
+# Defines all available jobs for characters.
+
+- id: "job_knight"
+  components:
+    info:
+      name: "Knight"
+      description: "A stalwart defender, expert in heavy armor and shields."
+    progression:
+      level: 12
+      xp: 0
+    skillList:
+      - "skill_shield_bash"
+      - "skill_cleave"
+      - "skill_taunt"
+      - "skill_protective_stance"
+      - "skill_vigor"
+      - "skill_heavy_armor_training"

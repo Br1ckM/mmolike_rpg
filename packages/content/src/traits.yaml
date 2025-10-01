@@ -1,0 +1,18 @@
+# content/traits.yaml
+- id: trait_thorns
+  name: Thorns
+  description: Reflects 20% of damage taken back to the attacker.
+  trigger: ON_DAMAGE_TAKEN
+  effects:
+    - type: REFLECT_DAMAGE
+      target: ATTACKER
+      value: 0.20 # 20%
+
+- id: trait_regeneration
+  name: Regeneration
+  description: Heals for 15 HP at the start of each turn.
+  trigger: ON_TURN_START
+  effects:
+    - type: HEAL
+      target: SELF
+      value: 15

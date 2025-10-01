@@ -1,0 +1,69 @@
+id: PLAYER_TEMPLATE
+components:
+  info:
+    name: Adventurer
+    race: Human
+    avatarUrl: 'https.xxx.com'
+  
+  controllable:
+    isPlayer: true
+
+  coreStats:
+    strength: 10
+    dexterity: 10
+    intelligence: 10
+
+  derivedStats:
+    health: 50
+    mana: 20
+    attack: 5
+    magicAttack: 5
+    defense: 5
+    magicResist: 5
+    critChance: 5
+    critDamage: 150
+    dodge: 5
+    haste: 0
+    accuracy: 80
+  
+  jobs:
+    activeJobId: 'job_adventurer'
+    jobList:
+      - id: 'job_adventurer'
+        name: 'Adventurer'
+        level: 1
+        xp: 0
+        skills:
+          - 'skill_basic_strike'
+          - 'skill_defensive_stance'
+
+  skillBook:
+    knownSkills:
+      - 'skill_basic_strike'
+      - 'skill_defensive_stance'
+  
+  equipment:
+    helm: null
+    cape: null
+    amulet: null
+    armor: null
+    belt: null
+    gloves: null
+    mainHand: null
+    offHand: null
+    ring1: null
+    ring2: null
+    boots: null
+    charm1: null
+    charm2: null
+    charm3: null
+
+    inventory:
+      bagIds:
+        - 'inventory_starting_satchel'
+      walletId: 'wallet_player'
+    
+    professions:
+      knownProfessions:
+        - 'prof_blacksmithing_novice'
+        - 'prof_alchemy_novice'

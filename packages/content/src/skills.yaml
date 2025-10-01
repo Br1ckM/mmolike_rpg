@@ -1,0 +1,74 @@
+# Defines all base skills available in the game.
+
+- id: "skill_shield_bash"
+  components:
+    info:
+      name: "Shield Bash"
+      description: "Stuns an enemy for 1 turn."
+      iconName: "Shield"
+    skill:
+      type: "active"
+      isFavorited: true
+    progression:
+      level: 5
+      xp: 30
+    evolution:
+      - level: 3
+        choices:
+          - id: "sb_evo1_choice1"
+            description: "Shield Bash now also applies a 10% defense debuff for 2 turns."
+          - id: "sb_evo1_choice2"
+            description: "Shield Bash deals 25% more damage."
+      - level: 6
+        choices:
+          - id: "sb_evo2_choice1"
+            description: "Stun duration increased to 2 turns."
+      - level: 9
+        choices:
+          - id: "sb_evo3_choice1"
+            description: "Shield Bash now hits a second nearby target for 50% damage and effect."
+
+- id: "skill_vigor"
+  components:
+    info:
+      name: "Vigor"
+      description: "Increases max health by 10%."
+      iconName: "Heart"
+    skill:
+      type: "passive"
+    progression:
+      level: 7
+      xp: 0
+    evolution:
+      - level: 3
+        choices: [{ id: "v_evo1", description: "Health bonus increased to 15%." }]
+      - level: 6
+        choices: [{ id: "v_evo2", description: "Also grants a small amount of health regeneration." }]
+      - level: 9
+        choices: [{ id: "v_evo3", description: "Vigor now also increases stamina regeneration by 20%." }]
+
+    # A standard mana-costing skill
+- id: "skill_fireball"
+  components:
+    info:
+      name: "Fireball"
+      description: "Hurls a ball of fire at an enemy."
+    skill:
+      type: "active"
+      costs:
+        - { stat: "mana", amount: 15 }
+      effects:
+        - { type: "Damage", target: "Enemy", power: 25, scalingStat: "magicAttack" }
+
+# A "Berserker" skill that costs health
+- id: "skill_blood_rage"
+  components:
+    info:
+      name: "Blood Rage"
+      description: "Sacrifice health to increase your attack power for a short time."
+    skill:
+      type: "active"
+      costs:
+        - { stat: "health", amount: 20 }
+      effects:
+        - { type: "ApplyEffect", target: "Self", effectId: "effect_attack_up_t1", power: 0, scalingStat: "attack" }

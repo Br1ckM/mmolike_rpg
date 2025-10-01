@@ -1,0 +1,11 @@
+- id: "baseitem_health_potion_minor"
+  components:
+    info:
+      name: "Minor Health Potion"
+      itemType: "consumable"
+      rarity: "Common"
+    stackable:
+      maxStack: 20
+    consumable:
+      effect: "RESTORE_HEALTH"
+      amount: 50

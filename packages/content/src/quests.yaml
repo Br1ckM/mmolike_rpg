@@ -1,0 +1,24 @@
+- id: "quest_a_goblin_menace"
+  components:
+    info:
+      name: "A Goblin Menace"
+      description: "Goblins are harassing travelers on the road. Please thin their numbers."
+      suggestedLevel: 3
+    objectives:
+      - type: "kill"
+        targetId: "goblin_scout"
+        targetName: "Goblin Scouts"
+        requiredAmount: 10
+      - type: "fetch"
+        targetId: "baseitem_goblin_ear"
+        targetName: "Goblin Ears"
+        requiredAmount: 5
+    rewards:
+      experience: 150
+      gold: 25
+      itemIds:
+        - "baseitem_health_potion_minor"
+      stateTriggers:
+        - status: "completed"
+          action: "SPAWN_ENTITY"
+          targetId: "enemy_goblin_chieftain"

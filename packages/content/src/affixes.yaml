@@ -1,0 +1,11 @@
+- id: "affix_str_t1"
+  type: "prefix"
+  name: "Sturdy" # The name that gets prepended (e.g., "Sturdy Iron Helm")
+  effects:
+    - { stat: "strength", value: 5 }
+
+- id: "affix_fire_res_t1"
+  type: "suffix"
+  name: "of the Salamander" # The name that gets appended
+  effects:
+    - { stat: "fireResistance", value: 5 }

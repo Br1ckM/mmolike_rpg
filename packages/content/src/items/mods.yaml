@@ -1,0 +1,8 @@
+- id: "mod_rune_of_fortitude"
+  components:
+    info:
+      name: "Rune of Fortitude"
+      description: "+5% Max Health"
+    modEffect:
+      effects:
+        - { stat: "health", value: 0.05, type: "percent" }

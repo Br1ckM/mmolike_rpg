@@ -1,0 +1,28 @@
+- id: "baseitem_longsword"
+  components:
+    info:
+      name: "Longsword"
+      description: "A well-balanced longsword."
+      itemType: "equipment"
+      iconName: "Sword"
+    equipable:
+      slot: "mainHand"
+      baseStats: # The stats inherent to a Longsword
+        attack: 5
+
+- id: "baseitem_iron_helm"
+  components:
+    info:
+      name: "Iron Helm"
+      description: "A sturdy iron helmet."
+      itemType: "equipment"
+      iconName: "Crown"
+    equipable:
+      slot: "helm"
+      baseStats:
+        defense: 10
+    # Defines how many affixes/mods can be applied
+    moddability:
+      maxPrefixes: 1
+      maxSuffixes: 1
+      modSlots: 2

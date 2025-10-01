@@ -1,0 +1,9 @@
+- id: "baseitem_old_scroll"
+  components:
+    info:
+      name: "Old Scroll"
+      description: "Illegible ancient text."
+      itemType: "quest"
+      rarity: "Quest"
+    questItem:
+      questId: "quest_the_lost_artifact"

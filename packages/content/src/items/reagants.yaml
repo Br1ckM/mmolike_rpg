@@ -1,0 +1,9 @@
+- id: "baseitem_phoenix_feather"
+  components:
+    info:
+      name: "Phoenix's Feather"
+      description: "A key ingredient in resurrection potions. Warm to the touch."
+      itemType: "reagent"
+      rarity: "Uncommon"
+    stackable:
+      maxStack: 99

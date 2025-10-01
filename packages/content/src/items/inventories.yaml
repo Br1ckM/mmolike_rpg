@@ -1,0 +1,16 @@
+# Defines all container entities like bags and wallets.
+
+- id: "inventory_starting_satchel"
+  components:
+    info:
+      name: "Adventurer's Satchel"
+      description: "A simple but sturdy leather bag."
+    slots:
+      size: 18
+      # This would be populated with Item entity IDs during gameplay
+      items: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+
+- id: "wallet_player"
+  components:
+    currency:
+      gold: 50
