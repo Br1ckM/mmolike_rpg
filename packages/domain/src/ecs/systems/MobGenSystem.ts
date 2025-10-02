@@ -1,10 +1,10 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { Character, CharacterData } from '../entities/character';
+import { Character, type CharacterData } from '../entities/character';
 import {
-    MobTierData,
-    MobArchetypeData,
-    MobFamilyData,
+    type MobTierData,
+    type MobArchetypeData,
+    type MobFamilyData,
     MobComponent,
     LootTableComponent,
     ActiveTraitsComponent,

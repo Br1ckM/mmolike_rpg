@@ -1,15 +1,15 @@
 import { Entity } from 'ecs-lib';
 import {
-    ItemInfoComponent, InfoData,
-    StackableComponent, StackableData,
-    EquipableComponent, EquipableData,
-    AffixesComponent, AffixData,
-    ModsComponent, ModsData,
-    ModSlotsComponent, ModSlotsData,
-    ConsumableComponent, ConsumableData,
-    QuestItemComponent, QuestItemData,
-    ReputationComponent, ReputationData,
-    VendorValueComponent, VendorValueData
+    ItemInfoComponent, type InfoData,
+    StackableComponent, type StackableData,
+    EquipableComponent, type EquipableData,
+    AffixesComponent, type AffixData,
+    ModsComponent, type ModsData,
+    ModSlotsComponent, type ModSlotsData,
+    ConsumableComponent, type ConsumableData,
+    QuestItemComponent, type QuestItemData,
+    ReputationComponent, type ReputationData,
+    VendorValueComponent, type VendorValueData
 } from '../components/item';
 
 // Blueprint for raw item data from YAML

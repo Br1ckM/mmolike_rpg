@@ -9,16 +9,16 @@ import {
     InventoryComponent,
     ProfessionsComponent,
     HealthComponent,
-    InfoData,
-    ControllableData,
-    CoreStatsData,
-    DerivedStatsData,
-    JobsData,
-    EquipmentData,
-    InventoryData,
-    ProfessionsData,
-    HealthData,
-    SkillBookComponent, SkillBookData
+    type InfoData,
+    type ControllableData,
+    type CoreStatsData,
+    type DerivedStatsData,
+    type JobsData,
+    type EquipmentData,
+    type InventoryData,
+    type ProfessionsData,
+    type HealthData,
+    SkillBookComponent, type SkillBookData
 } from '../components/character';
 import {
 

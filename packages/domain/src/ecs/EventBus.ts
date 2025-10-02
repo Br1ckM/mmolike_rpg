@@ -1,5 +1,5 @@
-import { EquipmentSlot } from "./components/character"
-import { DialogueResponse } from "./components/dialogue";
+import type { EquipmentSlot } from "./components/character";
+import type { DialogueResponse } from "./components/dialogue";
 
 // Define the structure for all possible event payloads
 interface EventMap {

@@ -1,9 +1,9 @@
 import ECS from 'ecs-lib';
 import { Entity } from 'ecs-lib';
 import { EventBus } from '../../EventBus';
-import { CombatantComponent, CombatComponent, AIProfileComponent, AIBehaviorProfile } from '../../components/combat';
+import { CombatantComponent, CombatComponent, AIProfileComponent, type AIBehaviorProfile } from '../../components/combat';
 import { HealthComponent, SkillBookComponent } from '../../components/character';
-import { SkillComponent, SkillEffectData } from '../../components/skill';
+import { SkillComponent, type SkillEffectData } from '../../components/skill';
 
 /**
  * Manages decision-making for all AI-controlled entities in combat.

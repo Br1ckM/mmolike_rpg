@@ -1,7 +1,7 @@
 import { Entity } from 'ecs-lib';
 import {
     CombatComponent,
-    CombatComponentData,
+    type CombatComponentData,
 } from '../components/combat';
 
 /**

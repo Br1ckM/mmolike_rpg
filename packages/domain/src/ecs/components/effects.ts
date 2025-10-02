@@ -1,5 +1,5 @@
 import { Component } from 'ecs-lib';
-import { DerivedStatsData } from './character';
+import type { DerivedStatsData } from './character';
 
 export type EffectType = 'BUFF' | 'DEBUFF' | 'DOT' | 'HOT';
 export type EffectValueType = 'FLAT' | 'PERCENT';

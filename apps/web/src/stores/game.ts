@@ -25,7 +25,8 @@ export const useGameStore = defineStore('game', () => {
     const notificationUnsubscribe = ref<(() => void) | null>(null);
 
     // --- Actions ---
-    function initialize() {
+    async function initialize() {
+        await App.isReady;
         // Subscribe to the dialogue state
         dialogueUnsubscribe.value = App.queries.subscribe<DialogueState>('dialogueState', (newDialogueState) => {
             dialogue.value = newDialogueState;

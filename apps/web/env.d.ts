@@ -6,6 +6,12 @@ declare module '*.vue' {
     export default component
 }
 
+// *** ADD THIS DECLARATION ***
+declare module '*.yaml' {
+    const data: any;
+    export default data;
+}
+
 interface ImportMetaEnv {
     readonly VITE_APP_TITLE?: string
     // add more env variables here as needed
@@ -14,4 +20,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
     readonly env: ImportMetaEnv
 }
-/// <reference types="vite/client" />

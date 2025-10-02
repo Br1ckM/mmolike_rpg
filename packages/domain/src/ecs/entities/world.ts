@@ -1,10 +1,10 @@
 import { Entity } from 'ecs-lib';
 import {
-    ContainerComponent, ContainerComponentData,
-    InteractionTargetComponent, InteractionTargetComponentData,
-    LocationComponent, LocationComponentData,
-    NodeComponent, NodeComponentData,
-    TravelTargetComponent, TravelTargetComponentData
+    ContainerComponent, type ContainerComponentData,
+    InteractionTargetComponent, type InteractionTargetComponentData,
+    LocationComponent, type LocationComponentData,
+    NodeComponent, type NodeComponentData,
+    TravelTargetComponent, type TravelTargetComponentData
 } from '../components/world';
 
 /**

@@ -23,11 +23,13 @@ export const usePlayerStore = defineStore('player', () => {
   });
 
   // --- Actions ---
-  function initialize() {
+  async function initialize() {
+    // Wait for the application to be fully loaded before subscribing.
+    await App.isReady;
+
     if (unsubscribe.value) {
-      unsubscribe.value(); // Unsubscribe from previous listeners if any
+      unsubscribe.value();
     }
-    // Subscribe to the playerState stream from the application layer
     unsubscribe.value = App.queries.subscribe<PlayerState>('playerState', (newPlayerState) => {
       player.value = newPlayerState;
     });

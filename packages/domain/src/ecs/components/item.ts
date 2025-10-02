@@ -1,5 +1,6 @@
 import { Component } from 'ecs-lib';
-import { EquipmentSlot } from './character'; // Assuming EquipmentSlot is exported from character components
+import type { EquipmentSlot } from './character'; // Assuming EquipmentSlot is exported from character components
+// Assuming EquipmentSlot is exported from character components
 
 // --- TYPE DEFINITIONS ---
 

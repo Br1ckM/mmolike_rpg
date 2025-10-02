@@ -3,7 +3,7 @@ import ECS from 'ecs-lib';
 import { EventBus } from '../../EventBus';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
 import { DerivedStatsComponent, HealthComponent } from '../../components/character';
-import { SkillComponent, SkillEffectData, TargetType, TargetPattern, SkillCost } from '../../components/skill';
+import { SkillComponent, type SkillEffectData, type TargetType, type TargetPattern, type SkillCost } from '../../components/skill';
 
 
 /**

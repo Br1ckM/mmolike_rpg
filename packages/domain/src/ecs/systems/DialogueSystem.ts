@@ -2,7 +2,7 @@ import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { DialogueComponent } from '../components/npc';
-import { DialogueTree, DialogueNode, DialogueAction, DialogueResponse, DialogueCondition } from '../components/dialogue';
+import type { DialogueTree, DialogueNode, DialogueAction, DialogueResponse, DialogueCondition } from '../components/dialogue';
 import { QuestStatusComponent } from '../components/quest';
 import { InfoComponent } from '../components/character';
 

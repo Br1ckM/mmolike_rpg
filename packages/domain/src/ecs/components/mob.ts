@@ -1,5 +1,5 @@
 import { Component } from 'ecs-lib';
-import { AIBehaviorProfile } from './combat';
+import type { AIBehaviorProfile } from './combat';
 
 // --- DATA STRUCTURES (for content files, e.g., YAML) ---
 
