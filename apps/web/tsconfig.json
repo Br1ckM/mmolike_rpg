@@ -1,5 +1,12 @@
 {
   "files": [],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "mmolike_rpg-application": ["../../packages/application/src"],
+      "mmolike_rpg-application/*": ["../../packages/application/src/*"]
+    }
+  },
   "references": [
     {
       "path": "./tsconfig.node.json"

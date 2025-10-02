@@ -1,0 +1,369 @@
+@import "tailwindcss";
+@import "tailwindcss-primeui";
+
+/* Primary and Surface Palettes */
+:root {
+    --p-primary-50: #ecfdf5;
+    --p-primary-100: #d1fae5;
+    --p-primary-200: #a7f3d0;
+    --p-primary-300: #6ee7b7;
+    --p-primary-400: #34d399;
+    --p-primary-500: #10b981;
+    --p-primary-600: #059669;
+    --p-primary-700: #047857;
+    --p-primary-800: #065f46;
+    --p-primary-900: #064e3b;
+    --p-primary-950: #022c22;
+    --p-surface-0: #ffffff;
+    --p-surface-50: #fafafa;
+    --p-surface-100: #f4f4f5;
+    --p-surface-200: #e4e4e7;
+    --p-surface-300: #d4d4d8;
+    --p-surface-400: #a1a1aa;
+    --p-surface-500: #71717a;
+    --p-surface-600: #52525b;
+    --p-surface-700: #3f3f46;
+    --p-surface-800: #27272a;
+    --p-surface-900: #18181b;
+    --p-surface-950: #09090b;
+    --p-content-border-radius: 6px;
+}
+
+/* Light */
+:root {
+    --p-primary-color: var(--p-primary-500);
+    --p-primary-contrast-color: var(--p-surface-0);
+    --p-primary-hover-color: var(--p-primary-600);
+    --p-primary-active-color: var(--p-primary-700);
+    --p-content-border-color: var(--p-surface-200);
+    --p-content-hover-background: var(--p-surface-100);
+    --p-content-hover-color: var(--p-surface-800);
+    --p-highlight-background: var(--p-primary-50);
+    --p-highlight-color: var(--p-primary-700);
+    --p-highlight-focus-background: var(--p-primary-100);
+    --p-highlight-focus-color: var(--p-primary-800);
+    --p-text-color: var(--p-surface-700);
+    --p-text-hover-color: var(--p-surface-800);
+    --p-text-muted-color: var(--p-surface-500);
+    --p-text-hover-muted-color: var(--p-surface-600);
+}
+
+/* Design System component styles (semantic classes used by DesignSystem.vue) */
+.design-system {
+    background: var(--p-surface-900);
+    min-height: 100vh;
+    padding: 2rem;
+    color: var(--p-text-color);
+}
+
+.ds-header {
+    margin-bottom: 3rem;
+}
+
+.ds-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--p-primary-400);
+    margin: 0 0 0.25rem 0;
+}
+
+.ds-subtitle {
+    margin: 0;
+    color: var(--p-text-muted-color);
+}
+
+.ds-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .ds-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .ds-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.ds-panel {
+    background: var(--p-surface-800);
+    padding: 1.25rem;
+    border-radius: var(--p-content-border-radius);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.ds-panel__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+    border-bottom: 1px solid var(--p-content-border-color);
+    padding-bottom: 0.5rem;
+}
+
+.ds-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.ds-card {
+    max-width: 24rem;
+    background: var(--p-surface-800);
+}
+
+.ds-card__image {
+    width: 100%;
+    display: block;
+    border-top-left-radius: calc(var(--p-content-border-radius) - 2px);
+    border-top-right-radius: calc(var(--p-content-border-radius) - 2px);
+}
+
+.ds-card__title {
+    color: var(--p-primary-400);
+}
+
+.ds-card__subtitle {
+    color: var(--p-text-muted-color);
+}
+
+.ds-card__text {
+    color: var(--p-text-color);
+}
+
+.ds-card__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ds-card__drop {
+    margin-left: 0.5rem;
+}
+
+.ds-progress {
+    margin-bottom: 0.75rem;
+}
+
+.ds-progress__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.ds-progress__health .p-progressbar-value {
+    background: #4ade80;
+}
+
+.ds-progress__mana .p-progressbar-value {
+    background: #60a5fa;
+}
+
+/* Simple progressbar used by the Volt demo (fallback to PrimeVue values if present) */
+.ds-progressbar {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    height: 0.75rem;
+    overflow: hidden;
+}
+
+.ds-progressbar__value {
+    height: 100%;
+    background: var(--p-primary-400);
+    transition: width 300ms ease;
+}
+
+.ds-progressbar__health {
+    background: #4ade80;
+}
+
+.ds-progressbar__mana {
+    background: #60a5fa;
+}
+
+.ds-progressbar--indeterminate .ds-progressbar__value {
+    width: 30%;
+    animation: ds-progress-indeterminate 1s linear infinite;
+}
+
+@keyframes ds-progress-indeterminate {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(300%);
+    }
+}
+
+.ds-panel--centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ds-avatar {
+    position: relative;
+}
+
+.ds-badge {
+    position: absolute;
+    right: -0.25rem;
+    bottom: -0.25rem;
+}
+
+.ds-username {
+    margin-top: 1rem;
+    font-weight: 700;
+}
+
+.ds-usermeta {
+    color: var(--p-text-muted-color);
+}
+
+.ds-panel--wide {
+    grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+    .ds-panel--wide {
+        grid-column: span 2;
+    }
+}
+
+.ds-quest-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ds-quest-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Modal/Dialog demo styles */
+.ds-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.ds-quest-icon--success {
+    color: #4ade80;
+}
+
+.ds-quest-icon--progress {
+    color: #fbbf24;
+}
+
+.ds-quest-icon--failed {
+    color: #9ca3af;
+}
+
+.ds-quest-text {
+    margin: 0;
+    color: var(--p-text-color);
+}
+
+/* Simple accordion styles */
+.ds-accordion__item {
+    background: transparent;
+    border-bottom: 1px solid var(--p-content-border-color);
+    padding: 0.5rem 0;
+}
+
+.ds-accordion__summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.ds-accordion__content {
+    padding: 0.5rem 0 0 1.75rem;
+    color: var(--p-text-color);
+}
+
+/* Modal/Dialog demo actions */
+.ds-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Dark Mode settings */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --p-primary-color: var(--p-primary-400);
+        --p-primary-contrast-color: var(--p-surface-900);
+        --p-primary-hover-color: var(--p-primary-300);
+        --p-primary-active-color: var(--p-primary-200);
+        --p-content-border-color: var(--p-surface-700);
+        --p-content-hover-background: var(--p-surface-800);
+        --p-content-hover-color: var(--p-surface-0);
+        --p-highlight-background: color-mix(in srgb, var(--p-primary-400), transparent 84%);
+        --p-highlight-color: rgba(255, 255, 255, 0.87);
+        --p-highlight-focus-background: color-mix(in srgb, var(--p-primary-400), transparent 76%);
+        --p-highlight-focus-color: rgba(255, 255, 255, 0.87);
+        --p-text-color: var(--p-surface-0);
+        --p-text-hover-color: var(--p-surface-0);
+        --p-text-muted-color: var(--p-surface-400);
+        --p-text-hover-muted-color: var(--p-surface-300);
+    }
+}
+
+/* Simple accordion styles */
+.ds-accordion__item {
+    background: transparent;
+    border-bottom: 1px solid var(--p-content-border-color);
+    padding: 0.5rem 0;
+}
+
+.ds-accordion__summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.ds-accordion__content {
+    padding: 0.5rem 0 0 1.75rem;
+    color: var(--p-text-color);
+}
+
+/* Modal/Dialog demo actions */
+.ds-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Dark Mode settings */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --p-primary-color: var(--p-primary-400);
+        --p-primary-contrast-color: var(--p-surface-900);
+        --p-primary-hover-color: var(--p-primary-300);
+        --p-primary-active-color: var(--p-primary-200);
+        --p-content-border-color: var(--p-surface-700);
+        --p-content-hover-background: var(--p-surface-800);
+        --p-content-hover-color: var(--p-surface-0);
+        --p-highlight-background: color-mix(in srgb, var(--p-primary-400), transparent 84%);
+        --p-highlight-color: rgba(255, 255, 255, 0.87);
+        --p-highlight-focus-background: color-mix(in srgb, var(--p-primary-400), transparent 76%);
+        --p-highlight-focus-color: rgba(255, 255, 255, 0.87);
+        --p-text-color: var(--p-surface-0);
+        --p-text-hover-color: var(--p-surface-0);
+        --p-text-muted-color: var(--p-surface-400);
+        --p-text-hover-muted-color: var(--p-surface-300);
+    }
+}

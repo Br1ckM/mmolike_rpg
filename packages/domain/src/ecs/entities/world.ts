@@ -24,6 +24,11 @@ export interface NodeEntityData {
     interactionTarget?: InteractionTargetComponentData;
 }
 
+export class World extends Entity {
+    constructor() {
+        super();
+    }
+}
 
 /**
  * Represents a location in the world, which can be a Zone, Hub, Dungeon, etc.
