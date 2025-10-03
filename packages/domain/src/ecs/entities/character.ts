@@ -9,34 +9,40 @@ import {
     InventoryComponent,
     ProfessionsComponent,
     HealthComponent,
+    ManaComponent,
+    SkillBookComponent,
     type InfoData,
     type ControllableData,
     type CoreStatsData,
-    type DerivedStatsData,
+    type DerivedStatsData, // NOTE: no health/mana here anymore
     type JobsData,
     type EquipmentData,
     type InventoryData,
     type ProfessionsData,
     type HealthData,
-    SkillBookComponent, type SkillBookData
-} from '../components/character';
-import {
-
+    type ManaData,
+    type ResourceData,
+    type SkillBookData,
 } from '../components/character';
 
 /**
- * A complete data structure representing the raw data for a character,
- * typically parsed from a YAML file. This interface serves as a contract
- * for creating a new Character entity.
+ * CharacterData (v2)
+ * - Preferred: provide health/mana as resource components.
+ * - Back-compat: if health/mana are missing, we fall back to derivedStats.{health,mana} as capacity.
  */
-
-// The data structure for our YAML files remains the same.
 export interface CharacterData {
     info: InfoData;
     controllable: ControllableData;
     coreStats: CoreStatsData;
-    derivedStats: DerivedStatsData;
-    health: HealthData;
+    derivedStats: DerivedStatsData; // attack, defense, etc. (no health/mana)
+    /** New preferred shape */
+    health?: HealthData;
+    mana?: ManaData;
+    /** Optional alternative nesting if your YAML groups resources */
+    resources?: {
+        health?: HealthData;
+        mana?: ManaData;
+    };
     jobs: JobsData;
     equipment: EquipmentData;
     inventory?: InventoryData;
@@ -44,36 +50,69 @@ export interface CharacterData {
     skillBook?: SkillBookData;
 }
 
+function clampResource(r: ResourceData): ResourceData {
+    const max = Math.max(0, r.max | 0);
+    const current = Math.max(0, Math.min(max, r.current | 0));
+    return { current, max };
+}
+
+/**
+ * Build a ResourceData from:
+ * 1) explicit component data (preferred), else
+ * 2) legacy derived capacity (treated as max; current = max by default).
+ * Flip spawnEmpty to true if you want current = 0 instead.
+ */
+function normalizeResource(
+    explicit?: ResourceData,
+    legacyCapacity?: number,
+    spawnEmpty = false,
+): ResourceData {
+    if (explicit && Number.isFinite(explicit.current) && Number.isFinite(explicit.max)) {
+        return clampResource(explicit);
+    }
+    const max = Math.max(0, Math.floor(legacyCapacity ?? 0));
+    return spawnEmpty ? { current: 0, max } : { current: max, max };
+}
+
 /**
  * Represents a character in the game world.
- * Its constructor is responsible for adding all necessary components.
  */
 export class Character extends Entity {
     constructor(data: CharacterData) {
         super();
 
-        // Now we instantiate the component classes with the data.
+        // Base components
         this.add(new InfoComponent(data.info));
         this.add(new ControllableComponent(data.controllable));
         this.add(new CoreStatsComponent(data.coreStats));
-        this.add(new DerivedStatsComponent(data.derivedStats));
-        this.add(new HealthComponent(data.health));
+        this.add(new DerivedStatsComponent(data.derivedStats)); // no health/mana inside
+
+        // Resource components (prefer explicit; fall back to legacy derived capacity)
+        const healthData = normalizeResource(
+            data.health ?? data.resources?.health,
+            (data as any)?.derivedStats?.health,
+      /* spawnEmpty */ false,
+        );
+        const manaData = normalizeResource(
+            data.mana ?? data.resources?.mana,
+            (data as any)?.derivedStats?.mana,
+      /* spawnEmpty */ false,
+        );
+
+        this.add(new HealthComponent(healthData));
+        this.add(new ManaComponent(manaData));
+
+        // Progression/equipment
         this.add(new JobsComponent(data.jobs));
         this.add(new EquipmentComponent(data.equipment));
 
-        // Player-only components are added conditionally.
-        if (data.inventory) {
-            this.add(new InventoryComponent(data.inventory));
-        }
-        if (data.professions) {
-            this.add(new ProfessionsComponent(data.professions));
-        }
-        if (data.skillBook) {
-            this.add(new SkillBookComponent(data.skillBook));
-        }
+        // Optional, player-only-ish
+        if (data.inventory) this.add(new InventoryComponent(data.inventory));
+        if (data.professions) this.add(new ProfessionsComponent(data.professions));
+        if (data.skillBook) this.add(new SkillBookComponent(data.skillBook));
     }
 
-    // Helper methods now use the component class as a key.
+    // Helper methods
     get name(): string {
         return InfoComponent.oneFrom(this).data.name;
     }

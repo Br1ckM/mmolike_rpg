@@ -1,197 +1,216 @@
-// src/components/character/CharacterEquipmentPanel.vue (Redesigned with SVG Paper Doll)
-
+<!-- src/components/character/CharacterEquipmentPanel.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { usePlayerStore } from '@/stores/player';
+import { storeToRefs } from 'pinia';
 
-// --- MOCK DATA FOR THIS PANEL (Moved here for component self-containment) ---
-const mockEquipment = ref({
-    Helm: { name: 'Draconic Helm', icon: 'pi pi-crown', stats: '+10 INT' },
-    Cape: { name: 'Cloak of Shadows', icon: 'pi pi-star-fill', stats: '+5 Dodge' },
-    Amulet: { name: 'Amulet of Clarity', icon: 'pi pi-briefcase', stats: '+2 Spirit' },
-    Armor: { name: 'Iron Plate', icon: 'pi pi-book', stats: '+10 DEF' },
-    Belt: { name: 'Utility Belt', icon: 'pi pi-tag', stats: '+5 Carry' },
-    MainHand: { name: 'War Axe', icon: 'pi pi-server', stats: '+15 ATK' },
-    OffHand: null,
-    Gloves: { name: 'Gauntlets', icon: 'pi pi-box', stats: '+5 Dex' },
-    Ring1: null,
-    Ring2: { name: 'Signet Ring', icon: 'pi pi-circle-fill', stats: '+3 Haste' },
-    Boots: { name: 'Leather Boots', icon: 'pi pi-send', stats: '+2 Mov' },
-    Charm1: null,
-    Charm2: { name: 'Fire Charm', icon: 'pi pi-heart-fill', stats: 'Immunity' },
-    Charm3: null,
-});
+type EquipmentSlotKey =
+  | 'helm' | 'cape' | 'amulet' | 'armor' | 'belt' | 'gloves'
+  | 'mainHand' | 'offHand'
+  | 'ring1' | 'ring2'
+  | 'boots'
+  | 'charm1' | 'charm2' | 'charm3';
 
-const equipmentSlots = computed(() => {
-    return Object.keys(mockEquipment.value);
-});
+const SLOTS: EquipmentSlotKey[] = [
+  'helm','cape','amulet','armor','belt','gloves',
+  'mainHand','offHand','ring1','ring2',
+  'boots','charm1','charm2','charm3'
+];
 
-/** Helper function to determine the equipment icon for empty slots */
-const getEquipmentIcon = (slot: string) => {
-    switch (slot) {
-        case 'Helm': return 'pi pi-crown';
-        case 'Armor': return 'pi pi-book';
-        case 'Gloves': return 'pi pi-box';
-        case 'Boots': return 'pi pi-send';
-        case 'MainHand': return 'pi pi-bolt';
-        case 'OffHand': return 'pi pi-shield-fill';
-        case 'Cape': return 'pi pi-star-fill';
-        case 'Amulet': return 'pi pi-briefcase';
-        case 'Belt': return 'pi pi-tag';
-        case 'Ring1': case 'Ring2': return 'pi pi-circle-fill';
-        case 'Charm1': case 'Charm2': case 'Charm3': return 'pi pi-heart-fill';
-        default: return 'pi pi-question';
-    }
+const slotLabel: Record<EquipmentSlotKey, string> = {
+  helm: 'Helm', cape: 'Cape', amulet: 'Amulet', armor: 'Armor', belt: 'Belt', gloves: 'Gloves',
+  mainHand: 'MainHand', offHand: 'OffHand',
+  ring1: 'Ring1', ring2: 'Ring2',
+  boots: 'Boots',
+  charm1: 'Charm1', charm2: 'Charm2', charm3: 'Charm3',
 };
 
-/** Helper function to get slot position (Uses User-Defined Coordinates) */
-const getSlotPosition = (slot: string) => {
-    switch (slot) {
-        // --- Center Slots ---
-        case 'Helm': return { top: '15%', left: '48%' };
-        case 'Armor': return { top: '35%', left: '48%' };
-        case 'Belt': return { top: '55%', left: '48%' };
-        case 'Boots': return { top: '80%', left: '48%' };
-
-        // --- Left Side Slots ---
-        case 'MainHand': return { top: '40%', left: '30%' }; 
-        case 'Gloves': return { top: '55%', left: '15%' };
-        case 'Cape': return { top: '15%', left: '25%' }; 
-        case 'Ring1': return { top: '65%', left: '30%' };
-
-        // --- Right Side Slots ---
-        case 'OffHand': return { top: '40%', right: '25%' }; 
-        case 'Amulet': return { top: '15%', right: '20%' };
-        case 'Ring2': return { top: '65%', right: '30%' };
-
-        // --- Charm Slots ---
-        case 'Charm1': return { top: '85%', right: '30%' }; 
-        case 'Charm2': return { top: '85%', right: '20%' };
-        case 'Charm3': return { top: '85%', right: '10%' };
-        default: return { top: '50%', left: '50%' };
-    }
+const defaultIcon: Record<EquipmentSlotKey, string> = {
+  helm: 'pi pi-crown',
+  armor: 'pi pi-book',
+  gloves: 'pi pi-box',
+  boots: 'pi pi-send',
+  mainHand: 'pi pi-bolt',
+  offHand: 'pi pi-shield-fill',
+  cape: 'pi pi-star-fill',
+  amulet: 'pi pi-briefcase',
+  belt: 'pi pi-tag',
+  ring1: 'pi pi-circle-fill',
+  ring2: 'pi pi-circle-fill',
+  charm1: 'pi pi-heart-fill',
+  charm2: 'pi pi-heart-fill',
+  charm3: 'pi pi-heart-fill',
 };
 
-// --- Context Menu State ---
+const getSlotPosition = (slot: EquipmentSlotKey) => {
+  switch (slot) {
+    // Center
+    case 'helm':  return { top: '15%', left: '50%' };
+    case 'armor': return { top: '35%', left: '50%' };
+    case 'belt':  return { top: '55%', left: '50%' };
+    case 'boots': return { top: '80%', left: '50%' };
+    // Left
+    case 'mainHand': return { top: '40%', left: '30%' };
+    case 'gloves':   return { top: '55%', left: '15%' };
+    case 'cape':     return { top: '15%', left: '25%' };
+    case 'ring1':    return { top: '65%', left: '30%' };
+    // Right
+    case 'offHand': return { top: '40%', left: '75%' };
+    case 'amulet':  return { top: '15%', left: '80%' };
+    case 'ring2':   return { top: '65%', left: '70%' };
+    // Charms
+    case 'charm1':  return { top: '85%', left: '70%' };
+    case 'charm2':  return { top: '85%', left: '80%' };
+    case 'charm3':  return { top: '85%', left: '90%' };
+  }
+};
+
+const playerStore = usePlayerStore();
+const { player } = storeToRefs(playerStore);
+
+type EquippedViewEntry = { id: string; name: string; icon: string; stats?: string } | null;
+type EquippedView = Record<EquipmentSlotKey, EquippedViewEntry>;
+
+/** Build a simple view-model from the actual player equipment */
+const equipped = computed<EquippedView>(() => {
+  const eq = (player.value?.equipment ?? {}) as Partial<Record<EquipmentSlotKey, string | null>>;
+  return SLOTS.reduce((acc, key) => {
+    const id = eq[key] ?? null;
+    // If you have item lookups, replace name/icon here using your content DB.
+    acc[key] = id ? { id, name: `Item ${id}`, icon: defaultIcon[key] } : null;
+    return acc;
+  }, {} as EquippedView);
+});
+
+const equipmentSlots = computed(() => SLOTS);
+
+// --- Context menu state/handlers ---
 const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
-const activeSlot = ref<string | null>(null);
+const activeSlot = ref<EquipmentSlotKey | null>(null);
 
-/** Opens the context menu on right-click */
-const showContextMenu = (event: MouseEvent, slot: string) => {
-    // Prevent the browser's default context menu from appearing
-    event.preventDefault();
-    
-    // Only show the menu if an item is actually equipped
-    if (!mockEquipment.value[slot]) {
-        return;
-    }
-
-    // Set position and active slot
-    contextMenuPosition.value = { x: event.clientX, y: event.clientY };
-    activeSlot.value = slot;
-    contextMenuVisible.value = true;
+const showContextMenu = (event: MouseEvent, slot: EquipmentSlotKey) => {
+  event.preventDefault();
+  if (!equipped.value[slot]) return; // only show when something is equipped
+  contextMenuPosition.value = { x: event.clientX, y: event.clientY };
+  activeSlot.value = slot;
+  contextMenuVisible.value = true;
 };
 
-/** Closes the context menu */
 const hideContextMenu = () => {
-    contextMenuVisible.value = false;
-    activeSlot.value = null;
+  contextMenuVisible.value = false;
+  activeSlot.value = null;
 };
 
-/** Action Handler */
 const handleMenuAction = (action: 'unequip' | 'inspect') => {
-    if (!activeSlot.value) return;
+  if (!activeSlot.value) return;
+  const slot = activeSlot.value;
 
-    if (action === 'unequip') {
-        mockEquipment.value[activeSlot.value] = null;
-        console.log(`Unequipped item from ${activeSlot.value}`);
-    } else if (action === 'inspect') {
-        console.log(`Inspecting item in ${activeSlot.value}`);
-        // Actual implementation would open a modal/panel with item details
-    }
-    
-    hideContextMenu();
+  if (action === 'unequip') {
+    // Wire this to your command bus when ready:
+    // App.commands.unequipItem(player.value!.id, slot);
+    console.log(`Unequip requested for ${slotLabel[slot]} (id: ${equipped.value[slot]?.id})`);
+  } else {
+    console.log(`Inspect requested for ${slotLabel[slot]} (id: ${equipped.value[slot]?.id})`);
+    // Open modal/panel with item details here
+  }
+
+  hideContextMenu();
 };
 
-// Global click listener to close the menu when clicking anywhere else
-onMounted(() => {
-    window.addEventListener('click', hideContextMenu);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('click', hideContextMenu);
-});
+onMounted(() => window.addEventListener('click', hideContextMenu));
+onUnmounted(() => window.removeEventListener('click', hideContextMenu));
 </script>
 
 <template>
-    <div class="bg-surface-800 rounded-lg shadow-lg p-6 mb-8">
-        <h3 class="text-xl font-semibold text-surface-0 mb-4 border-b border-surface-700 pb-2">Equipment</h3>
-        
-        <div class="relative w-full h-[450px] overflow-hidden">
-            
-            <svg class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-70" 
-                 width="120" height="350" viewBox="0 0 120 350" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="60" cy="30" r="25" fill="#3f3f46"/>
-                <rect x="35" y="55" width="50" height="150" rx="10" fill="#3f3f46"/>
-                <path d="M85 75L110 95V150L85 130V75Z" fill="#3f3f46"/>
-                <path d="M35 75L10 95V150L35 130V75Z" transform="scale(-1, 1) translate(-120, 0)" fill="#3f3f46"/>
-                <rect x="40" y="200" width="40" height="150" rx="5" fill="#3f3f46"/>
-            </svg>
-            
-            <div v-for="slot in equipmentSlots" :key="slot" 
-                class="absolute text-center text-surface-500 transform -translate-x-1/2 -translate-y-1/2 z-10 group"
-                :style="getSlotPosition(slot)"
-            >
-                <div @contextmenu="showContextMenu($event, slot)"
-                    :class="[
-                        'w-16 h-16 rounded-lg flex items-center justify-center p-1 relative transition-all duration-150 shadow-md cursor-pointer',
-                        // Styles for Equipped vs. Empty Slots
-                        mockEquipment[slot] 
-                            ? 'bg-surface-700 border-2 border-primary-400 shadow-xl shadow-primary-500/30' // GLOW EFFECT
-                            : 'bg-surface-800/80 border border-dashed border-surface-600 hover:border-surface-400'
-                    ]">
-                    <i v-if="!mockEquipment[slot]" :class="getEquipmentIcon(slot)" class="text-3xl text-surface-500"></i>
-                    
-                    <div v-else class="w-full h-full flex flex-col items-center justify-center">
-                        <i :class="mockEquipment[slot].icon" class="text-3xl text-primary-400"></i>
-                        <p class="text-xs text-surface-0 font-semibold">{{ mockEquipment[slot].name }}</p>
-                    </div>
-                </div>
-                
-                <p v-if="!mockEquipment[slot]" class="mt-2 text-xs font-semibold text-surface-400 opacity-80 group-hover:text-surface-0 transition-colors">{{ slot }}</p>
+  <div class="bg-surface-800 rounded-lg shadow-lg p-6 mb-8">
+    <h3 class="text-xl font-semibold text-surface-0 mb-4 border-b border-surface-700 pb-2">Equipment</h3>
 
-                <div class="absolute left-1/2 bottom-full mb-2 hidden group-hover:block w-max z-20 transform -translate-x-1/2
-                            bg-surface-900 text-surface-200 text-xs rounded-md px-3 py-1 shadow-xl border border-primary-400">
-                    <template v-if="mockEquipment[slot]">
-                        <p class="font-bold text-primary-400">{{ mockEquipment[slot].name }}</p>
-                        <p class="text-surface-200">{{ mockEquipment[slot].stats }}</p>
-                    </template>
-                    <template v-else>
-                        <p class="text-surface-400 font-semibold">Empty Slot: {{ slot }}</p>
-                        <p class="text-surface-500 italic">Click to equip item.</p>
-                    </template>
-                </div>
-            </div>
-            
-        </div> 
+    <div class="relative w-full h-[450px] overflow-visible">
+      <!-- Paper-doll silhouette -->
+      <svg
+        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-70"
+        width="120" height="350" viewBox="0 0 120 350" fill="none" xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="60" cy="30" r="25" fill="#3f3f46"/>
+        <rect x="35" y="55" width="50" height="150" rx="10" fill="#3f3f46"/>
+        <path d="M85 75L110 95V150L85 130V75Z" fill="#3f3f46"/>
+        <path d="M35 75L10 95V150L35 130V75Z" transform="scale(-1, 1) translate(-120, 0)" fill="#3f3f46"/>
+        <rect x="40" y="200" width="40" height="150" rx="5" fill="#3f3f46"/>
+      </svg>
 
-        <div v-if="contextMenuVisible" 
-             :style="{ top: `${contextMenuPosition.y}px`, left: `${contextMenuPosition.x}px` }"
-             class="fixed bg-surface-700 rounded-lg shadow-2xl border border-surface-600 z-50 py-1 min-w-40"
+      <!-- Slots -->
+      <div
+        v-for="slot in equipmentSlots"
+        :key="slot"
+        class="absolute z-10 group text-center text-surface-500 transform -translate-x-1/2 -translate-y-1/2 w-20 h-24"
+        :style="getSlotPosition(slot)"
+      >
+        <div
+          @contextmenu="showContextMenu($event, slot)"
+          :class="[
+            'w-16 h-16 mx-auto rounded-lg flex items-center justify-center p-1 relative transition-all duration-150 shadow-md cursor-pointer',
+            equipped[slot]
+              ? 'bg-surface-700 border-2 border-primary-400 shadow-xl shadow-primary-500/30'
+              : 'bg-surface-800/80 border border-dashed border-surface-600 hover:border-surface-400'
+          ]"
         >
-            <button 
-                @click.stop="handleMenuAction('unequip')"
-                class="w-full text-left px-3 py-1.5 text-surface-200 hover:bg-surface-600 transition-colors duration-100 flex items-center gap-2"
-            >
-                <i class="pi pi-times-circle text-red-400 text-sm"></i> Unequip
-            </button>
-            <button 
-                @click.stop="handleMenuAction('inspect')"
-                class="w-full text-left px-3 py-1.5 text-surface-200 hover:bg-surface-600 transition-colors duration-100 flex items-center gap-2"
-            >
-                <i class="pi pi-search text-sky-400 text-sm"></i> Inspect
-            </button>
+          <i
+            v-if="!equipped[slot]"
+            :class="defaultIcon[slot]"
+            class="text-3xl text-surface-500"
+          />
+          <div v-else class="w-full h-full flex flex-col items-center justify-center">
+            <i :class="equipped[slot]!.icon" class="text-3xl text-primary-400" />
+            <p class="text-[10px] leading-tight text-surface-0 font-semibold px-1 truncate w-full">
+              {{ equipped[slot]!.name }}
+            </p>
+          </div>
         </div>
-        
+
+        <!-- Label row (reserved height) -->
+        <p class="mt-2 h-5 text-xs font-semibold text-surface-400 opacity-80 group-hover:text-surface-0 transition-colors">
+          <span :class="equipped[slot] ? 'invisible' : ''">{{ slotLabel[slot] }}</span>
+        </p>
+
+        <!-- Tooltip -->
+        <div
+          class="absolute left-1/2 bottom-full mb-2 hidden group-hover:block w-max z-20 transform -translate-x-1/2
+                 bg-surface-900 text-surface-200 text-xs rounded-md px-3 py-1 shadow-xl border border-primary-400"
+        >
+          <template v-if="equipped[slot]">
+            <p class="font-bold text-primary-400">{{ equipped[slot]!.name }}</p>
+            <p class="text-surface-200">
+              <!-- Replace with real stat summary when available -->
+              id: {{ equipped[slot]!.id }}
+            </p>
+          </template>
+          <template v-else>
+            <p class="text-surface-400 font-semibold">Empty Slot: {{ slotLabel[slot] }}</p>
+            <p class="text-surface-500 italic">Click to equip item.</p>
+          </template>
+        </div>
+      </div>
     </div>
+
+    <!-- Context menu -->
+    <div
+      v-if="contextMenuVisible"
+      :style="{ top: `${contextMenuPosition.y}px`, left: `${contextMenuPosition.x}px` }"
+      class="fixed bg-surface-700 rounded-lg shadow-2xl border border-surface-600 z-50 py-1 min-w-40"
+    >
+      <button
+        @click.stop="handleMenuAction('unequip')"
+        class="w-full text-left px-3 py-1.5 text-surface-200 hover:bg-surface-600 transition-colors duration-100 flex items-center gap-2"
+      >
+        <i class="pi pi-times-circle text-red-400 text-sm"></i> Unequip
+      </button>
+      <button
+        @click.stop="handleMenuAction('inspect')"
+        class="w-full text-left px-3 py-1.5 text-surface-200 hover:bg-surface-600 transition-colors duration-100 flex items-center gap-2"
+      >
+        <i class="pi pi-search text-sky-400 text-sm"></i> Inspect
+      </button>
+    </div>
+  </div>
 </template>

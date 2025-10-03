@@ -3,7 +3,7 @@ import ECS from 'ecs-lib'
 import { EventBus } from '../EventBus';
 import {
     EquipmentComponent,
-    EquipmentSlot
+    type EquipmentSlot
 } from '../components/character';
 import { EquipableComponent } from '../components/item';
 

@@ -1,7 +1,7 @@
 import ECS, { Entity } from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { ActiveTraitsComponent } from '../components/mob';
-import { TraitData, TraitEffect, TraitTarget, TraitTrigger } from '../components/traits';
+import type { TraitData, TraitEffect, TraitTarget, TraitTrigger } from '../components/traits';
 import { DerivedStatsComponent, HealthComponent } from '../components/character';
 
 /**

@@ -1,11 +1,11 @@
 import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { Item, ItemData } from '../entities/item';
+import { Item, type ItemData } from '../entities/item';
 import { Character } from '../entities/character';
 import {
-    AffixData,
-    ItemRarity,
+    type AffixData,
+    type ItemRarity,
     EquipableComponent,
     AffixesComponent,
     ItemInfoComponent

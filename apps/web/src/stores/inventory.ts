@@ -21,7 +21,7 @@ export interface Bag {
     items: (Item | null)[];
 }
 
-export const useInventoryStore = defineStore('inventory', () => {
+export const usePlayerStore = defineStore('inventory', () => {
     // --- State ---
 
     // Currencies (The Wallet)
@@ -130,6 +130,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         useConsumable,
         inspectItem,
         closeInspector,
-        isInspectorOpen
+        isInspectorOpen,
+        itemToInspect
     };
 });

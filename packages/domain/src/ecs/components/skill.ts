@@ -1,5 +1,5 @@
 import { Component } from 'ecs-lib';
-import { DerivedStatsData } from './character';
+import type { DerivedStatsData } from './character';
 
 // --- TYPE DEFINITIONS ---
 

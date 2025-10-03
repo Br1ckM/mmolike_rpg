@@ -4,7 +4,7 @@
 import Avatar from '@/volt/Avatar.vue';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const playerStore = usePlayerStore();
 const { 
@@ -17,11 +17,6 @@ const {
 
 // --- MOCK DATA for structure and Tooltips ---
 const mockDerivedStats = ref({
-    core: { // Core Attributes (STR, DEX, INT, etc.)
-        STR: 85,
-        DEX: 60,
-        INT: 40,
-    },
     derived: [ // Derived Stats (Now an Array for easier listing/tooltips)
         { name: 'Attack', value: 70, icon: 'pi pi-bolt', tooltip: 'Calculated from Strength and Main Hand damage.' },
         { name: 'Defense', value: 45, icon: 'pi pi-shield', tooltip: 'Calculated from Constitution and Armor Rating.' },
@@ -32,6 +27,36 @@ const mockDerivedStats = ref({
         { name: 'Dodge', value: '18%', icon: 'pi pi-times-circle', tooltip: 'Chance to completely avoid damage.' },
         { name: 'Haste', value: '5%', icon: 'pi pi-forward', tooltip: 'Increases attack and spell speed.' },
     ],
+});
+
+const coreTiles = computed<Record<'STR'|'DEX'|'INT', number>>(() => ({
+    STR: player.value?.coreStats?.strength ?? 0,
+    DEX: player.value?.coreStats?.dexterity ?? 0,
+    INT: player.value?.coreStats?.intelligence ?? 0,
+}));
+
+type DerivedKey = | 'attack' | 'magicAttack' | 'defense' | 'magicResist' | 'critChance' | 'critDamage' | 'dodge' | 'haste' | 'accuracy';
+
+const DERIVED_META: Record<DerivedKey, { label: string; icon: string; tooltip: string; isPercent?: boolean }> = {
+    attack:       { label: 'Attack',       icon: 'pi pi-bolt',        tooltip: 'From STR, gear, and modifiers.' },
+    magicAttack:  { label: 'Magic Attack', icon: 'pi pi-star',        tooltip: 'From INT, gear, and modifiers.' },
+    defense:      { label: 'Defense',      icon: 'pi pi-shield',      tooltip: 'From DEX/armor and modifiers.' },
+    magicResist:  { label: 'Magic Resist', icon: 'pi pi-flag',        tooltip: 'Resistance against magic.' },
+    critChance:   { label: 'Crit Chance',  icon: 'pi pi-bullseye',    tooltip: 'Chance to crit.', isPercent: true },
+    critDamage:   { label: 'Crit Damage',  icon: 'pi pi-plus-circle', tooltip: 'Crit damage multiplier.', isPercent: true },
+    dodge:        { label: 'Dodge',        icon: 'pi pi-times-circle',tooltip: 'Chance to evade attacks.', isPercent: true },
+    haste:        { label: 'Haste',        icon: 'pi pi-forward',     tooltip: 'Attack/spell speed bonus.', isPercent: true },
+    accuracy:     { label: 'Accuracy',     icon: 'pi pi-check',       tooltip: 'Chance to hit.', isPercent: true },   
+}
+
+const derivedList = computed(() => {
+  const ds = player.value?.derivedStats ?? {} as Record<DerivedKey, number>;
+  return (Object.keys(DERIVED_META) as DerivedKey[]).map((key) => {
+    const meta = DERIVED_META[key];
+    const raw = Number.isFinite(ds[key]) ? ds[key] : 0;
+    const value = meta.isPercent ? `${Math.round(raw)}%` : Math.round(raw);
+    return { name: meta.label, icon: meta.icon, tooltip: meta.tooltip, value };
+  });
 });
 
 /** Helper function to return tile styling based on stat name */
@@ -57,7 +82,7 @@ const getStatTileStyles = (statName: string) => {
                 <Avatar image="https://placehold.co/150x150/27272a/eab308?text=A" size="xlarge" shape="circle" />
                 <p class="font-bold text-2xl mt-3 text-primary-400">{{ player?.name ?? 'Aethelred' }}</p>
                 <p class="text-surface-400 text-sm mb-2">The Bold</p>
-                <p class="text-surface-400 text-sm">Level {{ player?.derivedStats?.level ?? '1' }} Knight</p>
+                <p class="text-surface-400 text-sm">Level {{ player?.level ?? '1' }} Knight</p>
             </div>
             
             <div class="flex flex-grow gap-8">
@@ -65,7 +90,7 @@ const getStatTileStyles = (statName: string) => {
                 <div class="w-1/2 flex-shrink-0">
                     <h3 class="text-xl font-semibold text-surface-0 mb-3">Core Stats</h3>
                     <div class="grid grid-cols-3 gap-3">
-                        <div v-for="(value, name) in mockDerivedStats.core" :key="name" 
+                        <div v-for="(value, name) in coreTiles" :key="name" 
                             :class="[
                                 'border-2 rounded-lg p-3 text-center transition-shadow duration-150',
                                 'border-surface-700 shadow-md', // Dark border with shadow
@@ -84,7 +109,7 @@ const getStatTileStyles = (statName: string) => {
                     <div class="mb-5">
                         <div class="flex items-center justify-between mb-1 text-sm">
                             <label class="block font-semibold text-surface-0">Health</label>
-                            <span class="font-mono text-green-400">{{ healthValues ?? '0 / 0' }}</span>
+                            <span class="font-mono text-green-400">{{ healthValues.display ?? '0 / 0' }}</span>
                         </div>
                         <div class="bg-surface-700 rounded-full h-4 overflow-hidden">
                             <div 
@@ -97,7 +122,7 @@ const getStatTileStyles = (statName: string) => {
                     <div class="mb-5">
                         <div class="flex items-center justify-between mb-1 text-sm">
                             <label class="block font-semibold text-surface-0">Mana</label>
-                            <span class="font-mono text-sky-400">{{ manaValues ?? '0 / 0' }}</span>
+                            <span class="font-mono text-sky-400">{{ manaValues.display ?? '0 / 0' }}</span>
                         </div>
                         <div class="bg-surface-700 rounded-full h-4 overflow-hidden">
                             <div 
@@ -113,7 +138,7 @@ const getStatTileStyles = (statName: string) => {
         <div class="bg-surface-800 rounded-lg shadow-lg p-6 mb-8">
             <h3 class="text-xl font-semibold text-surface-0 mb-4 border-b border-surface-700 pb-2">Derived Stats</h3>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <div v-for="stat in mockDerivedStats.derived" :key="stat.name" 
+                <div v-for="stat in derivedList" :key="stat.name" 
                     class="bg-surface-700 border border-surface-600 rounded-lg p-3 text-center transition-shadow duration-150 relative group shadow-md"
                 >
                     <div class="flex items-center justify-center gap-2 mb-1">

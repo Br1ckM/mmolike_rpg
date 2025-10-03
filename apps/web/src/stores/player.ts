@@ -2,16 +2,35 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { App } from 'mmolike_rpg-application'; // Assuming you have a path alias for your packages
+import { App } from 'mmolike_rpg-application';
+
+type DerivedStats = {
+  attack: number;
+  magicAttack: number;
+  defense: number;
+  magicResist: number;
+  critChance: number;
+  critDamage: number;
+  dodge: number;
+  haste: number;
+  accuracy: number;
+}
+
+type CoreStats = {
+  STR: number;
+  DEX: number;
+  INT: number;
+}
 
 // Define a type for the player state DTO for better type safety
 interface PlayerState {
   id: number;
   name: string;
   health: { current: number; max: number };
-  mana: { current: number; max: number }; // Added mana property
-  derivedStats: any;
-  // Add other properties from the DTO as needed
+  mana: { current: number; max: number };
+  coreStats: CoreStats;
+  derivedStats: DerivedStats;
+  inventory?: { bagIds: string[]; walletId: string };
 }
 
 export const usePlayerStore = defineStore('player', () => {
@@ -20,67 +39,98 @@ export const usePlayerStore = defineStore('player', () => {
   const unsubscribe = ref<(() => void) | null>(null);
 
   // --- Getters ---
+  const resolvedHealth = computed(() =>
+    player.value?.health ?? { current: 0, max: 0 }
+  );
+
+  const resolvedMana = computed(() =>
+    player.value?.mana ?? { current: 0, max: 0 }
+  );
+
   const healthPercentage = computed(() => {
-    if (!player.value || !player.value.health) return 0;
-    return (player.value.health.current / player.value.health.max) * 100;
+    const { current: cur, max } = resolvedHealth.value;
+    if (max <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((cur / max) * 100)));
   });
 
-  // New getter for raw health values (e.g., "95/100")
   const healthValues = computed(() => {
-    if (!player.value || !player.value.health) return '0 / 0';
-    return `${player.value.health.current} / ${player.value.health.max}`;
+    const { current: cur, max } = resolvedHealth.value;
+    return { current: cur, max, display: `${cur} / ${max}` };
   });
 
-  // New getter for mana percentage
   const manaPercentage = computed(() => {
-    // Assuming mana is part of the player state now
-    if (!player.value || !player.value.mana) return 0;
-    return (player.value.mana.current / player.value.mana.max) * 100;
+    const { current: cur, max } = resolvedMana.value;
+    if (max <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((cur / max) * 100)));
   });
 
-  // New getter for raw mana values (e.g., "40/100")
   const manaValues = computed(() => {
-    if (!player.value || !player.value.mana) return '0 / 0';
-    return `${player.value.mana.current} / ${player.value.mana.max}`;
+    const { current: cur, max } = resolvedMana.value;
+    return { current: cur, max, display: `${cur} / ${max}` };
+  });
+
+  // NEW: INVENTORY GETTERS
+  const bags = computed(() => {
+    if (!player.value?.inventory?.bagIds) return [];
+    // This is a placeholder; you'll need to get the full bag and item details
+    // from the world state, which we'll address in a future step.
+    // For now, this structure is enough to get the components working.
+    return player.value.inventory.bagIds.map((bagId, index) => ({
+      id: bagId,
+      name: `Bag ${index + 1}`,
+      slots: 20, // Placeholder
+      items: [], // Placeholder
+    }));
+  });
+
+  const wallet = computed(() => {
+    if (!player.value?.inventory?.walletId) return {};
+    // Placeholder - similar to bags
+    return { Gold: 0, Silver: 0, Gems: 0 };
+  });
+
+  const belt = computed(() => {
+    // Placeholder
+    return new Array(5).fill(null);
   });
 
   // --- Actions ---
   async function initialize() {
-    // Wait for the application to be fully loaded before subscribing.
     await App.isReady;
 
     if (unsubscribe.value) {
       unsubscribe.value();
     }
-    unsubscribe.value = App.queries.subscribe<PlayerState>('playerState', (newPlayerState) => {
-      // Temporary stub for health and mana if not provided by the app/backend yet
-      if (!newPlayerState.mana) {
-        (newPlayerState as any).mana = { current: 50, max: 100 };
-      }
-      if (!newPlayerState.health) {
-        (newPlayerState as any).health = { current: 95, max: 100 };
-      }
-      if (!newPlayerState.derivedStats) {
-        (newPlayerState as any).derivedStats = { level: 1 };
-      }
 
+    // Subscribe first — QueryService.subscribe immediately calls the callback with the current state
+    unsubscribe.value = App.queries.subscribe<PlayerState>('playerState', (newPlayerState) => {
       player.value = newPlayerState;
     });
   }
 
-  // Example action that calls the command service
   function equipItem(itemId: number) {
     if (!player.value) return;
     App.commands.equipItem(player.value.id, itemId);
   }
 
+  // NEW: Add inventory-related actions if needed
+  function useConsumable(slotIndex: number) {
+    console.log(`Using consumable in belt slot ${slotIndex}`);
+    // You would eventually call App.commands.useConsumable here
+  }
+
+
   return {
     player,
     healthPercentage,
-    healthValues, // Exposed new getter
-    manaPercentage, // Exposed new getter
-    manaValues, // Exposed new getter
+    healthValues,
+    manaPercentage,
+    manaValues,
+    bags, // Expose new getters
+    wallet,
+    belt,
     initialize,
     equipItem,
+    useConsumable,
   };
 });

@@ -1,7 +1,7 @@
 import ECS from 'ecs-lib';
 import { Entity } from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { WorldClockComponent, TimeOfDay } from '../components/world';
+import { WorldClockComponent, type TimeOfDay } from '../components/world';
 
 /**
  * Manages the in-game time of day. This system is event-driven,

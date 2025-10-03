@@ -1,16 +1,16 @@
 // src/components/inventory/InventoryBelt.vue (Modified)
 
 <script setup lang="ts">
-import { useInventoryStore } from '@/stores/inventory';
+import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import InventoryItemSlot from './InventoryItemSlot.vue'; // <-- IMPORTED
 
-const inventoryStore = useInventoryStore();
-const { belt } = storeToRefs(inventoryStore);
+const playerStore = usePlayerStore();
+const { belt } = storeToRefs(playerStore);
 
 const useItem = (index: number) => {
     // Implement useConsumable action on a mock click (e.g., press '1' key)
-    inventoryStore.useConsumable(index);
+    playerStore.useConsumable(index);
 };
 </script>
 

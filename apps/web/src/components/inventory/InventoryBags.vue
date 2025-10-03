@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import InventoryItemSlot from './InventoryItemSlot.vue';
-import { useInventoryStore, Item } from '@/stores/inventory'; // Ensure Item type is imported
+import { usePlayerStore, Item } from '@/stores/player'; // Ensure Item type is imported
 import { storeToRefs } from 'pinia';
 import ItemInspectorModal from './ItemInspectorModal.vue';
 
-const inventoryStore = useInventoryStore();
-const { bags, totalSlots, usedSlots } = storeToRefs(inventoryStore);
+const playerStore = usePlayerStore();
+const { bags, totalSlots, usedSlots } = storeToRefs(playerStore);
 
 // Helper to determine the icon for the Bag Item Card
 const getBagIcon = (bagName: string) => {
@@ -18,7 +18,7 @@ const getBagIcon = (bagName: string) => {
 // NEW: opener that delegates to the store inspector action
 const openInspector = (item: Item | null) => {
     if (item) {
-        inventoryStore.inspectItem(item);
+        playerStore.inspectItem(item);
     }
 }
 </script>

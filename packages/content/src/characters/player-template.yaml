@@ -1,7 +1,7 @@
 id: PLAYER_TEMPLATE
 components:
   info:
-    name: Adventurer
+    name: Jim
     race: Human
     avatarUrl: 'https.xxx.com'
   
@@ -13,9 +13,15 @@ components:
     dexterity: 10
     intelligence: 10
 
+  resources:
+    health:
+      current: 100
+      max: 100
+    mana:
+      current: 50
+      max: 50
+
   derivedStats:
-    health: 50
-    mana: 20
     attack: 5
     magicAttack: 5
     defense: 5

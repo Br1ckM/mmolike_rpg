@@ -3,7 +3,7 @@ import { Entity, Component } from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { VendorComponent } from '../components/npc';
 import { InventoryComponent } from '../components/character';
-import { CurrencyComponent, CurrencyData, SlotsComponent, VendorValueComponent } from '../components/item';
+import { CurrencyComponent, type CurrencyData, SlotsComponent, VendorValueComponent } from '../components/item';
 
 /**
  * Manages all buy and sell transactions between a player and an NPC vendor.

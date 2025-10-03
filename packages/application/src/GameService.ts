@@ -41,7 +41,8 @@ import {
     ProfessionsComponent,
     HealthComponent,
     SkillBookComponent,
-    JobsComponent
+    JobsComponent,
+    ManaComponent,
 } from '../../domain/src/ecs/components/character';
 import { QuestStatusComponent } from '../../domain/src/ecs/components/quest';
 
@@ -165,6 +166,7 @@ export class GameService {
             coreStats: CoreStatsComponent.oneFrom(this.player)?.data,
             derivedStats: DerivedStatsComponent.oneFrom(this.player)?.data,
             health: HealthComponent.oneFrom(this.player)?.data,
+            mana: ManaComponent.oneFrom(this.player)?.data,
             equipment: EquipmentComponent.oneFrom(this.player)?.data,
             inventory: InventoryComponent.oneFrom(this.player)?.data,
             professions: ProfessionsComponent.oneFrom(this.player)?.data,

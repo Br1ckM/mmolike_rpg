@@ -1,11 +1,11 @@
 // src/components/inventory/InventoryWallet.vue
 
 <script setup lang="ts">
-import { useInventoryStore } from '@/stores/inventory';
+import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 
-const inventoryStore = useInventoryStore();
-const { wallet } = storeToRefs(inventoryStore);
+const playerStore = usePlayerStore();
+const { wallet } = storeToRefs(playerStore);
 </script>
 
 <template>

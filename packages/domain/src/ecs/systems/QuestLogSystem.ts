@@ -4,7 +4,7 @@ import { EventBus } from '../EventBus';
 import {
     QuestStatusComponent,
     QuestObjectiveComponent,
-    QuestStatusData
+    type QuestStatusData
 } from '../components/quest';
 
 /**

@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Item } from '@/stores/inventory';
+import { Item } from '@/stores/player';
 
 // Define props to receive the item data
 const props = defineProps<{

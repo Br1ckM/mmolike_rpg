@@ -4,11 +4,11 @@
 import InventoryWallet from '@/components/inventory/InventoryWallet.vue';
 import InventoryBelt from '@/components/inventory/InventoryBelt.vue';
 import InventoryBags from '@/components/inventory/InventoryBags.vue';
-import { useInventoryStore } from '@/stores/inventory';
+// NO LONGER NEEDED: import { usePlayerStore } from '@/stores/inventory';
 import { onMounted } from 'vue';
 
 // Initialize the store
-const inventoryStore = useInventoryStore();
+const playerStore = usePlayerStore();
 
 onMounted(() => {
     // You'd typically load data here

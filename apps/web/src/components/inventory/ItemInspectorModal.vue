@@ -4,11 +4,11 @@
 import Dialog from '@/volt/Dialog.vue';
 import Button from '@/volt/Button.vue';
 import Avatar from '@/volt/Avatar.vue';
-import { useInventoryStore } from '@/stores/inventory';
+import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 
-const inventoryStore = useInventoryStore();
-const { itemToInspect, isInspectorOpen } = storeToRefs(inventoryStore);
+const playerStore = usePlayerStore();
+const { itemToInspect, isInspectorOpen } = storeToRefs(playerStore);
 
 const blockInternalClose = () => {}; 
 
@@ -92,7 +92,7 @@ const getModSlotColor = (status: 'empty' | 'filled') => {
                     </div>
                 </div>
             </div> <div class="mt-auto border-t border-surface-700 pt-4 flex justify-end gap-3 p-6 flex-shrink-0 bg-surface-900 sticky bottom-0">
-                <Button label="Close" severity="secondary" @click="inventoryStore.closeInspector()" />
+                <Button label="Close" severity="secondary" @click="playerStore.closeInspector()" />
                 <Button label="Equip Item" icon="pi pi-user" />
             </div>
 
