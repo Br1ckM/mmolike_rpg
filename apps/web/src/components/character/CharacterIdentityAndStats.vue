@@ -1,0 +1,134 @@
+// src/components/character/CharacterIdentityAndStats.vue
+
+<script setup lang="ts">
+import Avatar from '@/volt/Avatar.vue';
+import { usePlayerStore } from '@/stores/player';
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
+
+const playerStore = usePlayerStore();
+const { 
+    player, 
+    healthPercentage, 
+    healthValues, 
+    manaPercentage, 
+    manaValues 
+} = storeToRefs(playerStore);
+
+// --- MOCK DATA for structure and Tooltips ---
+const mockDerivedStats = ref({
+    core: { // Core Attributes (STR, DEX, INT, etc.)
+        STR: 85,
+        DEX: 60,
+        INT: 40,
+    },
+    derived: [ // Derived Stats (Now an Array for easier listing/tooltips)
+        { name: 'Attack', value: 70, icon: 'pi pi-bolt', tooltip: 'Calculated from Strength and Main Hand damage.' },
+        { name: 'Defense', value: 45, icon: 'pi pi-shield', tooltip: 'Calculated from Constitution and Armor Rating.' },
+        { name: 'Magic Attack', value: 20, icon: 'pi pi-star', tooltip: 'Calculated from Intelligence and Spell Power.' },
+        { name: 'Magic Resist', value: 48, icon: 'pi pi-shield-fill', tooltip: 'Calculated from Spirit and Magic Resist Rating.' },
+        { name: 'Crit Chance', value: '15%', icon: 'pi pi-bullseye', tooltip: 'Chance to deal double damage.' },
+        { name: 'Crit Damage', value: '156%', icon: 'pi pi-plus-circle', tooltip: 'Damage multiplier when critical.' },
+        { name: 'Dodge', value: '18%', icon: 'pi pi-times-circle', tooltip: 'Chance to completely avoid damage.' },
+        { name: 'Haste', value: '5%', icon: 'pi pi-forward', tooltip: 'Increases attack and spell speed.' },
+    ],
+});
+
+/** Helper function to return tile styling based on stat name */
+const getStatTileStyles = (statName: string) => {
+    switch (statName) {
+        case 'STR':
+            return { color: 'text-red-700', bg: 'bg-red-100', valueClass: 'text-red-950' };
+        case 'DEX':
+            return { color: 'text-green-700', bg: 'bg-green-100', valueClass: 'text-green-950' };
+        case 'INT':
+            return { color: 'text-sky-700', bg: 'bg-sky-100', valueClass: 'text-sky-950' };
+        default:
+            return { color: 'text-surface-700', bg: 'bg-surface-300', valueClass: 'text-surface-950' };
+    }
+};
+</script>
+
+<template>
+    <div>
+        <div class="flex gap-8 mb-8">
+            
+            <div class="flex flex-col items-center flex-shrink-0">
+                <Avatar image="https://placehold.co/150x150/27272a/eab308?text=A" size="xlarge" shape="circle" />
+                <p class="font-bold text-2xl mt-3 text-primary-400">{{ player?.name ?? 'Aethelred' }}</p>
+                <p class="text-surface-400 text-sm mb-2">The Bold</p>
+                <p class="text-surface-400 text-sm">Level {{ player?.derivedStats?.level ?? '1' }} Knight</p>
+            </div>
+            
+            <div class="flex flex-grow gap-8">
+                
+                <div class="w-1/2 flex-shrink-0">
+                    <h3 class="text-xl font-semibold text-surface-0 mb-3">Core Stats</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div v-for="(value, name) in mockDerivedStats.core" :key="name" 
+                            :class="[
+                                'border-2 rounded-lg p-3 text-center transition-shadow duration-150',
+                                'border-surface-700 shadow-md', // Dark border with shadow
+                                getStatTileStyles(name).bg // Light background
+                            ]"
+                        >
+                            <p class="font-bold uppercase text-sm" :class="getStatTileStyles(name).color">{{ name }}</p>
+                            <p class="font-mono text-3xl font-bold" :class="getStatTileStyles(name).valueClass">{{ value }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-6/13 flex-shrink-0">
+                    <h3 class="text-xl font-semibold text-surface-0 mb-3">Resources</h3>
+                    
+                    <div class="mb-5">
+                        <div class="flex items-center justify-between mb-1 text-sm">
+                            <label class="block font-semibold text-surface-0">Health</label>
+                            <span class="font-mono text-green-400">{{ healthValues ?? '0 / 0' }}</span>
+                        </div>
+                        <div class="bg-surface-700 rounded-full h-4 overflow-hidden">
+                            <div 
+                                class="h-full bg-green-500 transition-width duration-300 ease-in-out" 
+                                :style="{ width: (healthPercentage ?? 0) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="flex items-center justify-between mb-1 text-sm">
+                            <label class="block font-semibold text-surface-0">Mana</label>
+                            <span class="font-mono text-sky-400">{{ manaValues ?? '0 / 0' }}</span>
+                        </div>
+                        <div class="bg-surface-700 rounded-full h-4 overflow-hidden">
+                            <div 
+                                class="h-full bg-sky-400 transition-width duration-300 ease-in-out" 
+                                :style="{ width: (manaPercentage ?? 0) + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-surface-800 rounded-lg shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-surface-0 mb-4 border-b border-surface-700 pb-2">Derived Stats</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div v-for="stat in mockDerivedStats.derived" :key="stat.name" 
+                    class="bg-surface-700 border border-surface-600 rounded-lg p-3 text-center transition-shadow duration-150 relative group shadow-md"
+                >
+                    <div class="flex items-center justify-center gap-2 mb-1">
+                        <i :class="stat.icon" class="text-primary-400 text-base"></i>
+                        <span class="text-surface-200 font-semibold text-sm">{{ stat.name }}</span>
+                    </div>
+                    
+                    <span class="font-mono text-xl font-bold text-surface-0">{{ stat.value }}</span>
+                    
+                    <div class="absolute right-0 bottom-full mb-2 hidden group-hover:block w-max max-w-xs z-20 
+                                bg-surface-900 text-surface-200 text-xs rounded-md px-3 py-2 shadow-xl border border-surface-700 transform translate-x-1/4">
+                        {{ stat.tooltip }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

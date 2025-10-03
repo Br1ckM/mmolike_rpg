@@ -15,7 +15,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="bg-surface-900 min-h-screen font-sans flex h-screen">
+  <div class="bg-surface-900 min-h-screen font-sans flex h-screen w-screen overflow-x-hidden">
     <Sidebar />
 
     <main class="flex-1 overflow-y-auto">
