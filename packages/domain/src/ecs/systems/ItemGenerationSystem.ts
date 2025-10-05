@@ -56,12 +56,30 @@ export class ItemGenerationSystem {
 
         const { components: baseComponents } = baseItemTemplate;
 
-        // --- Rarity and Affix Generation Logic ---
+        // --- Only apply affixes and rarity to 'equipment' type items ---
+        if (baseComponents.info.itemType !== 'equipment') {
+            // It's a reagent, consumable, etc. Just create the base item.
+
+            // Create a mutable copy of the components to avoid side effects
+            const newItemData = JSON.parse(JSON.stringify(baseComponents));
+
+            // If the item is stackable, initialize its current stack size to 1
+            if (newItemData.stackable) {
+                newItemData.stackable.current = 1;
+            }
+
+            const itemEntity = new Item(newItemData);
+            this.world.addEntity(itemEntity);
+            this.giveItemToCharacter(character, itemEntity);
+            return; // Stop execution here
+        }
+
+
+        // --- Rarity and Affix Generation Logic (Now only runs for equipment) ---
         const rarityRoll = Math.random();
         let rarity: ItemRarity = 'Common';
         const affixesToApply: AffixData[] = [];
 
-        // Example rarity chances: 10% Rare, 30% Uncommon, 60% Common
         if (rarityRoll < 0.1) {
             rarity = 'Rare';
             const prefix = this.getRandomAffix('prefix');
@@ -74,7 +92,6 @@ export class ItemGenerationSystem {
             if (affix) affixesToApply.push(affix);
         }
 
-        // --- Assemble the final ItemData for the new instance ---
         const newItemData: ItemData = {
             ...baseComponents,
             info: {
@@ -85,20 +102,14 @@ export class ItemGenerationSystem {
             affixes: affixesToApply,
         };
 
-        // Create the new item entity and add it to the ECS world
         const itemEntity = new Item(newItemData);
         this.world.addEntity(itemEntity);
 
         console.log(`Generated item: ${newItemData.info.name}`);
 
-        // Delegate the task of adding the item to the character's inventory
         this.giveItemToCharacter(character, itemEntity);
     }
 
-    /**
-     * Generates a descriptive name for an item based on its affixes.
-     * e.g., "Sturdy Longsword of the Salamander"
-     */
     private generateItemName(baseName: string, affixes: (AffixData & { name: string })[]): string {
         const prefix = affixes.find(a => a.type === 'prefix');
         const suffix = affixes.find(a => a.type === 'suffix');
@@ -110,24 +121,17 @@ export class ItemGenerationSystem {
         return name;
     }
 
-    /**
-     * Selects a random affix of a given type from the loaded content.
-     */
     private getRandomAffix(type: 'prefix' | 'suffix'): (AffixData & { name: string }) | null {
         const allOfType = [...this.content.affixes.values()].filter(a => a.type === type);
         if (allOfType.length === 0) return null;
         return allOfType[Math.floor(Math.random() * allOfType.length)];
     }
 
-    /**
-     * Placeholder function to give the generated item to a character.
-     * In a real implementation, this would emit another event or call an InventorySystem.
-     */
     private giveItemToCharacter(character: Character, item: Entity): void {
-        // Instead of logging, we now emit a formal event for the InventorySystem to handle.
         this.eventBus.emit('addItemToInventory', {
             characterId: character.id,
             itemEntityId: item.id,
         });
     }
 }
+

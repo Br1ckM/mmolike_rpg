@@ -6,6 +6,8 @@ import type { DialogueTree, DialogueNode, DialogueAction, DialogueResponse, Dial
 import { QuestStatusComponent } from '../components/quest';
 import { InfoComponent } from '../components/character';
 
+type HistoryEntry = { speaker: 'NPC' | 'Player'; text: string };
+
 /**
  * Manages the flow of conversations between players and NPCs. It interprets
  * DialogueTree data structures to present choices and trigger game events.
@@ -21,6 +23,7 @@ export class DialogueSystem {
         npcId: number;
         tree: DialogueTree;
         currentNode: DialogueNode;
+        history: HistoryEntry[];
     } | null = null;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
@@ -49,26 +52,33 @@ export class DialogueSystem {
         }
 
         const startNode = tree.nodes[tree.startNodeId];
+        const initialHistory: HistoryEntry[] = [{ speaker: 'NPC', text: startNode.text }]; // <-- Initialize history
+
         this.activeConversation = {
             ...payload,
             tree,
             currentNode: startNode,
+            history: initialHistory,
         };
 
-        const npcName = InfoComponent.oneFrom(npc)?.data.name || "Unknown";
+        const npcInfo = InfoComponent.oneFrom(npc)?.data;
+        const npcName = npcInfo?.name || "Unknown";
+        const npcAvatarUrl = npcInfo?.avatarUrl || "";
 
         // Emit an event to the UI to display the dialogue
         this.eventBus.emit('dialogueNodeChanged', {
             npcName,
+            npcAvatarUrl,
             text: startNode.text,
-            responses: this.getAvailableResponses(startNode, character), // Corrected call
+            responses: this.getAvailableResponses(startNode, character),
+            history: initialHistory,
         });
     }
 
     private onResponseSelected(payload: { responseIndex: number; }): void {
         if (!this.activeConversation) return;
 
-        const { currentNode, characterId, npcId } = this.activeConversation;
+        const { currentNode, characterId, npcId, history } = this.activeConversation;
         const character = this.world.getEntity(characterId);
         const npc = this.world.getEntity(npcId);
         if (!character || !npc) return;
@@ -77,6 +87,8 @@ export class DialogueSystem {
         const selectedResponse = availableResponses[payload.responseIndex];
 
         if (!selectedResponse) return;
+
+        history.push({ speaker: 'Player', text: selectedResponse.text });
 
         // Step 1: Execute any actions associated with the choice
         if (selectedResponse.actions) {
@@ -91,13 +103,20 @@ export class DialogueSystem {
         }
 
         const nextNode = this.activeConversation.tree.nodes[nextNodeId];
+        history.push({ speaker: 'NPC', text: nextNode.text });
+
         this.activeConversation.currentNode = nextNode;
-        const npcName = InfoComponent.oneFrom(npc)?.data.name || "Unknown";
+        const npcInfo = InfoComponent.oneFrom(npc)?.data;
+        const npcName = npcInfo?.name || "Unknown";
+        const npcAvatarUrl = npcInfo?.avatarUrl || "";
+
 
         this.eventBus.emit('dialogueNodeChanged', {
             npcName,
+            npcAvatarUrl,
             text: nextNode.text,
             responses: this.getAvailableResponses(nextNode, character), // Corrected call
+            history: history,
         });
     }
 

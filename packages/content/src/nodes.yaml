@@ -1,0 +1,123 @@
+# --- Permanent Travel Nodes ---
+- id: "node_to_cloverfell"
+  components:
+    node:
+      name: "Cloverfell Village"
+      description: "A path leads to a peaceful village."
+      position:
+        top: "50%"
+        left: "15%"
+    travelTarget:
+      targetLocationId: "loc_cloverfell_village"
+
+- id: "node_to_barterbrews"
+  components:
+    node:
+      name: "Barterbrew's Caravan"
+      description: "A well-worn path towards a plume of smoke."
+      position:
+        top: "80%"
+        left: "85%"
+    travelTarget:
+      targetLocationId: "loc_barterbrews_caravan"
+
+# --- Permanent Interaction Nodes (Dungeons) ---
+- id: "node_to_timberfang_den"
+  components:
+    node:
+      name: "Timberfang Tribe Den"
+      description: "A crudely marked entrance to the goblin den."
+      position:
+        top: "15%"
+        left: "75%"
+    interactionTarget:
+      type: "Dungeon"
+      targetId: "dungeon_timberfang" # ID for the dungeon's specific data
+
+- id: "node_to_oozefall_grotto"
+  components:
+    node:
+      name: "Oozefall Grotto"
+      description: "A slimy fissure in the rock face leads into darkness."
+      position:
+        top: "85%"
+        left: "30%"
+    interactionTarget:
+      type: "Dungeon"
+      targetId: "dungeon_oozefall" # ID for the dungeon's specific data
+
+
+# --- Depletable Resource Nodes ---
+- id: "node_copper_vein_1"
+  components:
+    node:
+      name: "Copper Vein"
+      description: "A rocky outcrop rich with copper ore."
+      position:
+        top: "60%"
+        left: "70%"
+    interactionTarget:
+      type: "Gather"
+      targetId: "loottable_copper"
+
+- id: "node_oakwood_1"
+  components:
+    node:
+      name: "Oak Wood"
+      description: "A cluster of sturdy oak trees."
+      position:
+        top: "20%"
+        left: "25%"
+    interactionTarget:
+      type: "Gather"
+      targetId: "loottable_wood"
+
+- id: "node_mint_patch_1"
+  components:
+    node:
+      name: "Mint Herb Patch"
+      description: "A patch of fragrant wild mint."
+      position:
+        top: "70%"
+        left: "50%"
+    interactionTarget:
+      type: "Gather"
+      targetId: "loottable_herbs"
+
+# --- Depletable Encounter Nodes (Dens) ---
+- id: "node_warren_of_hoppers"
+  components:
+    node:
+      name: "Warren of the Hoppers"
+      description: "A series of burrows teeming with aggressive, rabbit-like creatures."
+      position:
+        top: "45%"
+        left: "80%"
+    interactionTarget:
+      type: "Encounter"
+      targetId: "enc_hoppers"
+
+- id: "node_timberfang_camp"
+  components:
+    node:
+      name: "Timberfang Tribe Camp"
+      description: "A small, hastily constructed goblin outpost."
+      position:
+        top: "30%"
+        left: "60%"
+    interactionTarget:
+      type: "Encounter"
+      targetId: "enc_goblin_scouts"
+
+- id: "node_the_howling_grounds"
+  components:
+    node:
+      name: "The Howling Grounds"
+      description: "An open clearing where wolves are known to hunt."
+      position:
+        top: "65%"
+        left: "20%"
+    interactionTarget:
+      type: "Encounter"
+      targetId: "enc_wolves"
+      

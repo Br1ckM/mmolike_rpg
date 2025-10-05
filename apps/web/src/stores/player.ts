@@ -22,6 +22,24 @@ type CoreStats = {
   INT: number;
 }
 
+export interface UIItem {
+  id: number;
+  name: string;
+  icon: string;
+  stackSize?: number;
+  maxStack?: number;
+  quality: string;
+  type: string;
+  [key: string]: any; // Allow other properties
+}
+
+export interface UIBag {
+  id: number;
+  name: string;
+  slots: number;
+  items: (UIItem | null)[];
+}
+
 // Define a type for the player state DTO for better type safety
 interface PlayerState {
   id: number;
@@ -30,7 +48,25 @@ interface PlayerState {
   mana: { current: number; max: number };
   coreStats: CoreStats;
   derivedStats: DerivedStats;
-  inventory?: { bagIds: string[]; walletId: string };
+  inventory: {
+    wallet: { [currency: string]: number };
+    bags: any[];
+  } | null;
+  quests: any[];
+}
+
+interface QuestObjective {
+  description: string;
+  current: number;
+  required: number;
+  targetName: string;
+  requiredAmount: number;
+}
+
+interface ActiveQuest {
+  id: string;
+  name: string;
+  objectives: QuestObjective[];
 }
 
 export const usePlayerStore = defineStore('player', () => {
@@ -69,30 +105,59 @@ export const usePlayerStore = defineStore('player', () => {
     return { current: cur, max, display: `${cur} / ${max}` };
   });
 
-  // NEW: INVENTORY GETTERS
-  const bags = computed(() => {
-    if (!player.value?.inventory?.bagIds) return [];
-    // This is a placeholder; you'll need to get the full bag and item details
-    // from the world state, which we'll address in a future step.
-    // For now, this structure is enough to get the components working.
-    return player.value.inventory.bagIds.map((bagId, index) => ({
-      id: bagId,
-      name: `Bag ${index + 1}`,
-      slots: 20, // Placeholder
-      items: [], // Placeholder
-    }));
+  const bags = computed((): UIBag[] => {
+    if (!player.value?.inventory?.bags) return [];
+    return player.value.inventory.bags.map(bagData => {
+      return {
+        id: bagData.id,
+        name: bagData.ItemInfoComponent.name,
+        slots: bagData.SlotsComponent.size,
+        items: bagData.items.map((itemData: any | null): UIItem | null => {
+          if (!itemData) return null;
+          return {
+            id: itemData.id,
+            name: itemData.ItemInfoComponent.name,
+            icon: `pi pi-${itemData.ItemInfoComponent.iconName?.toLowerCase() || 'box'}`,
+            quality: itemData.ItemInfoComponent.rarity,
+            type: itemData.ItemInfoComponent.itemType,
+            stackSize: itemData.StackableComponent?.current, // Note: your component is named 'stackable' in yaml
+            maxStack: itemData.StackableComponent?.maxStack,
+            ...itemData, // Pass through all data for the inspector
+          };
+        }),
+      };
+    });
   });
 
   const wallet = computed(() => {
-    if (!player.value?.inventory?.walletId) return {};
-    // Placeholder - similar to bags
-    return { Gold: 0, Silver: 0, Gems: 0 };
+    return player.value?.inventory?.wallet ?? { Gold: 0 };
   });
 
   const belt = computed(() => {
-    // Placeholder
-    return new Array(5).fill(null);
+    // This will need a dedicated component on the backend later.
+    // For now, we'll keep the mock data to show it.
+    const potion: UIItem = { id: 10, name: 'Health Potion', icon: 'pi pi-plus-circle', type: 'consumable', stackSize: 5, maxStack: 10, quality: 'Common' };
+    return [potion, null, null, null, null];
   });
+
+  const activeQuests = computed((): ActiveQuest[] => {
+    if (!player.value?.quests) return [];
+
+    return player.value.quests
+      .filter((quest: any) => quest.status === 'in_progress')
+      .map((quest: any) => ({
+        id: quest.questId,
+        name: quest.info.name,
+        objectives: quest.objectives.map((obj: any, index: number) => ({
+          description: obj.targetName,
+          current: quest.objectiveProgress[index],
+          required: obj.requiredAmount,
+        })),
+      }));
+  });
+  const totalSlots = computed(() => bags.value.reduce((sum, bag) => sum + bag.slots, 0));
+  const usedSlots = computed(() => bags.value.reduce((sum, bag) => sum + bag.items.filter(item => item !== null).length, 0));
+
 
   // --- Actions ---
   async function initialize() {
@@ -129,8 +194,11 @@ export const usePlayerStore = defineStore('player', () => {
     bags, // Expose new getters
     wallet,
     belt,
+    totalSlots,
+    usedSlots,
     initialize,
     equipItem,
     useConsumable,
+    activeQuests,
   };
 });

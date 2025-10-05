@@ -22,3 +22,18 @@
         - status: "completed"
           action: "SPAWN_ENTITY"
           targetId: "enemy_goblin_chieftain"
+          
+- id: "quest_a_growing_concern"
+  components:
+    info:
+      name: "A Growing Concern"
+      description: "Mayor Elenor is worried about the wolf population. Thin their numbers in the Whispering Glade."
+      suggestedLevel: 2
+    objectives:
+      - type: "kill"
+        targetId: "mob_wolf" # This mob would need to be defined
+        targetName: "Glade Wolves"
+        requiredAmount: 8
+    rewards:
+      experience: 100
+      gold: 15

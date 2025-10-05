@@ -22,7 +22,7 @@ export class InventorySystem {
         this.eventBus = eventBus;
 
         this.eventBus.on('addItemToInventory', this.handleAddItem.bind(this));
-        eventBus.on('removeItemFromInventory', this.handleRemoveItem.bind(this));
+        this.eventBus.on('removeItemFromInventory', this.handleRemoveItem.bind(this));
     }
 
     /**
@@ -36,9 +36,10 @@ export class InventorySystem {
 
         const success = this.addItem(character, item);
 
-        if (!success) {
-            // If the item could not be added, emit an "inventoryFull" event.
-            // Another system could then handle this, e.g., by dropping the item on the ground.
+        if (success) {
+            // After successfully adding, notify the system that the player's state has changed.
+            this.eventBus.emit('playerStateModified', { characterId: character.id });
+        } else {
             this.eventBus.emit('inventoryFull', {
                 characterId: character.id,
                 itemEntityId: item.id
@@ -53,7 +54,7 @@ export class InventorySystem {
      */
     private addItem(character: Entity, item: Entity): boolean {
         const inventory = InventoryComponent.oneFrom(character);
-        if (!inventory) return false; // This character has no inventory
+        if (!inventory) return false;
 
         const itemInfo = ItemInfoComponent.oneFrom(item);
         const itemStack = StackableComponent.oneFrom(item);
@@ -65,7 +66,9 @@ export class InventorySystem {
                 const bagEntity = this.world.getEntity(parseInt(bagId, 10));
                 if (!bagEntity) continue;
 
-                const slots = SlotsComponent.oneFrom(bagEntity).data;
+                const slots = SlotsComponent.oneFrom(bagEntity)?.data;
+                if (!slots) continue;
+
                 for (let i = 0; i < slots.items.length; i++) {
                     const existingItemIdStr = slots.items[i];
                     if (!existingItemIdStr) continue;
@@ -73,10 +76,20 @@ export class InventorySystem {
                     const existingItem = this.world.getEntity(parseInt(existingItemIdStr, 10));
                     if (!existingItem) continue;
 
-                    if (ItemInfoComponent.oneFrom(existingItem).data.name === itemInfo.data.name) {
+                    const existingItemStack = StackableComponent.oneFrom(existingItem);
+                    const existingItemInfo = ItemInfoComponent.oneFrom(existingItem);
+
+                    // Check if items are the same and if the existing stack is not full
+                    if (
+                        existingItemStack &&
+                        existingItemInfo?.data.name === itemInfo?.data.name &&
+                        existingItemStack.data.current < existingItemStack.data.maxStack
+                    ) {
+                        // Increment the stack and destroy the new item entity
+                        existingItemStack.data.current += 1;
                         this.world.removeEntity(item);
                         itemAdded = true;
-                        console.log(`Stacked ${itemInfo.data.name} in bag ${bagId}.`);
+                        console.log(`Stacked ${itemInfo?.data.name}. New count: ${existingItemStack.data.current}`);
                         break;
                     }
                 }
@@ -90,19 +103,19 @@ export class InventorySystem {
                 const bagEntity = this.world.getEntity(parseInt(bagId, 10));
                 if (!bagEntity) continue;
 
-                const slots = SlotsComponent.oneFrom(bagEntity).data;
+                const slots = SlotsComponent.oneFrom(bagEntity)?.data;
+                if (!slots) continue;
+
                 const emptySlotIndex = slots.items.indexOf(null);
 
                 if (emptySlotIndex !== -1) {
-                    slots.items[emptySlotIndex] = item.id.toString(); // Store the item's entity ID
+                    slots.items[emptySlotIndex] = item.id.toString();
                     itemAdded = true;
-                    console.log(`Added ${itemInfo.data.name} to an empty slot in bag ${bagId}.`);
+                    console.log(`Added ${itemInfo?.data.name} to an empty slot in bag ${bagId}.`);
                     break;
                 }
             }
         }
-
-
 
         return itemAdded;
     }
@@ -113,18 +126,15 @@ export class InventorySystem {
 
         if (!character || !itemToRemove) return;
 
-        // Use the shared utility function to do the work
         const wasRemoved = this.findAndRemoveItemFromBags(character, itemToRemove.id);
 
         if (wasRemoved) {
-            // If the reason was 'equip', fire the follow-up event
             if (payload.reason === 'equip') {
                 this.eventBus.emit('itemRemovedForEquip', {
                     characterId: payload.characterId,
                     itemEntityId: payload.itemEntityId,
                 });
             } else {
-                // For other reasons (like consuming a potion), destroy the item entity
                 this.world.removeEntity(itemToRemove);
                 console.log(`Removed and destroyed item ${itemToRemove.id}.`);
             }
@@ -153,3 +163,4 @@ export class InventorySystem {
         return false;
     }
 }
+

@@ -35,7 +35,7 @@ const {
       <div>
         <div class="flex items-center justify-between mb-1 text-sm">
             <label class="block font-semibold">Health</label>
-            <span class="font-mono text-green-400">{{ healthValues }}</span>
+            <span class="font-mono text-green-400">{{ healthValues.display }}</span>
         </div>
         <div class="bg-black/20 rounded-full h-3 overflow-hidden">
           <div 
@@ -47,7 +47,7 @@ const {
       <div>
         <div class="flex items-center justify-between mb-1 text-sm">
             <label class="block font-semibold">Mana</label>
-            <span class="font-mono text-sky-400">{{ manaValues }}</span>
+            <span class="font-mono text-sky-400">{{ manaValues.display }}</span>
         </div>
         <div class="bg-black/20 rounded-full h-3 overflow-hidden">
           <div 

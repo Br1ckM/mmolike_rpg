@@ -1,0 +1,20 @@
+- id: "loottable_copper"
+  entries:
+    - id: "item_copper_ore" # This item would need to be defined in your item files
+      type: "generated_item"
+      chance: 0.8 # 80% chance to get an item
+      quantity: [1, 3] # Get 1 to 3 ore
+
+- id: "loottable_wood"
+  entries:
+    - id: "item_oak_log"
+      type: "generated_item"
+      chance: 0.9
+      quantity: [2, 5]
+
+- id: "loottable_herbs"
+  entries:
+    - id: "item_wild_mint"
+      type: "generated_item"
+      chance: 1.0
+      quantity: [1, 2]

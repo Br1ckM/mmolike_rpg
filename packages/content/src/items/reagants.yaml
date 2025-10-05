@@ -7,3 +7,42 @@
       rarity: "Uncommon"
     stackable:
       maxStack: 99
+
+- id: "item_copper_ore"
+  components:
+    info:
+      name: "Copper Ore"
+      description: "A chunk of raw copper ore. Can be smelted by a blacksmith."
+      itemType: "reagent"
+      rarity: "Common"
+      iconName: "box"
+    stackable:
+      maxStack: 100
+    vendorValue:
+      gold: 2
+
+- id: "item_oak_log"
+  components:
+    info:
+      name: "Oak Log"
+      description: "A sturdy log of oak. Useful in woodworking."
+      itemType: "reagent"
+      rarity: "Common"
+      iconName: "box"
+    stackable:
+      maxStack: 100
+    vendorValue:
+      gold: 1
+
+- id: "item_wild_mint"
+  components:
+    info:
+      name: "Wild Mint"
+      description: "A fragrant herb used in alchemy."
+      itemType: "reagent"
+      rarity: "Common"
+      iconName: "box"
+    stackable:
+      maxStack: 100
+    vendorValue:
+      gold: 3

@@ -1,5 +1,14 @@
 import type { MobFamilyData, MobTierData, MobArchetypeData } from './ecs/components/mob';
 import type { TraitData } from './ecs/components/traits';
+import type { LocationEntityData, NodeEntityData } from './ecs/entities/world';
+import type { NPCEntityData } from './ecs/entities/npc';
+import type { DialogueTree } from './ecs/components/dialogue';
+import type { QuestEntityData } from './ecs/entities/quest';
+
+interface ContentTemplate<T> {
+    id: string;
+    components: T;
+}
 
 // This interface now correctly defines the shape of the parsed content maps.
 export interface GameContent {
@@ -11,6 +20,11 @@ export interface GameContent {
     encounters: Map<string, any>;
     affixes: Map<string, any>;
     baseItems: Map<string, any>;
+    locations: Map<string, LocationEntityData>;
+    quests: Map<string, ContentTemplate<QuestEntityData>>;
+    dialogueTrees: Map<string, DialogueTree>;
+    nodes: Map<string, ContentTemplate<NodeEntityData>>;
+    lootTables: Map<string, any>;
 }
 
 // The raw input from YAML imports will be an object where each value is an array.
@@ -27,6 +41,11 @@ export class ContentService implements GameContent {
     public encounters!: Map<string, any>;
     public affixes!: Map<string, any>;
     public baseItems!: Map<string, any>;
+    public locations!: Map<string, LocationEntityData>;
+    public quests!: Map<string, ContentTemplate<QuestEntityData>>;
+    public dialogueTrees!: Map<string, DialogueTree>;
+    public nodes!: Map<string, ContentTemplate<NodeEntityData>>;
+    public lootTables!: Map<string, any>;
 
     constructor(rawContent: RawGameContent) {
         this.loadAllContent(rawContent);

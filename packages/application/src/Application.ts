@@ -6,7 +6,7 @@ import { ContentService, type GameContent, type RawGameContent } from '../../dom
 
 // Import the parsed YAML content directly
 import affixes from '../../content/src/affixes.yaml';
-import dialogue from '../../content/src/dialogue.yaml';
+import dialogueTrees from '../../content/src/dialogue.yaml';
 import effects from '../../content/src/effects.yaml';
 import jobs from '../../content/src/jobs.yaml';
 import quests from '../../content/src/quests.yaml';
@@ -21,6 +21,10 @@ import misc from '../../content/src/items/misc.yaml';
 import mods from '../../content/src/items/mods.yaml';
 import questItems from '../../content/src/items/quest-items.yaml';
 import reagants from '../../content/src/items/reagants.yaml';
+import npcs from '../../content/src/characters/npcs.yaml';
+import locations from '../../content/src/locations.yaml';
+import nodes from '../../content/src/nodes.yaml';
+import lootTables from '../../content/src/loot_table.yaml'
 
 
 class Application {
@@ -29,7 +33,6 @@ class Application {
     public queries!: QueryService;
     private loop!: GameLoop;
     public isReady: Promise<void>;
-
     constructor() {
         this.isReady = this.initialize();
     }
@@ -58,17 +61,23 @@ class Application {
 
         const allContent: RawGameContent = {
             affixes,
-            dialogue,
+            dialogueTrees,
             effects,
             jobs,
             quests,
             skills,
             traits,
+            lootTables,
+            locations,
+            nodes,
             // Combine items and characters into their respective categories
             baseItems: combinedBaseItemsArray,
             // Use an array for mobs, as expected by RawGameContent
-            mobs: [playerTemplate] // Add other characters/mobs here as objects
+            mobs: [playerTemplate, ...npcs] // Add other characters/mobs here as objects
         };
+
+        console.log('[DEBUG 1] Raw Player Template:', playerTemplate);
+        console.log('[DEBUG 1] Raw Inventories:', inventories);
 
         // 2. Create the ContentService with the pre-parsed data.
         const contentService = new ContentService(allContent as unknown as RawGameContent);

@@ -4,7 +4,8 @@ import { EventBus } from '../EventBus';
 import {
     QuestStatusComponent,
     QuestObjectiveComponent,
-    type QuestStatusData
+    type QuestStatusData,
+    QuestComponent,
 } from '../components/quest';
 
 /**
@@ -14,10 +15,12 @@ import {
 export class QuestLogSystem {
     private world: ECS;
     private eventBus: EventBus;
+    private contentIdToEntityIdMap: Map<string, number>;
 
-    constructor(world: ECS, eventBus: EventBus) {
+    constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap; // Store the map
 
         this.eventBus.on('questAccepted', this.onQuestAccepted.bind(this));
         this.eventBus.on('questTurnedIn', this.onQuestTurnedIn.bind(this));
@@ -28,13 +31,27 @@ export class QuestLogSystem {
      */
     private onQuestAccepted(payload: { characterId: number; questId: string; }): void {
         const character = this.world.getEntity(payload.characterId);
-        // Corrected: Parse the string ID to a number for entity lookup.
-        const questEntity = this.world.getEntity(parseInt(payload.questId, 10));
+        if (!character) return;
+
+        const existingQuest = QuestStatusComponent.allFrom(character).find(
+            q => q.data.questId === payload.questId
+        );
+
+        if (existingQuest) {
+            console.warn(`Character ${payload.characterId} tried to accept quest '${payload.questId}' which they already have.`);
+            return; // Stop execution if the quest already exists in the log
+        }
+
+        // FIX: Use the map to get the numeric ID instead of parseInt
+        const questEntityId = this.contentIdToEntityIdMap.get(payload.questId);
+        const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
 
         if (!character || !questEntity) {
-            console.error(`Could not accept quest: Character or Quest entity not found.`);
+            console.error(`Could not accept quest: Character or Quest entity not found for questId "${payload.questId}".`);
             return;
         }
+
+        const questInfo = QuestComponent.oneFrom(questEntity)?.data;
 
         const objectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;
         if (!objectives) return;
@@ -49,6 +66,13 @@ export class QuestLogSystem {
 
         character.add(new QuestStatusComponent(statusData));
         console.log(`Quest '${payload.questId}' accepted by character ${payload.characterId}.`);
+
+        this.eventBus.emit('notification', {
+            type: 'success',
+            message: `Accepted: ${questInfo?.name || payload.questId}`
+        });
+
+        this.eventBus.emit('playerStateModified', { characterId: payload.characterId });
     }
 
     /**
@@ -73,10 +97,10 @@ export class QuestLogSystem {
      * Checks if all objectives for a quest are met.
      */
     private checkForQuestCompletion(character: Entity, statusData: QuestStatusData): void {
-        // Corrected: Parse the string ID to a number for entity lookup.
-        const questEntity = this.world.getEntity(parseInt(statusData.questId, 10));
+        // FIX: Use the map here as well
+        const questEntityId = this.contentIdToEntityIdMap.get(statusData.questId);
+        const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
 
-        // Corrected: Add a null check for the quest entity.
         if (!questEntity) return;
 
         const objectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;

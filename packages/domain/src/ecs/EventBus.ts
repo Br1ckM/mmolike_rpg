@@ -3,6 +3,7 @@ import type { DialogueResponse } from "./components/dialogue";
 
 // Define the structure for all possible event payloads
 interface EventMap {
+    'playerStateModified': { characterId: number; };
     'enemyDefeated': { enemyId: string; characterId: number; };
     'lootContainerOpened': { containerId: string; characterId: number; };
     'generateItemRequest': { baseItemId: string; characterId: number; };
@@ -27,8 +28,10 @@ interface EventMap {
     'dialogueResponseSelected': { responseIndex: number; };
     'dialogueNodeChanged': {
         npcName: string;
+        npcAvatarUrl: string;
         text: string;
         responses: DialogueResponse[];
+        history: { speaker: 'NPC' | 'Player'; text: string }[]; // <-- ADD THIS
     };
     'dialogueEnded': {};
     'vendorScreenOpened': { characterId: number; npcId: number; };
@@ -44,6 +47,8 @@ interface EventMap {
     'advanceTimeRequested': { from: 'Morning' | 'Afternoon' | 'Evening' | 'Night'; };
     'travelToNodeRequested': { characterId: number; nodeId: string; };
     'playerLocationChanged': { characterId: number; newLocationId: string; };
+    'interactWithNodeRequested': { characterId: number, nodeId: number };
+    'gatherResourceRequested': { characterId: number, lootTableId: string };
     'startCombatEncounter': {
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The player's party
         team2: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The enemy group
@@ -97,6 +102,10 @@ interface EventMap {
     'startEncounterRequest': {
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[];
         encounterId: string; // The ID of the encounter to be spawned
+    };
+    'notification': {
+        type: 'info' | 'success' | 'error' | 'warn';
+        message: string;
     };
 }
 

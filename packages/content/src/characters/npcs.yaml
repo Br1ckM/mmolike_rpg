@@ -1,0 +1,33 @@
+- id: "npc_mayor_elenor"
+  components:
+    info:
+      name: "Mayor Elenor"
+      race: "Human"
+      avatarUrl: "https://placehold.co/150x150/4ade80/000?text=ME"
+    dialogue:
+      dialogueTreeId: "dt_mayor_welcome"
+    questGiver:
+      questIds:
+        - "quest_a_growing_concern"
+
+- id: "npc_grizelda_blacksmith"
+  components:
+    info:
+      name: "Grizelda the Blacksmith"
+      race: "Dwarf"
+      avatarUrl: "https://placehold.co/150x150/fbbf24/000?text=GS"
+    dialogue:
+      dialogueTreeId: "dt_grizelda_vendor"
+    vendor:
+      inventoryId: "inv_grizelda_wares" # Placeholder for vendor's items
+
+- id: "npc_lyra_alchemist"
+  components:
+    info:
+      name: "Lyra the Alchemist"
+      race: "Elf"
+      avatarUrl: "https://placehold.co/150x150/3b82f6/000?text=LA"
+    dialogue:
+      dialogueTreeId: "dt_lyra_trainer"
+    trainer:
+      trainableSkillIds: [] # Placeholder for skills

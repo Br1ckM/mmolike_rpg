@@ -30,6 +30,10 @@ export class CommandService {
         });
     }
 
+    public interactWithNode(characterId: number, nodeId: number): void {
+        this.domainEventBus.emit('interactWithNodeRequested', { characterId, nodeId });
+    }
+
     // --- Inventory Commands ---
 
     public equipItem(characterId: number, itemId: number): void {

@@ -1,10 +1,8 @@
-// src/components/inventory/InventoryWallet.vue
-
 <script setup lang="ts">
-import { usePlayerStore } from '@/stores/player';
+import { usePlayerStore } from '@/stores/player'; // Changed from inventoryStore
 import { storeToRefs } from 'pinia';
 
-const playerStore = usePlayerStore();
+const playerStore = usePlayerStore(); // Changed from inventoryStore
 const { wallet } = storeToRefs(playerStore);
 </script>
 
@@ -16,7 +14,7 @@ const { wallet } = storeToRefs(playerStore);
         
         <div class="space-y-2 text-surface-300">
             <div v-for="(amount, currency) in wallet" :key="currency" class="flex justify-between items-center p-2 bg-surface-700 rounded-md">
-                <span class="font-semibold">{{ currency }}</span>
+                <span class="font-semibold capitalize">{{ currency }}</span>
                 <span class="font-mono text-lg text-primary-300">{{ amount }}</span>
             </div>
         </div>

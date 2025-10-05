@@ -11,7 +11,7 @@ const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (m
 export class LootResolutionSystem {
     private world: ECS;
     private eventBus: EventBus;
-    private content: { lootTables: Map<string, any> };
+    private content: { lootTables: Map<string, any>; baseItems: Map<string, any> };
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
         this.world = world;
@@ -19,7 +19,7 @@ export class LootResolutionSystem {
         this.content = loadedContent;
 
         eventBus.on('enemyDefeated', this.onEnemyDefeated.bind(this));
-        // You would add other listeners here, e.g., eventBus.on('lootContainerOpened', ...)
+        eventBus.on('gatherResourceRequested', this.onGatherResource.bind(this));
     }
 
     private onEnemyDefeated(payload: { enemyId: string; characterId: number; }): void {
@@ -37,6 +37,46 @@ export class LootResolutionSystem {
                 }
                 // ... handle currency or static item drops here
             }
+        }
+    }
+
+    private onGatherResource(payload: { characterId: number; lootTableId: string }): void {
+        const lootTableData = this.content.lootTables.get(payload.lootTableId);
+        if (!lootTableData) {
+            console.error(`Loot table "${payload.lootTableId}" not found.`);
+            return;
+        }
+
+        let itemsGenerated = false;
+        for (const entry of lootTableData.entries) {
+            if (Math.random() <= entry.chance) {
+                const quantity = randomNumber(entry.quantity[0], entry.quantity[1]);
+
+                if (quantity > 0) {
+                    for (let i = 0; i < quantity; i++) {
+                        this.eventBus.emit('generateItemRequest', {
+                            baseItemId: entry.id,
+                            characterId: payload.characterId,
+                        });
+                    }
+
+                    const itemTemplate = this.content.baseItems.get(entry.id);
+                    if (itemTemplate) {
+                        this.eventBus.emit('notification', {
+                            type: 'success',
+                            message: `Gathered ${quantity}x ${itemTemplate.components.info.name}`
+                        });
+                    }
+                    itemsGenerated = true;
+                }
+            }
+        }
+
+        if (!itemsGenerated) {
+            this.eventBus.emit('notification', {
+                type: 'info',
+                message: `You found nothing of value.`
+            });
         }
     }
 }

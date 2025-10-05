@@ -1,0 +1,44 @@
+- id: "loc_cloverfell_village"
+  components:
+    location:
+      name: "Cloverfell Village"
+      description: "A small, quiet village nestled at the edge of the Whispering Glade."
+      type: "Hub"
+      isSafeZone: true
+    container:
+      containedEntityIds:
+        - "npc_mayor_elenor"
+        - "npc_grizelda_blacksmith"
+        - "npc_lyra_alchemist"
+
+- id: "loc_barterbrews_caravan"
+  components:
+    location:
+      name: "Barterbrew's Caravan"
+      description: "A small, mobile trading post run by the jovial merchant, Barterbrew."
+      type: "Hub"
+      isSafeZone: true
+    container:
+      containedEntityIds: []
+
+# --- UPDATED ZONE ---
+- id: "loc_timberbrook_fields"
+  components:
+    location:
+      name: "Timberbrook Fields"
+      description: "The plains around the sleepy little village of Cloverfell."
+      type: "Zone"
+      isSafeZone: false
+    container:
+      # This list determines which nodes appear on the Zone Map
+      containedEntityIds:
+        - "node_to_cloverfell"
+        - "node_to_barterbrews"
+        - "node_to_timberfang_den"
+        - "node_to_oozefall_grotto"
+        - "node_copper_vein_1"
+        - "node_oakwood_1"
+        - "node_mint_patch_1"
+        - "node_warren_of_hoppers"
+        - "node_timberfang_camp"
+        - "node_the_howling_grounds"

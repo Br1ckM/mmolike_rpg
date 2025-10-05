@@ -5,6 +5,10 @@
     info:
       name: "Adventurer's Satchel"
       description: "A simple but sturdy leather bag."
+      # FIX: Add missing required fields
+      itemType: "misc"
+      rarity: "Common"
+      iconName: "shopping-bag" # Optional, but good for the UI
     slots:
       size: 18
       # This would be populated with Item entity IDs during gameplay
@@ -12,5 +16,12 @@
 
 - id: "wallet_player"
   components:
+    # FIX: Add the entire missing 'info' component
+    info:
+      name: "Wallet"
+      description: "Holds your currency."
+      itemType: "misc"
+      rarity: "Common"
+      iconName: "wallet"
     currency:
       gold: 50

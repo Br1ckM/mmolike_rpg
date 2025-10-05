@@ -14,6 +14,10 @@ export type InteractionType = 'Gather' | 'Encounter' | 'Den' | 'Dungeon';
 export interface NodeComponentData {
     name: string;
     description: string;
+    position?: { // <-- ADD THIS OBJECT
+        top: string;
+        left: string;
+    };
 }
 
 /**

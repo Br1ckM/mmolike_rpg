@@ -2,43 +2,76 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { App } from 'mmolike_rpg-application';
 
-// Define the interface for the entities we select in the hub list
-export interface HubEntity {
+// Define types for the data we expect from the backend
+interface HubNpc {
     id: number;
-    imageUrl: string;
-    name: string;
-    type: 'NPC' | 'Shop' | 'Trainer';
-    // Add other properties as needed
+    InfoComponent: {
+        name: string;
+        avatarUrl: string;
+    };
+}
+
+interface HubState {
+    location: {
+        id: number;
+        LocationComponent: {
+            name: string;
+            description: string;
+        }
+    } | null;
+    npcs: HubNpc[];
+    nodes: HubNode[];
+}
+
+interface HubNode {
+    id: number;
+    NodeComponent: {
+        name: string;
+        description: string;
+        position?: { // <-- ADD THIS
+            top: string;
+            left: string;
+        };
+    };
 }
 
 export const useHubStore = defineStore('hub', () => {
     // --- State ---
-    // Tracks the currently selected entity from the HubNPCList.
-    const activeEntity = ref<HubEntity | null>(null);
+    const location = ref<HubState['location']>(null);
+    const npcs = ref<HubState['npcs']>([]);
+    const nodes = ref<HubState['nodes']>([]);
+    const unsubscribe = ref<(() => void) | null>(null);
 
-    // Tracks which specific service panel should be visible in the InteractionPanel.
-    const activeService = ref<'Dialogue' | 'Shop' | 'Trainer' | null>(null);
+    // --- Getters ---
+    const hubName = computed(() => location.value?.LocationComponent.name ?? 'Unknown Location');
 
     // --- Actions ---
-    function setActiveEntity(entity: HubEntity) {
-        activeEntity.value = entity;
-        activeService.value = null; // Clear service when entity changes
-    }
+    async function initialize() {
+        await App.isReady;
+        if (unsubscribe.value) unsubscribe.value();
 
-    function setActiveService(service: 'Dialogue' | 'Shop' | 'Trainer') {
-        activeService.value = service;
-    }
+        unsubscribe.value = App.queries.subscribe<HubState>('hubState', (newHubState) => {
+            console.log('[DEBUG Frontend Store] Hub store received new state:', newHubState);
 
-    function clearActiveService() {
-        activeService.value = null;
+            if (newHubState) {
+                location.value = newHubState.location;
+                npcs.value = newHubState.npcs;
+                nodes.value = newHubState.nodes || [];
+            } else {
+                location.value = null;
+                npcs.value = [];
+                nodes.value = [];
+            }
+        });
     }
 
     return {
-        activeEntity,
-        activeService,
-        setActiveEntity,
-        setActiveService,
-        clearActiveService,
+        location,
+        npcs,
+        nodes,
+        hubName,
+        initialize,
     };
 });

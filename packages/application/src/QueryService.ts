@@ -39,6 +39,9 @@ export class QueryService {
         if (key === 'playerState') {
             callback(this.gameService.getPlayerState());
         }
+        if (key === 'hubState') {
+            callback(this.gameService.getHubState());
+        }
 
         // Return an unsubscribe function
         return () => {
@@ -66,14 +69,21 @@ export class QueryService {
             'inventoryFull', // Example: could trigger a notification
             'skillLearned',
             'damageDealt',
-            'healthHealed'
+            'healthHealed',
+            'playerStateModified'
         ];
 
         playerStateEvents.forEach(eventName => {
             this.domainEventBus.on(eventName, () => {
+                console.log(`[QueryService] Heard '${eventName}'. Refreshing playerState.`);
+
                 const playerState = this.gameService.getPlayerState();
                 this.publish('playerState', playerState);
             });
+        });
+
+        this.domainEventBus.on('notification', (payload) => {
+            this.publish('notification', payload);
         });
 
         // Handle events that have specific payloads for the UI
@@ -91,6 +101,10 @@ export class QueryService {
 
         this.domainEventBus.on('combatEnded', (payload) => {
             this.publish('combatState', null);
+        });
+        this.domainEventBus.on('playerLocationChanged', () => {
+            const hubState = this.gameService.getHubState();
+            this.publish('hubState', hubState);
         });
     }
 }

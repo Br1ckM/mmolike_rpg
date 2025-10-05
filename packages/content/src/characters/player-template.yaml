@@ -64,12 +64,12 @@ components:
     charm2: null
     charm3: null
 
-    inventory:
-      bagIds:
-        - 'inventory_starting_satchel'
-      walletId: 'wallet_player'
+  inventory:
+    bagIds:
+      - 'inventory_starting_satchel'
+    walletId: 'wallet_player'
     
-    professions:
-      knownProfessions:
-        - 'prof_blacksmithing_novice'
-        - 'prof_alchemy_novice'
+  professions:
+    knownProfessions:
+      - 'prof_blacksmithing_novice'
+      - 'prof_alchemy_novice'

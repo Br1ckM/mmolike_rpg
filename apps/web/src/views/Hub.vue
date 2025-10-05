@@ -1,15 +1,16 @@
-// src/views/Hub.vue (Modified)
+// src/views/Hub.vue
 
 <script setup lang="ts">
-import HubNPCList from '@/components/hub/HubNPCList.vue'; // Will be used inside HubDynamicView
-import HubContextContent from '@/components/hub/HubContextContent.vue'; // Renamed right-column content
-import HubDynamicView from '@/components/hub/HubDynamicView.vue'; // NEW Dynamic Wrapper
+import HubDynamicView from '@/components/hub/HubDynamicView.vue';
 import DialogueOverlay from '@/components/hub/DialogueOverlay.vue';
+import HubContextContent from '@/components/hub/HubContextContent.vue';
 import { onMounted } from 'vue';
+import { useHubStore } from '@/stores/hub'; // <-- IMPORT
 
-// NOTE: You'll want to initialize a hub-specific store here later
+// Initialize the store when the component mounts
+const hubStore = useHubStore();
 onMounted(() => {
-    // Example: hubStore.loadLocalNPCs();
+    hubStore.initialize();
 })
 </script>
 

@@ -39,3 +39,66 @@
       responses:
         - text: "[End Conversation]"
           nextNodeId: "END"
+
+- id: "dt_mayor_welcome"
+  startNodeId: "start"
+  nodes:
+    start:
+      id: "start"
+      text: "Welcome to Cloverfell. It's a peaceful village, but I'm worried about the increasing number of beasts in the glade."
+      responses:
+        - text: "What seems to be the problem?"
+          nextNodeId: "quest_offer"
+        - text: "Just looking around."
+          nextNodeId: "end_generic"
+    quest_offer:
+      id: "quest_offer"
+      text: "The wolves are growing bolder. We need someone to cull their numbers before they threaten the village directly. Can you help?"
+      responses:
+        - text: "I'll handle it."
+          nextNodeId: "end_accepted"
+          actions:
+            - type: "GIVE_QUEST"
+              questId: "quest_a_growing_concern"
+        - text: "I'm not ready for that."
+          nextNodeId: "end_generic"
+    end_accepted:
+      id: "end_accepted"
+      text: "Thank you. Your help is greatly appreciated."
+      responses:
+        - text: "[End Conversation]"
+          nextNodeId: "END"
+    end_generic:
+      id: "end_generic"
+      text: "Safe travels, then."
+      responses:
+        - text: "[End Conversation]"
+          nextNodeId: "END"
+
+- id: "dt_grizelda_vendor"
+  startNodeId: "start"
+  nodes:
+    start:
+      id: "start"
+      text: "Need some proper steel? Or perhaps you've got some junk to offload?"
+      responses:
+        - text: "Let me see what you have."
+          nextNodeId: "END"
+          actions:
+            - type: "OPEN_VENDOR"
+        - text: "Just browsing."
+          nextNodeId: "END"
+
+- id: "dt_lyra_trainer"
+  startNodeId: "start"
+  nodes:
+    start:
+      id: "start"
+      text: "The delicate balance of nature can be coaxed to reveal its secrets. Are you here to learn?"
+      responses:
+        - text: "I wish to learn alchemy."
+          nextNodeId: "END"
+          actions:
+            - type: "START_TRAINING"
+        - text: "Not at the moment."
+          nextNodeId: "END"

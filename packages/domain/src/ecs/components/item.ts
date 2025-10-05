@@ -18,6 +18,7 @@ export interface InfoData {
 
 export interface StackableData {
     maxStack: number;
+    current: number;
 }
 
 export interface EquipableData {

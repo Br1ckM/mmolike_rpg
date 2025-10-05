@@ -9,10 +9,13 @@ import { PlayerLocationComponent, TravelTargetComponent, LocationComponent } fro
 export class TravelSystem {
     private world: ECS;
     private eventBus: EventBus;
+    private contentIdToEntityIdMap: Map<string, number>; // <-- Add map property
 
-    constructor(world: ECS, eventBus: EventBus) {
+    // <-- Update constructor to accept the map
+    constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap; // <-- Store the map
 
         this.eventBus.on('travelToNodeRequested', this.onTravelToNodeRequested.bind(this));
     }
@@ -34,35 +37,29 @@ export class TravelSystem {
             return;
         }
 
-        const newLocationId = travelTarget.targetLocationId;
-        const newLocationEntity = this.world.getEntity(parseInt(newLocationId, 10));
+        const newLocationContentId = travelTarget.targetLocationId;
+        // FIX: Use the map to get the numeric ID from the string content ID
+        const newLocationEntityId = this.contentIdToEntityIdMap.get(newLocationContentId);
+        const newLocationEntity = newLocationEntityId ? this.world.getEntity(newLocationEntityId) : undefined;
+
         if (!newLocationEntity) {
-            console.error(`TravelSystem: Target location entity '${newLocationId}' not found.`);
+            console.error(`TravelSystem: Target location entity '${newLocationContentId}' not found.`);
             return;
         }
 
+        const newLocationId = newLocationEntity.id.toString();
         const newLocationType = LocationComponent.oneFrom(newLocationEntity)?.data.type;
 
-        // --- CORE LOGIC IMPROVEMENT ---
-        // Update the correct part of the player's location based on the type of destination.
-        if (newLocationType === 'Zone') {
-            playerLocation.currentZoneId = newLocationId;
-            // When entering a new Zone, you might want to set the sub-location to a default hub.
-            // For now, we'll assume the Zone itself is the initial sub-location.
+        if (newLocationType === 'Hub') {
             playerLocation.currentSubLocationId = newLocationId;
-            console.log(`Player ${character.id} has traveled to Zone ${newLocationId}.`);
-        } else if (newLocationType === 'Hub') {
-            playerLocation.currentSubLocationId = newLocationId;
-            // A Hub should always exist within a Zone. We can add a check here to ensure the parentZoneId
-            // of the Hub matches the player's currentZoneId for consistency.
             console.log(`Player ${character.id} has traveled to Hub ${newLocationId}.`);
+        } else {
+            // Handle other travel types like Zone if needed
         }
 
-        // Announce the change to the rest of the game.
-        // We send the specific location ID they entered.
-        this.eventBus.emit('playerLocationChanged', {
+        // Announce the change to trigger a UI refresh
+        this.eventBus.emit('playerStateModified', {
             characterId: character.id,
-            newLocationId: newLocationId,
         });
     }
 }

@@ -1,20 +1,12 @@
 <script setup lang="ts">
 import { ArrowPathIcon } from '@heroicons/vue/24/solid';
-import { ref } from 'vue';
+// FIX: Import the player store and storeToRefs
+import { usePlayerStore } from '@/stores/player';
+import { storeToRefs } from 'pinia';
 
-// Temporary reactive data for demonstration, replace with a store later
-const activeQuests = ref([
-  {
-    id: 1,
-    name: 'A Goblin Menace',
-    // use our Mallorn Gold for quest icons/emphasis
-    iconColor: 'text-tertiary-400',
-    objectives: [
-      { description: 'Goblin Scouts Slain', current: 5, required: 10, unit: 'Slain' },
-      { description: 'Goblin Ears Collected', current: 2, required: 5, unit: 'Collected' },
-    ]
-  }
-]);
+// FIX: Remove mock data and get real data from the store
+const playerStore = usePlayerStore();
+const { activeQuests } = storeToRefs(playerStore);
 
 // Helper function to calculate percentage
 const getProgress = (current: number, required: number) => {
@@ -24,31 +16,30 @@ const getProgress = (current: number, required: number) => {
 
 <template>
   <div class="h-full flex flex-col">
-    <h2 class="text-xl font-semibold mb-3 border-b border-secondary-600 pb-2 text-secondary-100">
+    <h2 class="text-xl font-semibold mb-3 border-b border-surface-700 pb-2">
       Active Quests
     </h2>
 
     <div class="overflow-y-auto flex-grow">
-      <ul class="space-y-3">
+      <ul v-if="activeQuests.length > 0" class="space-y-3">
         <li v-for="quest in activeQuests" :key="quest.id">
           
-          <div class="font-semibold flex items-center gap-2 text-secondary-50">
-            <ArrowPathIcon class="w-5 h-5" :class="quest.iconColor" />
+          <div class="font-semibold flex items-center gap-2 text-surface-0">
+            <ArrowPathIcon class="w-5 h-5 text-amber-400" />
             <span>{{ quest.name }}</span>
           </div>
 
-          <ul class="pl-7 mt-1 text-sm text-secondary-300 space-y-2">
-            <li v-for="obj in quest.objectives" :key="obj.description" class="list-none">
+          <ul class="pl-7 mt-1 text-sm text-surface-300 space-y-2">
+            <li v-for="obj in quest.objectives" :key="obj.description">
               
               <div class="flex justify-between items-center mb-0.5">
                 <span>{{ obj.description }}:</span>
-                <span class="font-mono text-xs text-secondary-200">
+                <span class="font-mono text-xs">
                   {{ obj.current }} / {{ obj.required }}
                 </span>
               </div>
 
-              <!-- Track uses moonlit silver; fill uses emerald -->
-              <div class="bg-secondary-900/40 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-surface-900/40 rounded-full h-1.5 overflow-hidden">
                 <div
                   class="h-full bg-primary-400 transition-all"
                   :style="{ width: getProgress(obj.current, obj.required) + '%' }"
@@ -59,6 +50,7 @@ const getProgress = (current: number, required: number) => {
 
         </li>
       </ul>
+      <p v-else class="text-surface-400 italic">You have no active quests.</p>
     </div>
   </div>
 </template>

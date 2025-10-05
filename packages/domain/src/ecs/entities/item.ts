@@ -9,7 +9,9 @@ import {
     ConsumableComponent, type ConsumableData,
     QuestItemComponent, type QuestItemData,
     ReputationComponent, type ReputationData,
-    VendorValueComponent, type VendorValueData
+    VendorValueComponent, type VendorValueData,
+    SlotsComponent, type SlotsData,
+    CurrencyComponent, type CurrencyData
 } from '../components/item';
 
 // Blueprint for raw item data from YAML
@@ -24,6 +26,8 @@ export interface ItemData {
     questItem?: QuestItemData;
     reputation?: ReputationData;
     vendorValue?: VendorValueData;
+    slots?: SlotsData;
+    currency?: CurrencyData;
 }
 
 export class Item extends Entity {
@@ -39,5 +43,7 @@ export class Item extends Entity {
         if (data.questItem) this.add(new QuestItemComponent(data.questItem));
         if (data.reputation) this.add(new ReputationComponent(data.reputation));
         if (data.vendorValue) this.add(new VendorValueComponent(data.vendorValue));
+        if (data.slots) this.add(new SlotsComponent(data.slots));
+        if (data.currency) this.add(new CurrencyComponent(data.currency));
     }
 }
