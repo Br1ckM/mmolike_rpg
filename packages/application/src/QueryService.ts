@@ -82,6 +82,23 @@ export class QueryService {
             });
         });
 
+        const combatStateEvents: (keyof EventBus['listeners'])[] = [
+            'combatStarted',
+            'roundStarted',
+            'turnStarted',
+            'damageDealt',
+            'healthHealed',
+            'effectApplied',
+            'turnEnded',
+        ];
+
+        combatStateEvents.forEach(eventName => {
+            this.domainEventBus.on(eventName, () => {
+                const combatState = this.gameService.getCombatState();
+                this.publish('combatState', combatState);
+            });
+        });
+
         this.domainEventBus.on('notification', (payload) => {
             this.publish('notification', payload);
         });
@@ -93,10 +110,6 @@ export class QueryService {
 
         this.domainEventBus.on('dialogueEnded', () => {
             this.publish('dialogueState', null); // Signal that dialogue is over
-        });
-
-        this.domainEventBus.on('combatStarted', (payload) => {
-            this.publish('combatState', payload);
         });
 
         this.domainEventBus.on('combatEnded', (payload) => {

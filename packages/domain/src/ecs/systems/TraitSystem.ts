@@ -3,6 +3,7 @@ import { EventBus } from '../EventBus';
 import { ActiveTraitsComponent } from '../components/mob';
 import type { TraitData, TraitEffect, TraitTarget, TraitTrigger } from '../components/traits';
 import { DerivedStatsComponent, HealthComponent } from '../components/character';
+import { TraitDefinitionComponent } from '../components/traits';
 
 /**
  * Manages the effects of passive traits during combat.
@@ -13,7 +14,7 @@ export class TraitSystem {
     private world: ECS;
     private eventBus: EventBus;
     private content: {
-        traits: Map<string, TraitData>;
+        traits: Map<string, Entity>;
     };
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
@@ -61,7 +62,11 @@ export class TraitSystem {
         if (!activeTraits) return;
 
         for (const traitId of activeTraits) {
-            const traitData = this.content.traits.get(traitId);
+            const traitEntity = this.content.traits.get(traitId);
+            if (!traitEntity) continue;
+
+            const traitData = TraitDefinitionComponent.oneFrom(traitEntity)?.data;
+
             if (traitData && traitData.trigger === trigger) {
                 for (const effect of traitData.effects) {
                     this.resolveEffect(effect, context);

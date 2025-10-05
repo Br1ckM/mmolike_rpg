@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Sidebar from '@/components/Sidebar.vue';
+import CombatModal from '@/components/combat/CombatModal.vue';
 import { onMounted } from 'vue';
 
 import { usePlayerStore } from '@/stores/player'
@@ -21,5 +22,6 @@ onMounted(() => {
     <main class="flex-1 overflow-y-auto">
       <RouterView />
     </main>
+    <CombatModal />
   </div>
 </template>

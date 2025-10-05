@@ -25,6 +25,11 @@ import npcs from '../../content/src/characters/npcs.yaml';
 import locations from '../../content/src/locations.yaml';
 import nodes from '../../content/src/nodes.yaml';
 import lootTables from '../../content/src/loot_table.yaml'
+import encounters from '../../content/src/encounters.yaml'
+import mobs from '../../content/src/characters/mobs.yaml';
+import families from '../../content/src/families.yaml';
+import tiers from '../../content/src/tiers.yaml';
+import archetypes from '../../content/src/archetypes.yaml';
 
 
 class Application {
@@ -70,10 +75,14 @@ class Application {
             lootTables,
             locations,
             nodes,
+            encounters,
+            families,
+            tiers,
+            archetypes,
             // Combine items and characters into their respective categories
             baseItems: combinedBaseItemsArray,
             // Use an array for mobs, as expected by RawGameContent
-            mobs: [playerTemplate, ...npcs] // Add other characters/mobs here as objects
+            mobs: [playerTemplate, ...npcs, ...mobs] // Add other characters/mobs here as objects
         };
 
         console.log('[DEBUG 1] Raw Player Template:', playerTemplate);

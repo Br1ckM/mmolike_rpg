@@ -1,0 +1,27 @@
+- id: "enc_wulfkin_hunt"
+  name: "Wulfkin Hunt"
+  composition:
+    - protoId: "mob_wolf"
+      initialRow: "Front"
+    - protoId: "mob_wolf"
+      initialRow: "Back"
+    - protoId: "mob_wolf"
+      initialRow: "Back"
+
+- id: "enc_goblin_scouts"
+  name: "Goblin Scouts"
+  composition:
+    - protoId: "goblin_scout"
+      initialRow: "Front"
+
+- id: "enc_hoppers"
+  name: "Hoppers"
+  composition:
+    - protoId: "hopper"
+      initialRow: "Front"
+
+- id: "enc_wolves"
+  name: "Wolves"
+  composition:
+    - protoId: "mob_wolf"
+      initialRow: "Front"

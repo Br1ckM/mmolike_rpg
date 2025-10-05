@@ -40,3 +40,5 @@ export interface TraitData {
     trigger: TraitTrigger;
     effects: TraitEffect[];  // A trait can have multiple effects
 }
+
+export const TraitDefinitionComponent = Component.register<TraitData>();

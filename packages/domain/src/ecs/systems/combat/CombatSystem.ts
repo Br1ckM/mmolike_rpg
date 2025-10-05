@@ -22,6 +22,7 @@ export class CombatSystem {
 
         this.eventBus.on('combatStarted', this.onCombatStarted.bind(this));
         this.eventBus.on('actionTaken', this.onActionTaken.bind(this));
+        this.eventBus.on('fleeAttempt', this.onFleeAttempt.bind(this));
     }
 
     private onCombatStarted(payload: { combatEntityId: string; combatants: string[]; }): void {
@@ -40,6 +41,24 @@ export class CombatSystem {
         });
 
         this.startNextTurn(combatEntity);
+    }
+
+    private onFleeAttempt(payload: { combatEntityId: string; actorId: string }): void {
+        const combatEntity = this.world.getEntity(parseInt(payload.combatEntityId, 10));
+        if (!combatEntity) return;
+
+        // For now, flee is always successful. This can be expanded later with logic.
+        console.log(`Actor ${payload.actorId} has fled from combat.`);
+
+        // Find the team of the fleeing actor
+        const actor = this.world.getEntity(parseInt(payload.actorId, 10));
+        const actorCombatant = CombatantComponent.oneFrom(actor!)?.data;
+
+        if (actorCombatant) {
+            // If a player flees, it's a loss for their team.
+            const winningTeamId = actorCombatant.teamId === 'team1' ? 'team2' : 'team1';
+            this.endCombat(combatEntity, winningTeamId);
+        }
     }
 
     private onActionTaken(payload: {
@@ -118,7 +137,7 @@ export class CombatSystem {
                 actorHealth.current -= cost.amount;
             } else if (actorStats && cost.stat in actorStats) {
                 const statKey = cost.stat as keyof typeof actorStats;
-                actorStats[statKey] -= cost.amount;
+                (actorStats[statKey] as number) -= cost.amount;
             }
         }
     }
@@ -205,7 +224,7 @@ export class CombatSystem {
         const targetHealth = HealthComponent.oneFrom(target)!.data;
         const targetCombatant = CombatantComponent.oneFrom(target)!.data;
 
-        const scalingStatValue = actorStats[effect.scalingStat as keyof typeof actorStats] || 0;
+        const scalingStatValue = (actorStats as any)[effect.scalingStat as keyof typeof actorStats] || 0;
         let damage = (scalingStatValue * 0.5) + effect.power - targetStats.defense;
 
         const isCritical = (Math.random() * 100) <= actorStats.critChance;
@@ -239,7 +258,7 @@ export class CombatSystem {
         if (!targetHealth) return;
 
         const actorStats = DerivedStatsComponent.oneFrom(actor)!.data;
-        const scalingStatValue = actorStats[effect.scalingStat as keyof typeof actorStats] || 0;
+        const scalingStatValue = (actorStats as any)[effect.scalingStat as keyof typeof actorStats] || 0;
         const healAmount = (scalingStatValue * 0.5) + effect.power;
 
         const previousHealth = targetHealth.current;
@@ -264,18 +283,26 @@ export class CombatSystem {
 
     private startNextTurn(combatEntity: Entity): void {
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
-        combat.currentTurnIndex++;
 
-        if (combat.currentTurnIndex >= combat.turnQueue.length) {
-            combat.currentTurnIndex = 0;
-            combat.roundNumber++;
-            this.eventBus.emit('roundStarted', { combatEntityId: combatEntity.id.toString(), roundNumber: combat.roundNumber });
-        }
+        // Find the next living combatant
+        let nextTurnIndex = combat.currentTurnIndex;
+        let nextCombatant: Entity | undefined;
 
-        const activeCombatantId = combat.turnQueue[combat.currentTurnIndex];
+        do {
+            nextTurnIndex = (nextTurnIndex + 1) % combat.turnQueue.length;
+            if (nextTurnIndex === 0) {
+                combat.roundNumber++;
+                this.eventBus.emit('roundStarted', { combatEntityId: combatEntity.id.toString(), roundNumber: combat.roundNumber });
+            }
+            const nextCombatantId = combat.turnQueue[nextTurnIndex];
+            nextCombatant = this.world.getEntity(parseInt(nextCombatantId, 10));
+        } while (nextCombatant && HealthComponent.oneFrom(nextCombatant)!.data.current <= 0);
+
+        combat.currentTurnIndex = nextTurnIndex;
+
         this.eventBus.emit('turnStarted', {
             combatEntityId: combatEntity.id.toString(),
-            activeCombatantId: activeCombatantId
+            activeCombatantId: nextCombatant!.id.toString()
         });
     }
 
@@ -292,6 +319,31 @@ export class CombatSystem {
         return false;
     }
 
+    private endCombat(combatEntity: Entity, winningTeamId: string): void {
+        const combat = CombatComponent.oneFrom(combatEntity)!.data;
+
+        this.eventBus.emit('combatEnded', { combatEntityId: combatEntity.id.toString(), winningTeamId: winningTeamId });
+
+        if (winningTeamId === 'team1') {
+            const playerId = combat.combatants.find(id => CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team1');
+            combat.combatants.forEach(id => {
+                const combatantEntity = this.world.getEntity(parseInt(id, 10))!;
+                if (CombatantComponent.oneFrom(combatantEntity)?.data.teamId === 'team2') {
+                    this.eventBus.emit('enemyDefeated', { enemyId: id, characterId: parseInt(playerId!, 10) });
+                }
+            });
+        }
+
+        combat.combatants.forEach(id => {
+            const entity = this.world.getEntity(parseInt(id, 10))!;
+            const combatantComp = CombatantComponent.oneFrom(entity);
+            if (combatantComp) {
+                entity.remove(combatantComp);
+            }
+        });
+        this.world.removeEntity(combatEntity);
+    }
+
     private checkForCombatEnd(combatEntity: Entity): boolean {
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
         const team1Alive = combat.combatants.some(id => CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team1' && HealthComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)!.data.current > 0);
@@ -299,23 +351,7 @@ export class CombatSystem {
 
         if (!team1Alive || !team2Alive) {
             const winningTeamId = team1Alive ? 'team1' : 'team2';
-            this.eventBus.emit('combatEnded', { combatEntityId: combatEntity.id.toString(), winningTeamId: winningTeamId });
-
-            if (winningTeamId === 'team1') {
-                const playerId = combat.combatants.find(id => CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team1');
-                combat.combatants.forEach(id => {
-                    if (CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team2') {
-                        this.eventBus.emit('enemyDefeated', { enemyId: id, characterId: parseInt(playerId!, 10) });
-                    }
-                });
-            }
-
-            combat.combatants.forEach(id => {
-                const entity = this.world.getEntity(parseInt(id, 10))!;
-                entity.remove(CombatantComponent.oneFrom(entity)!);
-            });
-            this.world.removeEntity(combatEntity);
-
+            this.endCombat(combatEntity, winningTeamId);
             return true;
         }
         return false;

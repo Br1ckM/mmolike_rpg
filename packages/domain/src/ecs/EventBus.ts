@@ -98,7 +98,7 @@ interface EventMap {
 
     /** Fired by the CombatSystem when a turn has been fully resolved. */
     'turnEnded': { combatEntityId: string; endedTurnForId: string; };
-
+    'fleeAttempt': { combatEntityId: string; actorId: string; };
     'startEncounterRequest': {
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[];
         encounterId: string; // The ID of the encounter to be spawned

@@ -367,3 +367,28 @@
         --p-text-hover-muted-color: var(--p-surface-300);
     }
 }
+
+/* New Combat Animation */
+@keyframes float {
+    0% {
+        transform: translateY(0px) scale(1);
+        box-shadow: 0 5px 15px 0px rgba(0, 0, 0, 0.5);
+    }
+
+    50% {
+        transform: translateY(-8px) scale(1.1);
+        box-shadow: 0 30px 20px -10px rgba(0, 0, 0, 0.3);
+    }
+
+    100% {
+        transform: translateY(0px) scale(1);
+        box-shadow: 0 5px 15px 0px rgba(0, 0, 0, 0.5);
+    }
+}
+
+.is-active-turn {
+    animation: float 1.8s ease-in-out infinite;
+    border-color: var(--p-primary-400) !important;
+    border-width: 3px;
+    z-index: 10;
+}

@@ -17,7 +17,10 @@ interface DialogueState {
 
 interface CombatState {
     combatEntityId: string;
-    combatants: string[];
+    combatants: any[];
+    turnQueue: string[];
+    currentTurnIndex: number;
+    roundNumber: number;
 }
 
 export const useGameStore = defineStore('game', () => {

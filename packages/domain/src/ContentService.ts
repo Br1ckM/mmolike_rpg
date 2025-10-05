@@ -1,9 +1,14 @@
+// packages/domain/src/ContentService.ts
+
 import type { MobFamilyData, MobTierData, MobArchetypeData } from './ecs/components/mob';
 import type { TraitData } from './ecs/components/traits';
 import type { LocationEntityData, NodeEntityData } from './ecs/entities/world';
 import type { NPCEntityData } from './ecs/entities/npc';
 import type { DialogueTree } from './ecs/components/dialogue';
 import type { QuestEntityData } from './ecs/entities/quest';
+import type { SkillEntityData } from './ecs/entities/skill';
+import type { EffectDefinitionData } from './ecs/components/effects';
+import type { JobEntityData } from './ecs/entities/job';
 
 interface ContentTemplate<T> {
     id: string;
@@ -25,6 +30,9 @@ export interface GameContent {
     dialogueTrees: Map<string, DialogueTree>;
     nodes: Map<string, ContentTemplate<NodeEntityData>>;
     lootTables: Map<string, any>;
+    skills: Map<string, ContentTemplate<SkillEntityData>>;
+    effects: Map<string, ContentTemplate<EffectDefinitionData>>;
+    jobs: Map<string, ContentTemplate<JobEntityData>>;
 }
 
 // The raw input from YAML imports will be an object where each value is an array.
@@ -46,6 +54,9 @@ export class ContentService implements GameContent {
     public dialogueTrees!: Map<string, DialogueTree>;
     public nodes!: Map<string, ContentTemplate<NodeEntityData>>;
     public lootTables!: Map<string, any>;
+    public skills!: Map<string, ContentTemplate<SkillEntityData>>;
+    public effects!: Map<string, ContentTemplate<EffectDefinitionData>>;
+    public jobs!: Map<string, ContentTemplate<JobEntityData>>;
 
     constructor(rawContent: RawGameContent) {
         this.loadAllContent(rawContent);

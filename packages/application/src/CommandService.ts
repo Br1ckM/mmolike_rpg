@@ -60,6 +60,20 @@ export class CommandService {
         });
     }
 
+    public defend(combatEntityId: string, actorId: string): void {
+        this.domainEventBus.emit('actionTaken', {
+            combatEntityId,
+            actorId,
+            actionType: 'SKILL',
+            skillId: 'skill_defend', // Use the defend skill
+            targetId: actorId, // Target is self
+        });
+    }
+
+    public flee(combatEntityId: string, actorId: string): void {
+        this.domainEventBus.emit('fleeAttempt', { combatEntityId, actorId });
+    }
+
     public moveRow(combatEntityId: string, actorId: string): void {
         this.domainEventBus.emit('actionTaken', {
             combatEntityId,

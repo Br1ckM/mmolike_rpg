@@ -6,7 +6,7 @@ export type TimeOfDay = 'Morning' | 'Afternoon' | 'Evening' | 'Night';
 export type LocationType = 'Zone' | 'Hub';
 
 /** An interaction is an immediate, transactional event that happens at a node. */
-export type InteractionType = 'Gather' | 'Encounter' | 'Den' | 'Dungeon';
+export type InteractionType = 'Gather' | 'Encounter' | 'Den' | 'Dungeon' | 'Hunt';
 
 /**
  * A component that identifies an entity as a discoverable point of interest (a "node").
@@ -14,7 +14,7 @@ export type InteractionType = 'Gather' | 'Encounter' | 'Den' | 'Dungeon';
 export interface NodeComponentData {
     name: string;
     description: string;
-    position?: { // <-- ADD THIS OBJECT
+    position?: {
         top: string;
         left: string;
     };

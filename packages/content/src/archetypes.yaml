@@ -1,0 +1,8 @@
+- id: "ARCH-BRUTE"
+  name: "Brute"
+  aiProfile: "Aggressor"
+  allocation: [0.6, 0.3, 0.1]
+- id: "ARCH-SCOUT"
+  name: "Scout"
+  aiProfile: "Aggressor"
+  allocation: [0.3, 0.6, 0.1]

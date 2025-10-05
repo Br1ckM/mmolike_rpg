@@ -120,4 +120,15 @@
     interactionTarget:
       type: "Encounter"
       targetId: "enc_wolves"
-      
+
+- id: "node_wulfkin_hunt"
+  components:
+    node:
+      name: "Wulfkin Hunt"
+      description: "A dangerous looking wolf"
+      position:
+        top: "35%"
+        left: "40%"
+    interactionTarget:
+      type: "Hunt"
+      targetId: "enc_wulfkin_hunt"

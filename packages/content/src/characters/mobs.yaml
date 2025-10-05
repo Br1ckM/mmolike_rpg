@@ -1,0 +1,22 @@
+# packages/content/src/characters/mobs.yaml
+- id: "mob_wolf"
+  name: "Wolf"
+  level: 2
+  familyId: "FAM-CANINE"
+  tierId: "Standard"
+  archIds: ["ARCH-BRUTE"]
+  skills: []
+- id: "goblin_scout"
+  name: "Goblin Scout"
+  level: 1
+  familyId: "FAM-GOBLIN"
+  tierId: "Fodder"
+  archIds: ["ARCH-SCOUT"]
+  skills: []
+- id: "hopper"
+  name: "Hopper"
+  level: 1
+  familyId: "FAM-PEST"
+  tierId: "Fodder"
+  archIds: ["ARCH-SCOUT"]
+  skills: []

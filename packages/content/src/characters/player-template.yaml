@@ -3,7 +3,7 @@ components:
   info:
     name: Jim
     race: Human
-    avatarUrl: 'https.xxx.com'
+    avatarUrl: 'https://placehold.co/600x400@2x.png'
   
   controllable:
     isPlayer: true

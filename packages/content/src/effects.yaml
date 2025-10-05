@@ -20,3 +20,15 @@
       tickEffect:
         type: "DAMAGE"
         power: 5
+
+- id: "effect_defending"
+  components:
+    definition:
+      name: "Defending"
+      description: "Increases Defense by 50% for 1 turn."
+      type: "BUFF"
+      baseDuration: 1 # Lasts until the character's next turn
+      statModifier:
+        stat: "defense"
+        value: 0.50
+        valueType: "PERCENT"

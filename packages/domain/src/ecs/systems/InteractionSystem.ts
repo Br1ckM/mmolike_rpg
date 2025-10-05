@@ -41,7 +41,12 @@ export class InteractionSystem {
                         lootTableId: interactionTarget.targetId,
                     });
                     break;
-                // Other cases like 'Encounter' will be handled here later
+                case 'Hunt':
+                    this.eventBus.emit('startEncounterRequest', {
+                        team1: [{ entityId: String(payload.characterId), initialRow: 'Front' }],
+                        encounterId: interactionTarget.targetId,
+                    });
+                    break;
             }
         }
     }

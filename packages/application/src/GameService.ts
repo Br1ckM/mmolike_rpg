@@ -1,3 +1,5 @@
+// packages/application/src/GameService.ts
+
 import ECS, { Entity } from 'ecs-lib';
 import { EventBus } from '../../domain/src/ecs/EventBus';
 import { ContentService, type GameContent } from '../../domain/src/ContentService';
@@ -6,6 +8,13 @@ import { Item, type ItemData } from '../../domain/src/ecs/entities/item'
 import { World, Node } from '../../domain/src/ecs/entities/world';
 import { WorldClockComponent, type TimeOfDay, NodeComponent } from '../../domain/src/ecs/components/world';
 import { Quest, type QuestEntityData } from '../../domain/src/ecs/entities/quest';
+import { Skill, type SkillEntityData } from '../../domain/src/ecs/entities/skill';
+import { Effect } from '../../domain/src/ecs/entities/effects';
+import { type EffectDefinitionData } from '../../domain/src/ecs/components/effects';
+import { Trait } from '../../domain/src/ecs/entities/trait';
+import { type TraitData } from '../../domain/src/ecs/components/traits';
+import { Job, type JobEntityData } from '../../domain/src/ecs/entities/job';
+
 
 // Import all domain systems
 import { StatCalculationSystem } from '../../domain/src/ecs/systems/StatCalculationSystem';
@@ -35,6 +44,8 @@ import { NPC, type NPCEntityData } from '../../domain/src/ecs/entities/npc';
 import { Location, type LocationEntityData } from '../../domain/src/ecs/entities/world';
 import { PlayerLocationComponent, ContainerComponent } from '../../domain/src/ecs/components/world';
 import { InteractionSystem } from '../../domain/src/ecs/systems/InteractionSystem';
+import { CombatComponent, CombatantComponent } from '../../domain/src/ecs/components/combat';
+
 
 // Import Component types for creating the DTO
 import {
@@ -93,6 +104,7 @@ const getEntityDTO = (entity: Entity | null) => {
     checkAndAddComponent(DialogueComponent, 'DialogueComponent');
     checkAndAddComponent(VendorComponent, 'VendorComponent');
     checkAndAddComponent(TrainerComponent, 'TrainerComponent');
+    checkAndAddComponent(CombatantComponent, 'CombatantComponent');
 
     // Item Components (keep these)
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
@@ -188,6 +200,47 @@ export class GameService {
         );
 
         this.world.addSystem(scheduleSystem);
+
+        if (this.content.skills) {
+            const skillEntries = [...this.content.skills.entries()];
+            for (const [id, template] of skillEntries) {
+                const entity = new Skill((template as any).components as SkillEntityData);
+                this.world.addEntity(entity);
+                this.contentIdToEntityIdMap.set(id, entity.id);
+                // Replace raw data with the entity in the content map
+                this.content.skills.set(id, entity as any);
+            }
+        }
+
+        if (this.content.effects) {
+            const effectEntries = [...this.content.effects.entries()];
+            for (const [id, template] of effectEntries) {
+                const entity = new Effect((template as any).components.definition as EffectDefinitionData);
+                this.world.addEntity(entity);
+                this.contentIdToEntityIdMap.set(id, entity.id);
+                this.content.effects.set(id, entity as any);
+            }
+        }
+
+        if (this.content.traits) {
+            const traitEntries = [...this.content.traits.entries()];
+            for (const [id, template] of traitEntries) {
+                const entity = new Trait(template as TraitData);
+                this.world.addEntity(entity);
+                this.contentIdToEntityIdMap.set(id, entity.id);
+                this.content.traits.set(id, entity as any);
+            }
+        }
+
+        if (this.content.jobs) {
+            const jobEntries = [...this.content.jobs.entries()];
+            for (const [id, template] of jobEntries) {
+                const entity = new Job((template as any).components as JobEntityData);
+                this.world.addEntity(entity);
+                this.contentIdToEntityIdMap.set(id, entity.id);
+                this.content.jobs.set(id, entity as any);
+            }
+        }
 
         // --- Create Location Entities ---
         if (this.content.locations) {
@@ -405,6 +458,24 @@ export class GameService {
             location: hubData, // Use the Hub's data for the location name
             npcs: npcs,       // The NPCs from the Hub
             nodes: nodes,     // The Nodes from the surrounding Zone
+        };
+    }
+
+    public getCombatState(): any {
+        const entities = (this.world as any).entities || [];
+        const combatEntity = entities.find((e: Entity) => CombatComponent.oneFrom(e));
+        if (!combatEntity) return null;
+
+        const combatData = CombatComponent.oneFrom(combatEntity)!.data;
+
+        const combatants = combatData.combatants.map(id => {
+            const entity = this.world.getEntity(parseInt(id, 10));
+            return getEntityDTO(entity || null);
+        }).filter(c => c !== null);
+
+        return {
+            ...combatData,
+            combatants
         };
     }
 }

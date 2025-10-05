@@ -1,0 +1,12 @@
+- id: "FAM-CANINE"
+  name: "Canine"
+  boosts: [0.1, 0.2, 0.0]
+  lootPools: ["loottable_wolf"]
+- id: "FAM-GOBLIN"
+  name: "Goblin"
+  boosts": [0.1, 0.1, 0.1]
+  lootPools: ["loottable_goblin"]
+- id: "FAM-PEST"
+  name: "Pest"
+  boosts: [0.0, 0.2, 0.1]
+  lootPools": ["loottable_pest"]

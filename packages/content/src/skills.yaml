@@ -72,3 +72,23 @@
         - { stat: "health", amount: 20 }
       effects:
         - { type: "ApplyEffect", target: "Self", effectId: "effect_attack_up_t1", power: 0, scalingStat: "attack" }
+        
+- id: "basic_attack"
+  components:
+    info:
+      name: "Basic Attack"
+      description: "A simple attack that deals damage based on your attack power."
+    skill:
+      type: "active"
+      effects:
+        - { type: "Damage", target: "Enemy", power: 5, scalingStat: "attack", targeting: { pattern: "SINGLE" } }
+
+- id: "skill_defend"
+  components:
+    info:
+      name: "Defend"
+      description: "Take a defensive stance, increasing armor."
+    skill:
+      type: "active"
+      effects:
+        - { type: "ApplyEffect", target: "Self", effectId: "effect_defending", power: 0, scalingStat: "attack", targeting: { pattern: "SINGLE" } }
