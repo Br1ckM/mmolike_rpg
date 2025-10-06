@@ -14,11 +14,13 @@ export class CombatSystem {
     private world: ECS;
     private eventBus: EventBus;
     private content: any;
+    private contentIdToEntityIdMap: Map<string, number>;
 
-    constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
+    constructor(world: ECS, eventBus: EventBus, loadedContent: any, contentIdToEntityIdMap: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
         this.content = loadedContent;
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
         this.eventBus.on('combatStarted', this.onCombatStarted.bind(this));
         this.eventBus.on('actionTaken', this.onActionTaken.bind(this));
@@ -44,6 +46,8 @@ export class CombatSystem {
     }
 
     private onFleeAttempt(payload: { combatEntityId: string; actorId: string }): void {
+        console.log(`[CombatSystem] Heard "fleeAttempt" for actor: ${payload.actorId}`);
+
         const combatEntity = this.world.getEntity(parseInt(payload.combatEntityId, 10));
         if (!combatEntity) return;
 
@@ -68,6 +72,7 @@ export class CombatSystem {
         skillId?: string;
         targetId?: string;
     }): void {
+        console.log(`[CombatSystem] Heard "actionTaken" for action: ${payload.actionType}`);
         const combatEntity = this.world.getEntity(parseInt(payload.combatEntityId, 10));
         if (!combatEntity) return;
 
@@ -76,8 +81,11 @@ export class CombatSystem {
                 this.resolveMoveRow(payload.actorId);
                 break;
             case 'SKILL':
+                console.log(`[CombatSystem] Resolving SKILL: ${payload.skillId}`);
+
                 const actor = this.world.getEntity(parseInt(payload.actorId, 10))!;
-                const skillEntity = this.content.skills.get(payload.skillId!);
+                const numericSkillId = this.contentIdToEntityIdMap.get(payload.skillId!);
+                const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : undefined;
                 if (!actor || !skillEntity) {
                     console.error("Actor or skill not found for action.");
                     break;
@@ -97,8 +105,10 @@ export class CombatSystem {
                 break;
         }
 
+        console.log("[CombatSystem] Reached end of onActionTaken. Checking for combat end and starting next turn.");
 
         if (this.checkForCombatEnd(combatEntity)) {
+            console.log("[CombatSystem] Combat has ended.");
             return;
         }
 
@@ -151,6 +161,8 @@ export class CombatSystem {
     }
 
     private resolveSkillUsage(combatEntity: Entity, actorId: string, targetId: string, skillId: string): void {
+        console.log(`[CombatSystem] In resolveSkillUsage for skill: ${skillId}`);
+
         const actor = this.world.getEntity(parseInt(actorId, 10))!;
         const initialTarget = this.world.getEntity(parseInt(targetId, 10))!;
 
@@ -282,6 +294,8 @@ export class CombatSystem {
     }
 
     private startNextTurn(combatEntity: Entity): void {
+        console.log("[CombatSystem] Starting next turn...");
+
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
 
         // Find the next living combatant

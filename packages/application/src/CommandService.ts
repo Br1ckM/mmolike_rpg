@@ -51,6 +51,7 @@ export class CommandService {
     // --- Combat Commands ---
 
     public performSkill(combatEntityId: string, actorId: string, skillId: string, targetId: string): void {
+        console.log(`[CommandService] Firing "actionTaken" for skill: ${skillId}`);
         this.domainEventBus.emit('actionTaken', {
             combatEntityId,
             actorId,
@@ -61,6 +62,7 @@ export class CommandService {
     }
 
     public defend(combatEntityId: string, actorId: string): void {
+        console.log(`[CommandService] Firing "actionTaken" for defend`);
         this.domainEventBus.emit('actionTaken', {
             combatEntityId,
             actorId,
@@ -71,6 +73,7 @@ export class CommandService {
     }
 
     public flee(combatEntityId: string, actorId: string): void {
+        console.log(`[CommandService] Firing "fleeAttempt"`);
         this.domainEventBus.emit('fleeAttempt', { combatEntityId, actorId });
     }
 

@@ -80,6 +80,7 @@ import {
 import { QuestStatusComponent, QuestComponent, QuestObjectiveComponent } from '../../domain/src/ecs/components/quest';
 import { LocationComponent } from '../../domain/src/ecs/components/world';
 import { DialogueComponent, VendorComponent, TrainerComponent } from '../../domain/src/ecs/components/npc'
+import { SkillInfoComponent, SkillComponent } from '../../domain/src/ecs/components/skill';
 
 
 // Helper to get all components from an entity using public accessors
@@ -95,25 +96,27 @@ const getEntityDTO = (entity: Entity | null) => {
         }
     };
 
-    // FIX: Add all character and NPC components to the check
+    // Character Components
     checkAndAddComponent(InfoComponent, 'InfoComponent');
     checkAndAddComponent(ControllableComponent, 'ControllableComponent');
     checkAndAddComponent(CoreStatsComponent, 'CoreStatsComponent');
     checkAndAddComponent(DerivedStatsComponent, 'DerivedStatsComponent');
     checkAndAddComponent(HealthComponent, 'HealthComponent');
+    checkAndAddComponent(ManaComponent, 'ManaComponent');
+    checkAndAddComponent(SkillBookComponent, 'SkillBookComponent');
     checkAndAddComponent(DialogueComponent, 'DialogueComponent');
     checkAndAddComponent(VendorComponent, 'VendorComponent');
     checkAndAddComponent(TrainerComponent, 'TrainerComponent');
     checkAndAddComponent(CombatantComponent, 'CombatantComponent');
 
-    // Item Components (keep these)
+    // Item Components
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
     checkAndAddComponent(StackableComponent, 'StackableComponent');
     checkAndAddComponent(EquipableComponent, 'EquipableComponent');
     checkAndAddComponent(SlotsComponent, 'SlotsComponent');
     checkAndAddComponent(CurrencyComponent, 'CurrencyComponent');
 
-    // World Components (keep these)
+    // World Components
     checkAndAddComponent(LocationComponent, 'LocationComponent');
     checkAndAddComponent(ContainerComponent, 'ContainerComponent');
     checkAndAddComponent(NodeComponent, 'NodeComponent');
@@ -129,7 +132,7 @@ const getEntityDTO = (entity: Entity | null) => {
 export class GameService {
     public world: ECS;
     public eventBus: EventBus;
-    public content: GameContent; // It now holds the GameContent object directly
+    public content: GameContent;
     public player: Character | null = null;
     private systems: any[];
     private contentIdToEntityIdMap = new Map<string, number>();
@@ -138,7 +141,7 @@ export class GameService {
         this.world = new ECS();
         this.eventBus = new EventBus();
         this.systems = [];
-        this.content = contentService as GameContent; // Assign the .data property from the service
+        this.content = contentService as GameContent;
         this.contentIdToEntityIdMap = new Map<string, number>();
 
         console.log('[LOAD DIAGNOSTIC] GameService constructor received content data. Keys:', Object.keys(this.content));
@@ -194,7 +197,7 @@ export class GameService {
             new WorldClockSystem(this.world, this.eventBus, worldEntity),
             new TravelSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
             new CombatInitiationSystem(this.world, this.eventBus),
-            new CombatSystem(this.world, this.eventBus, this.content),
+            new CombatSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new AISystem(this.world, this.eventBus, this.content),
             new StatusEffectSystem(this.world, this.eventBus, this.content)
         );
@@ -470,12 +473,49 @@ export class GameService {
 
         const combatants = combatData.combatants.map(id => {
             const entity = this.world.getEntity(parseInt(id, 10));
-            return getEntityDTO(entity || null);
+            const combatantDTO = getEntityDTO(entity || null);
+
+            if (combatantDTO && combatantDTO.SkillBookComponent) {
+                const hydratedSkills = combatantDTO.SkillBookComponent.knownSkills.map((skillId: any) => {
+                    // --- FIX START ---
+                    // Add a type check to handle cases where an object might have slipped through.
+                    if (typeof skillId !== 'string') {
+                        // If it's not a string, it's likely already a hydrated object from a previous pass.
+                        // We can just return it as-is.
+                        return skillId;
+                    }
+                    // --- FIX END ---
+
+                    const numericSkillId = this.contentIdToEntityIdMap.get(skillId);
+                    const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : undefined;
+
+                    if (!skillEntity) {
+                        return { id: skillId, name: 'Unknown Skill', description: '', costs: [] };
+                    }
+
+                    const info = SkillInfoComponent.oneFrom(skillEntity as unknown as Entity)?.data;
+                    const skill = SkillComponent.oneFrom(skillEntity as unknown as Entity)?.data;
+                    const firstEffectTarget = skill?.effects?.[0]?.target || 'Enemy';
+
+                    return {
+                        id: skillId,
+                        name: info?.name || 'Unnamed Skill',
+                        description: info?.description || '',
+                        costs: skill?.costs || [],
+                        target: firstEffectTarget,
+                    };
+                });
+                combatantDTO.SkillBookComponent.hydratedSkills = hydratedSkills;
+            }
+
+            return combatantDTO;
         }).filter(c => c !== null);
 
         return {
+            combatEntityId: combatEntity.id.toString(),
             ...combatData,
             combatants
         };
     }
 }
+

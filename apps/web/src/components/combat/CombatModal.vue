@@ -3,17 +3,34 @@ import Dialog from '@/volt/Dialog.vue';
 import Button from '@/volt/Button.vue';
 import CombatantCard from './CombatantCard.vue';
 import CombatBar from './CombatBar.vue';
+import CombatSkillList from './CombatSkillList.vue';
 import { useGameStore } from '@/stores/game';
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { App } from 'mmolike_rpg-application';
 
 const gameStore = useGameStore();
-const { combat } = storeToRefs(gameStore);
+const { combat, combatLog } = storeToRefs(gameStore);
 
-// --- Component State ---
-const isTargeting = ref(false);
+// --- State Management ---
+const playerActionMode = ref<'idle' | 'selecting-skill' | 'targeting'>('idle');
+const isSelectingSkill = computed(() => playerActionMode.value === 'selecting-skill');
+const isTargeting = computed(() => playerActionMode.value === 'targeting');
+
 const selectedTargets = ref<string[]>([]);
+const selectedSkillId = ref<string | null>(null);
+
+const overlayTitle = computed(() => {
+    if (playerActionMode.value === 'selecting-skill') {
+        return 'Select a Skill';
+    }
+    if (playerActionMode.value === 'targeting') {
+        const skillName = activeCombatant.value?.SkillBookComponent.hydratedSkills.find((s: any) => s.id === selectedSkillId.value)?.name || 'action';
+        return `Select a target for ${skillName}`;
+    }
+    return '';
+});
+
 
 const isCombatActive = computed(() => combat.value !== null);
 
@@ -66,84 +83,95 @@ const enemyGrid = computed(() => {
     return grid;
 });
 
-// --- Targeting Logic ---
+// --- Action & Targeting Logic ---
+
 const handleAction = (actionId: string) => {
     if (!combat.value || !activeCombatant.value) return;
 
+    playerActionMode.value = 'idle';
+
     switch (actionId) {
         case 'attack':
-            isTargeting.value = true;
+            selectedSkillId.value = 'basic_attack';
+            playerActionMode.value = 'targeting';
             selectedTargets.value = [];
             break;
+        case 'skills':
+            playerActionMode.value = 'selecting-skill';
+            break;
         case 'defend':
-            App.commands.defend(combat.value.combatEntityId, activeCombatant.value.id);
+            App.commands.defend(combat.value.combatEntityId, String(activeCombatant.value.id));
             break;
         case 'flee':
-            App.commands.flee(combat.value.combatEntityId, activeCombatant.value.id);
+            App.commands.flee(combat.value.combatEntityId, String(activeCombatant.value.id));
             break;
-        // Handle other actions like 'skills', 'item' etc. here
+    }
+};
+
+const onSkillSelected = (skill: any) => {
+    selectedSkillId.value = skill.id;
+
+    if (skill.target === 'Self') {
+        selectedTargets.value = [String(activeCombatant.value.id)];
+        confirmAction();
+    } else {
+        playerActionMode.value = 'targeting';
+        selectedTargets.value = [];
     }
 };
 
 const handleSelectTarget = (targetId: string) => {
-    if (!isTargeting.value) return;
+    if (playerActionMode.value !== 'targeting') return;
 
-    // For now, we only allow single targeting. This can be expanded later.
     selectedTargets.value = [targetId];
-    
-    // In a real scenario, you'd have a confirm button.
-    // For now, we'll just confirm immediately.
-    confirmAttack();
+    confirmAction();
 };
 
-const confirmAttack = () => {
-    if (selectedTargets.value.length === 0 || !activeCombatant.value || !combat.value) return;
-    
-    // The player's basic attack skill ID
-    const attackSkillId = 'basic_attack';
-    
+const confirmAction = () => {
+    if (selectedTargets.value.length === 0 || !activeCombatant.value || !combat.value || !selectedSkillId.value) return;
+
     App.commands.performSkill(
         combat.value.combatEntityId,
-        activeCombatant.value.id,
-        attackSkillId,
+        String(activeCombatant.value.id),
+        selectedSkillId.value,
         selectedTargets.value[0]
     );
-    
-    // Reset targeting state
-    isTargeting.value = false;
-    selectedTargets.value = [];
+
+    cancelSelection();
 };
 
-const cancelTargeting = () => {
-    isTargeting.value = false;
+const cancelSelection = () => {
+    playerActionMode.value = 'idle';
     selectedTargets.value = [];
+    selectedSkillId.value = null;
 };
 
-const doNothing = () => {};
+const doNothing = () => { };
 </script>
 
 <template>
-    <Dialog
-        :visible="isCombatActive"
-        @update:visible="doNothing"
-        :modal="true"
-        :closable="false"
-        header="Combat"
-        class="w-full h-full"
-        :pt="{
+    <Dialog :visible="isCombatActive" @update:visible="doNothing" :modal="true" :closable="false" header="Combat"
+        class="w-full h-full" :pt="{
             root: 'max-h-full max-w-full border-none',
             header: 'hidden',
             content: 'p-0 bg-surface-900 h-full flex flex-col',
             mask: 'bg-black/80 z-40'
-        }"
-    >
-        <div v-if="combat" class="h-full flex flex-col items-center justify-center p-4 bg-gray-800 bg-opacity-50 flex-grow relative">
-            
-            <!-- Targeting Overlay -->
-            <div v-if="isTargeting" class="absolute inset-0 bg-black/50 z-20 flex items-start justify-center pt-8 pointer-events-none">
-                <div class="bg-surface-800 p-4 rounded-lg shadow-xl border border-primary-500 pointer-events-auto">
-                    <p class="text-lg font-bold text-primary-400">Select a target for Attack</p>
-                    <Button label="Cancel" severity="danger" @click="cancelTargeting" class="mt-2" />
+        }">
+        <div v-if="combat"
+            class="h-full flex flex-col items-center justify-center p-4 bg-gray-800 bg-opacity-50 flex-grow relative">
+
+            <!-- Overlays -->
+            <div v-if="playerActionMode !== 'idle'"
+                class="absolute inset-0 bg-black/50 z-20 flex items-center justify-center pointer-events-none">
+                <div
+                    class="bg-surface-800 p-4 rounded-lg shadow-xl border border-primary-500 pointer-events-auto max-w-lg w-full">
+                    <p class="text-lg font-bold text-primary-400 text-center mb-4">{{ overlayTitle }}</p>
+
+                    <CombatSkillList v-if="isSelectingSkill && activeCombatant"
+                        :skills="activeCombatant.SkillBookComponent.hydratedSkills" :caster="activeCombatant"
+                        @select="onSkillSelected" />
+
+                    <Button label="Cancel" severity="danger" @click="cancelSelection" class="mt-4 w-full" />
                 </div>
             </div>
 
@@ -152,10 +180,12 @@ const doNothing = () => {};
                 <div class="col-span-2 grid grid-cols-2 grid-rows-4 gap-y-2">
                     <template v-for="(row, i) in playerGrid" :key="`player-row-${i}`">
                         <div class="flex items-center justify-center">
-                            <CombatantCard v-if="row.back" :combatant="row.back" :is-active="String(row.back.id) === activeCombatantId" />
+                            <CombatantCard v-if="row.back" :combatant="row.back"
+                                :is-active="String(row.back.id) === activeCombatantId" :combat-log="combatLog" />
                         </div>
                         <div class="flex items-center justify-center">
-                            <CombatantCard v-if="row.front" :combatant="row.front" :is-active="String(row.front.id) === activeCombatantId" />
+                            <CombatantCard v-if="row.front" :combatant="row.front"
+                                :is-active="String(row.front.id) === activeCombatantId" :combat-log="combatLog" />
                         </div>
                     </template>
                 </div>
@@ -165,26 +195,18 @@ const doNothing = () => {};
 
                 <!-- Enemy Side -->
                 <div class="col-span-2 grid grid-cols-2 grid-rows-4 gap-y-2">
-                     <template v-for="(row, i) in enemyGrid" :key="`enemy-row-${i}`">
+                    <template v-for="(row, i) in enemyGrid" :key="`enemy-row-${i}`">
                         <div class="flex items-center justify-center">
-                            <CombatantCard 
-                                v-if="row.front" 
-                                :combatant="row.front" 
-                                :is-active="String(row.front.id) === activeCombatantId"
-                                :is-targetable="isTargeting"
-                                :is-targeted="selectedTargets.includes(String(row.front.id))"
-                                @click="handleSelectTarget(String(row.front.id))"
-                            />
+                            <CombatantCard v-if="row.front" :combatant="row.front"
+                                :is-active="String(row.front.id) === activeCombatantId" :is-targetable="isTargeting"
+                                :is-targeted="selectedTargets.includes(String(row.front.id))" :combat-log="combatLog"
+                                @click="handleSelectTarget(String(row.front.id))" />
                         </div>
                         <div class="flex items-center justify-center">
-                            <CombatantCard 
-                                v-if="row.back" 
-                                :combatant="row.back" 
-                                :is-active="String(row.back.id) === activeCombatantId"
-                                :is-targetable="isTargeting"
-                                :is-targeted="selectedTargets.includes(String(row.back.id))"
-                                @click="handleSelectTarget(String(row.back.id))"
-                            />
+                            <CombatantCard v-if="row.back" :combatant="row.back"
+                                :is-active="String(row.back.id) === activeCombatantId" :is-targetable="isTargeting"
+                                :is-targeted="selectedTargets.includes(String(row.back.id))" :combat-log="combatLog"
+                                @click="handleSelectTarget(String(row.back.id))" />
                         </div>
                     </template>
                 </div>
@@ -193,4 +215,3 @@ const doNothing = () => {};
         <CombatBar v-if="isPlayerTurn" @action="handleAction" class="flex-shrink-0" />
     </Dialog>
 </template>
-

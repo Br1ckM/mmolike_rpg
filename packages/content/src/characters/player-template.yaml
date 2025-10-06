@@ -40,13 +40,13 @@ components:
         level: 1
         xp: 0
         skills:
-          - 'skill_basic_strike'
-          - 'skill_defensive_stance'
+          - 'basic_attack'
+          - 'skill_defend'
 
   skillBook:
     knownSkills:
-      - 'skill_basic_strike'
-      - 'skill_defensive_stance'
+      - 'basic_attack'
+      - 'skill_defend'
   
   equipment:
     helm: null

@@ -75,7 +75,7 @@ export class QueryService {
 
         playerStateEvents.forEach(eventName => {
             this.domainEventBus.on(eventName, () => {
-                console.log(`[QueryService] Heard '${eventName}'. Refreshing playerState.`);
+                console.log(`[QueryService] Heard '${eventName}'. Refreshing playerState.`)
 
                 const playerState = this.gameService.getPlayerState();
                 this.publish('playerState', playerState);
@@ -86,6 +86,7 @@ export class QueryService {
             'combatStarted',
             'roundStarted',
             'turnStarted',
+            'actionTaken',
             'damageDealt',
             'healthHealed',
             'effectApplied',
