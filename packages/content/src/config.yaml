@@ -1,0 +1,58 @@
+# This file contains all the core "magic numbers" for game balance.
+# Modifying these values will have a global impact on combat and character stats.
+
+stat_scalings:
+  # How many points of a derived stat you get per point of a core stat.
+  attack_from_strength: 2
+  magic_attack_from_intelligence: 2
+  defense_from_dexterity: 1.0
+  magic_resist_from_intelligence: 1.5
+  dodge_from_dexterity: 0.5
+  health_from_strength: 10
+  mana_from_intelligence: 5
+
+base_stats:
+  # The default starting values for secondary stats.
+  crit_chance: 5
+  crit_damage: 150 # Represented as a percentage (e.g., 150 = 150%)
+  accuracy: 90
+  haste: 0
+
+damage_formula:
+  # Multipliers applied in the final damage calculation.
+  scaling_stat_multiplier: 1.0 # The impact of Attack/Magic Attack
+  power_multiplier: 1.0        # The impact of a skill's base power
+
+
+
+mob_generation:
+  # The number of core stat points a mob gets for each level.
+  stat_points_per_level: 10
+
+rarity_chances:
+  # The chance for an equipment drop to be of a certain rarity.
+  # Probabilities should sum to 1.0. Lower numbers are rolled first.
+  rare: 0.10      # 10% chance for a Rare item
+  uncommon: 0.30  # 30% chance for an Uncommon item
+  common: 1.0     # 60% chance for a Common item (the remainder)
+
+rarity_affixes:
+  # Defines how many affixes each rarity gets. Can be a fixed number or a [min, max] range.
+  common:
+    prefixes: 0
+    suffixes: 0
+    total_max: 0
+  uncommon:
+    prefixes: [0, 1]
+    suffixes: [0, 1]
+    total_max: 1 # An Uncommon item can have at most 1 affix total.
+  rare:
+    prefixes: 1
+    suffixes: 1
+    total_max: 2
+
+player_progression:
+  core_stats_per_level: 3
+  gear_stat_budget:
+    base: 5
+    per_level: 2

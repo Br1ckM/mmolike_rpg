@@ -114,7 +114,7 @@ export class QueryService {
         });
 
         this.domainEventBus.on('combatEnded', (payload) => {
-            this.publish('combatState', null);
+            this.publish('combatResult', payload);
         });
         this.domainEventBus.on('playerLocationChanged', () => {
             const hubState = this.gameService.getHubState();

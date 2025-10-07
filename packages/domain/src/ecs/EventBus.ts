@@ -4,15 +4,18 @@ import type { DialogueResponse } from "./components/dialogue";
 // Define the structure for all possible event payloads
 interface EventMap {
     'playerStateModified': { characterId: number; };
-    'enemyDefeated': { enemyId: string; characterId: number; };
+    'enemyDefeated': { enemyId: string; characterId: number; level: number; };
+    'experienceGained': { characterId: number; amount: number; };
+    'playerLeveledUp': { characterId: number; newLevel: number; };
     'lootContainerOpened': { containerId: string; characterId: number; };
-    'generateItemRequest': { baseItemId: string; characterId: number; };
+    'generateItemRequest': { baseItemId: string; characterId: number; itemLevel: number };
     'addItemToInventory': { characterId: number; itemEntityId: number; };
     'inventoryFull': { characterId: number; itemEntityId: number; };
     'equipItemRequest': { characterId: number; itemEntityId: number; };
     'unequipItemRequest': { characterId: number; slot: EquipmentSlot; };
     'characterEquipmentChanged': { characterId: number; };
     'useConsumableRequest': { characterId: number; itemEntityId: number; };
+    'useItemInBeltRequest': { characterId: number; beltIndex: number; combatEntityId?: string; };
     'removeItemFromInventory': {
         characterId: number;
         itemEntityId: number;
@@ -69,7 +72,7 @@ interface EventMap {
     'actionTaken': {
         combatEntityId: string;
         actorId: string;
-        actionType: 'SKILL' | 'MOVE_ROW';
+        actionType: 'SKILL' | 'MOVE_ROW' | 'ITEM';
         skillId?: string;
         targetId?: string;
     };
@@ -122,11 +125,19 @@ export class EventBus {
      * @param key The event to listen for.
      * @param handler The function to call when the event is emitted.
      */
-    on<K extends EventKey>(key: K, handler: EventHandler<EventMap[K]>): void {
+    on<K extends EventKey>(key: K, handler: EventHandler<EventMap[K]>): () => void {
         if (!this.listeners[key]) {
             this.listeners[key] = [];
         }
         this.listeners[key]!.push(handler);
+
+        // Return an unsubscribe function so callers can remove their listener.
+        return () => {
+            const handlers = this.listeners[key];
+            if (!handlers) return;
+            const idx = handlers.indexOf(handler as EventHandler<EventMap[K]>);
+            if (idx !== -1) handlers.splice(idx, 1);
+        };
     }
 
     /**

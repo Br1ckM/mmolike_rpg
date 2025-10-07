@@ -8,7 +8,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "mmolike_rpg-application": ["../../packages/application/src"],
-      "mmolike_rpg-application/*": ["../../packages/application/src/*"]
+      "mmolike_rpg-application/*": ["../../packages/application/src/*"],
+      "mmolike_rpg-domain/*": ["../../packages/domain/src/*"],
+      "mmolike_rpg-content/*": ["../../packages/content/src/*"]
     }
   }
 }

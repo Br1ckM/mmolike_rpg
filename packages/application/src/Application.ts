@@ -30,6 +30,9 @@ import mobs from '../../content/src/characters/mobs.yaml';
 import families from '../../content/src/families.yaml';
 import tiers from '../../content/src/tiers.yaml';
 import archetypes from '../../content/src/archetypes.yaml';
+import spawnPools from '../../content/src/spawn_pools.yaml';
+import config from '../../content/src/config.yaml';
+import playerProgression from '../../content/src/player_progression.yaml';
 
 
 class Application {
@@ -79,6 +82,9 @@ class Application {
             families,
             tiers,
             archetypes,
+            spawnPools,
+            config,
+            playerProgression,
             // Combine items and characters into their respective categories
             baseItems: combinedBaseItemsArray,
             // Use an array for mobs, as expected by RawGameContent

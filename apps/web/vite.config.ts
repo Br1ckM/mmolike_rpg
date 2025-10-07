@@ -18,7 +18,9 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "./src") },
-      { find: "mmolike_rpg-application", replacement: path.resolve(__dirname, "../..", "packages/application/src") }
+      { find: "mmolike_rpg-application", replacement: path.resolve(__dirname, "../..", "packages/application/src") },
+      { find: "mmolike_rpg-domain", replacement: path.resolve(__dirname, "../..", "packages/domain/src") },
+      { find: "mmolike_rpg-content", replacement: path.resolve(__dirname, "../..", "packages/content/src") }
     ]
   },
 })

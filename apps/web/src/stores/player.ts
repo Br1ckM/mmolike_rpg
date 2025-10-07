@@ -17,9 +17,9 @@ type DerivedStats = {
 }
 
 type CoreStats = {
-  STR: number;
-  DEX: number;
-  INT: number;
+  strength: number;
+  dexterity: number;
+  intelligence: number;
 }
 
 export interface UIItem {
@@ -48,10 +48,14 @@ interface PlayerState {
   mana: { current: number; max: number };
   coreStats: CoreStats;
   derivedStats: DerivedStats;
+  progression: { level: number; xp: number };
   inventory: {
     wallet: { [currency: string]: number };
     bags: any[];
   } | null;
+  consumableBelt?: { // It can be optional if not all characters have it
+    itemIds: (string | null)[];
+  };
   quests: any[];
 }
 
@@ -69,10 +73,14 @@ interface ActiveQuest {
   objectives: QuestObjective[];
 }
 
+const xpForLevel = (level: number) => Math.floor(100 * Math.pow(level, 1.5));
+
 export const usePlayerStore = defineStore('player', () => {
   // --- State ---
   const player = ref<PlayerState | null>(null);
   const unsubscribe = ref<(() => void) | null>(null);
+  const itemToInspect = ref<UIItem | null>(null);
+  const isInspectorOpen = computed(() => itemToInspect.value !== null);
 
   // --- Getters ---
   const resolvedHealth = computed(() =>
@@ -133,11 +141,23 @@ export const usePlayerStore = defineStore('player', () => {
     return player.value?.inventory?.wallet ?? { Gold: 0 };
   });
 
-  const belt = computed(() => {
-    // This will need a dedicated component on the backend later.
-    // For now, we'll keep the mock data to show it.
-    const potion: UIItem = { id: 10, name: 'Health Potion', icon: 'pi pi-plus-circle', type: 'consumable', stackSize: 5, maxStack: 10, quality: 'Common' };
-    return [potion, null, null, null, null];
+  const belt = computed((): (UIItem | null)[] => {
+    if (!player.value?.consumableBelt?.itemIds) return Array(5).fill(null);
+
+    const allItemsById = new Map<number, UIItem>();
+    bags.value.forEach(bag => {
+      bag.items.forEach(item => {
+        if (item) {
+          allItemsById.set(item.id, item);
+        }
+      });
+    });
+
+    return player.value.consumableBelt.itemIds.map(itemIdStr => {
+      if (!itemIdStr) return null;
+      const itemId = parseInt(itemIdStr, 10);
+      return allItemsById.get(itemId) || null;
+    });
   });
 
   const activeQuests = computed((): ActiveQuest[] => {
@@ -157,6 +177,22 @@ export const usePlayerStore = defineStore('player', () => {
   });
   const totalSlots = computed(() => bags.value.reduce((sum, bag) => sum + bag.slots, 0));
   const usedSlots = computed(() => bags.value.reduce((sum, bag) => sum + bag.items.filter(item => item !== null).length, 0));
+
+  // --- NEW XP Getters ---
+  const experience = computed(() => {
+    const level = player.value?.progression?.level ?? 1;
+    const currentXp = player.value?.progression?.xp ?? 0;
+    const requiredXp = xpForLevel(level);
+    const percentage = requiredXp > 0 ? Math.max(0, Math.min(100, Math.round((currentXp / requiredXp) * 100))) : 0;
+
+    return {
+      level,
+      current: currentXp,
+      required: requiredXp,
+      percentage,
+      display: `${currentXp} / ${requiredXp}`,
+    };
+  });
 
 
   // --- Actions ---
@@ -178,10 +214,18 @@ export const usePlayerStore = defineStore('player', () => {
     App.commands.equipItem(player.value.id, itemId);
   }
 
-  // NEW: Add inventory-related actions if needed
   function useConsumable(slotIndex: number) {
-    console.log(`Using consumable in belt slot ${slotIndex}`);
-    // You would eventually call App.commands.useConsumable here
+    if (!player.value) return;
+    // This call is now correct, as the third argument is optional for non-combat use.
+    App.commands.useItemInBelt(player.value.id, slotIndex);
+  }
+
+  function inspectItem(item: UIItem) {
+    itemToInspect.value = item;
+  }
+
+  function closeInspector() {
+    itemToInspect.value = null;
   }
 
 
@@ -191,14 +235,19 @@ export const usePlayerStore = defineStore('player', () => {
     healthValues,
     manaPercentage,
     manaValues,
-    bags, // Expose new getters
+    bags,
     wallet,
     belt,
     totalSlots,
     usedSlots,
+    activeQuests,
+    itemToInspect,
+    isInspectorOpen,
     initialize,
     equipItem,
     useConsumable,
-    activeQuests,
+    inspectItem,
+    closeInspector,
+    experience,
   };
 });

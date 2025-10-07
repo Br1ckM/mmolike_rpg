@@ -8,6 +8,7 @@ import Dashboard from '../views/Dashboard.vue'
 import Hub from '../views/Hub.vue'
 import Character from '../views/Character.vue'
 import Inventory from '../views/Inventory.vue' // <-- IMPORTED
+import Simulator from '../views/Simulator.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,7 +27,8 @@ const router = createRouter({
         { path: 'codex', name: 'codex', component: Placeholder, props: { pageName: 'Codex' } },
         { path: 'about', name: 'about', component: Placeholder, props: { pageName: 'About / FAQ' } },
         { path: 'settings', name: 'settings', component: Placeholder, props: { pageName: 'Settings' } },
-        { path: 'design', name: 'design', component: DesignSystem, props: { pageName: 'Design Board' } }
+        { path: 'design', name: 'design', component: DesignSystem, props: { pageName: 'Design Board' } },
+        { path: 'simulator', name: 'simulator', component: Simulator }
       ]
     },
   ],

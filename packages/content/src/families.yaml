@@ -4,9 +4,34 @@
   lootPools: ["loottable_wolf"]
 - id: "FAM-GOBLIN"
   name: "Goblin"
-  boosts": [0.1, 0.1, 0.1]
+  boosts: [0.1, 0.1, 0.1]
   lootPools: ["loottable_goblin"]
 - id: "FAM-PEST"
   name: "Pest"
   boosts: [0.0, 0.2, 0.1]
-  lootPools": ["loottable_pest"]
+  lootPools: ["loottable_pest"]
+- id: "FAM-BEAST"
+  name: "Beast"
+  boosts: [0.2, 0.1, 0.0]
+  lootPools: ["loottable_beast_parts"]
+- id: "FAM-BUN"
+  name: "Bunnykin"
+  boosts: [0.0, 0.3, 0.0]
+  lootPools: []
+- id: "FAM-BOA"
+  name: "Boar"
+  boosts: [0.3, 0.0, 0.0]
+  lootPools: ["loottable_beast_parts"]
+- id: "FAM-POA"
+  name: "Poachers"
+  boosts: [0.1, 0.1, 0.1]
+  lootPools: ["loottable_poacher"]
+- id: "FAM-SLM"
+  name: "Slimefolk"
+  boosts: [0.1, 0.0, 0.2]
+  lootPools: []
+- id: "FAM-WLF"
+  name: "Wolfkin"
+  boosts: [0.1, 0.2, 0.0]
+  lootPools: ["loottable_wolf"]
+

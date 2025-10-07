@@ -11,6 +11,7 @@ const mainNavLinks = [
 ];
 
 const bottomNavLinks = [
+  { name: 'Combat Simulator', path: '/simulator' }, // <-- NEW LINK
   { name: 'Design System', path: '/design' },
   { name: 'About / FAQ', path: '/about' },
   { name: 'Settings', path: '/settings' },
@@ -25,23 +26,15 @@ const bottomNavLinks = [
 
     <nav class="p-2 flex flex-col flex-grow">
       <div class="flex flex-col gap-1">
-        <RouterLink
-          v-for="link in mainNavLinks"
-          :key="link.name"
-          :to="link.path"
-          class="block px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-surface-700 hover:text-surface-0"
-        >
+        <RouterLink v-for="link in mainNavLinks" :key="link.name" :to="link.path"
+          class="block px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-surface-700 hover:text-surface-0">
           {{ link.name }}
         </RouterLink>
       </div>
 
       <div class="mt-auto flex flex-col gap-1">
-        <RouterLink
-          v-for="link in bottomNavLinks"
-          :key="link.name"
-          :to="link.path"
-          class="block px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-surface-700 hover:text-surface-0"
-        >
+        <RouterLink v-for="link in bottomNavLinks" :key="link.name" :to="link.path"
+          class="block px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-surface-700 hover:text-surface-0">
           {{ link.name }}
         </RouterLink>
       </div>

@@ -9,4 +9,4 @@
   statPointMultiplier: 1.2
 - id: "Boss"
   name: "Boss"
-  statPointMultiplier: 2.0
+  statPointMultiplier: 1.5

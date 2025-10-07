@@ -1,27 +1,87 @@
-- id: "enc_wulfkin_hunt"
-  name: "Wulfkin Hunt"
+# ============================
+# Encounter Table (Revised)
+# ============================
+
+# --- Static, Hand-Crafted Encounters ---
+
+- id: "enc_poacher_ambush"
+  name: "Poacher Ambush"
+  level: 7 # Mid-zone baseline; Poachers now span 5–12
   composition:
-    - protoId: "mob_wolf"
-      initialRow: "Front"
-    - protoId: "mob_wolf"
+    - protoId: "poa-003" # Poacher Houndmaster
       initialRow: "Back"
-    - protoId: "mob_wolf"
+      level: 9 # Elevated to emphasize threat within new range
+    - protoId: "poa-004" # Poacher Hound-Dog
+      initialRow: "Front"
+      # Defaults to 7 from encounter level
+    - protoId: "poa-004" # Poacher Hound-Dog
+      initialRow: "Front"
+      # Defaults to 7 from encounter level
+
+- id: "enc_slimefolk_engulfer_pair"
+  name: "Slimefolk Engulfer Pair"
+  level: 11 # Side-dungeon baseline; Slimefolk now 10–16
+  # Side Dungeon: intended for advanced players
+  composition:
+    - protoId: "slm-002"
+      initialRow: "Front"
+    - protoId: "slm-002"
+      initialRow: "Front"
+
+# --- Dynamic, Randomly Generated Encounters ---
+
+- id: "hunt_wulfkin_pack"
+  name: "Hunt: Wulfkin Pack"
+  generation:
+    - pool: "pool_wolfkin"
+      count: [2, 4]
+      level: [6, 12] # Wolfkin appear as late-mid to late main-path content
+
+- id: "hunt_slimefolk_infestation"
+  name: "Hunt: Slimefolk Infestation"
+  # Side Dungeon: spawn only in Slimefolk biome/instance
+  generation:
+    - pool: "pool_slimefolk"
+      count: [3, 5]
+      level: [10, 14] # Dungeon trash to sub-boss tiers
+
+- id: "hunt_bunnykin_warren"
+  name: "Hunt: Bunnykin Warren"
+  generation:
+    - pool: "pool_bunnykin"
+      count: [2, 3]
+      level: [1, 2] # Starter content unchanged
+
+# --- Boss Encounters ---
+
+- id: "boss_burrow_queen"
+  name: "The Burrow Queen"
+  level: 10 # Bunnykin zone boss remains mid-zone cap for starter arc
+  composition:
+    - protoId: "bun-900" # The Burrow Queen
       initialRow: "Back"
+  generation:
+    - pool: "pool_bunnykin"
+      count: [2, 3]
+      level: [8, 9] # Adds support the boss without eclipsing her
 
-- id: "enc_goblin_scouts"
-  name: "Goblin Scouts"
+- id: "boss_slimefold_idol"
+  name: "The Slimefold Idol"
+  level: 16 # Side-dungeon apex: slightly above zone cap for optional challenge
+  # Side Dungeon Boss: unlock/telegraph appropriately
   composition:
-    - protoId: "goblin_scout"
-      initialRow: "Front"
+    - protoId: "slm-900"
+      initialRow: "Back"
+  generation:
+    - pool: "pool_slimefolk"
+      count: [2, 3]
+      level: [14, 15] # Nasty elite escorts just below the boss
 
-- id: "enc_hoppers"
-  name: "Hoppers"
-  composition:
-    - protoId: "hopper"
-      initialRow: "Front"
+# --- Optional Poacher Elite Hunt (Late-Mid Spike) ---
 
-- id: "enc_wolves"
-  name: "Wolves"
-  composition:
-    - protoId: "mob_wolf"
-      initialRow: "Front"
+- id: "hunt_poacher_captain_raid"
+  name: "Hunt: Poacher Captain’s Raid"
+  generation:
+    - pool: "pool_poacher_elite" # Pool should include 'poa-700' plus a few high-end Poachers
+      count: [1, 3]
+      level: [11, 12] # Peaks the Poacher arc before handing off to Wolfkin

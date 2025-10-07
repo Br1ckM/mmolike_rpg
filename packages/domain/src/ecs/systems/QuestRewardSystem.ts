@@ -1,6 +1,6 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { QuestRewardComponent } from '../components/quest';
+import { QuestRewardComponent, QuestComponent } from '../components/quest';
 import { InventoryComponent } from '../components/character';
 import { CurrencyComponent } from '../components/item';
 
@@ -25,14 +25,17 @@ export class QuestRewardSystem {
         if (!character || !questEntity) return;
 
         const rewards = QuestRewardComponent.oneFrom(questEntity)?.data;
+        const questInfo = QuestComponent.oneFrom(questEntity)?.data;
+
         if (!rewards) {
             console.log(`Quest '${payload.questId}' has no rewards.`);
             return;
         }
 
-        // Grant Experience (conceptual)
-        // In a real implementation, you'd have a system to handle this.
-        console.log(`Character ${character.id} gained ${rewards.experience} XP.`);
+        this.eventBus.emit('experienceGained', {
+            characterId: character.id,
+            amount: rewards.experience,
+        });
 
         // Grant Gold
         if (rewards.gold) {
@@ -50,12 +53,14 @@ export class QuestRewardSystem {
 
             // Grant Items
             if (rewards.itemIds) {
+                const itemLevel = questInfo?.suggestedLevel ?? 1; // Get the quest level
                 for (const itemId of rewards.itemIds) {
                     // Emit an event for the ItemGenerationSystem to create the item
-                    // and give it to the character.
+                    // and give it to the character, now including the itemLevel.
                     this.eventBus.emit('generateItemRequest', {
                         baseItemId: itemId,
                         characterId: character.id,
+                        itemLevel: itemLevel, // Pass the quest's level
                     });
                     console.log(`Awarding item '${itemId}' to character ${character.id}.`);
                 }

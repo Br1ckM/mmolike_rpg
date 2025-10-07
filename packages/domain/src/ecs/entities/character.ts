@@ -11,10 +11,12 @@ import {
     HealthComponent,
     ManaComponent,
     SkillBookComponent,
+    ConsumableBeltComponent,
+    ProgressionComponent,
     type InfoData,
     type ControllableData,
     type CoreStatsData,
-    type DerivedStatsData, // NOTE: no health/mana here anymore
+    type DerivedStatsData,
     type JobsData,
     type EquipmentData,
     type InventoryData,
@@ -23,7 +25,9 @@ import {
     type ManaData,
     type ResourceData,
     type SkillBookData,
+    type ConsumableBeltData,
 } from '../components/character';
+import type { ProgressionData } from '../components/skill';
 
 /**
  * CharacterData (v2)
@@ -48,6 +52,8 @@ export interface CharacterData {
     inventory?: InventoryData;
     professions?: ProfessionsData;
     skillBook?: SkillBookData;
+    consumableBelt?: ConsumableBeltData;
+    progression?: ProgressionData;
 }
 
 function clampResource(r: ResourceData): ResourceData {
@@ -110,6 +116,8 @@ export class Character extends Entity {
         if (data.inventory) this.add(new InventoryComponent(data.inventory));
         if (data.professions) this.add(new ProfessionsComponent(data.professions));
         if (data.skillBook) this.add(new SkillBookComponent(data.skillBook));
+        if (data.consumableBelt) this.add(new ConsumableBeltComponent(data.consumableBelt));
+        if (data.progression) this.add(new ProgressionComponent(data.progression));
     }
 
     // Helper methods

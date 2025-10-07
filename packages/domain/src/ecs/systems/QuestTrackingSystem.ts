@@ -30,7 +30,7 @@ export class QuestTrackingSystem {
     /**
      * Handles the 'enemyDefeated' event to check for 'kill' objectives.
      */
-    private onEnemyDefeated(payload: { enemyId: string; characterId: number; }): void {
+    private onEnemyDefeated(payload: { enemyId: string; characterId: number; level: number; }): void {
         const character = this.world.getEntity(payload.characterId);
         if (!character) return;
 

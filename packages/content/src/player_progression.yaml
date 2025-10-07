@@ -1,0 +1,10 @@
+# The number of points (Strength, Dexterity, Intelligence) the player can allocate per level.
+core_stats_per_level: 3
+
+# Defines the total "stat budget" for items at a given level.
+# This is used by the ItemGenerationSystem to create level-appropriate gear.
+# A simple linear progression is a good starting point.
+# Formula: base + (per_level * (item_level - 1))
+gear_stat_budget:
+  base: 5      # A level 1 item has 5 total stat points (e.g., +5 STR, or +2 STR/+3 DEX).
+  per_level: 2 # Each additional level adds 2 points to the budget.

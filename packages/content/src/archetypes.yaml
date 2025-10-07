@@ -1,8 +1,32 @@
-- id: "ARCH-BRUTE"
+- id: "ARCH-BRUT"
   name: "Brute"
   aiProfile: "Aggressor"
   allocation: [0.6, 0.3, 0.1]
-- id: "ARCH-SCOUT"
-  name: "Scout"
+- id: "ARCH-SKIR"
+  name: "Skirmisher"
   aiProfile: "Aggressor"
   allocation: [0.3, 0.6, 0.1]
+- id: "ARCH-CAST"
+  name: "Caster"
+  aiProfile: "Aggressor" # Will likely change when spells are added
+  allocation: [0.1, 0.3, 0.6]
+- id: "ARCH-CONT"
+  name: "Controller"
+  aiProfile: "Healer" # Placeholder, will eventually use debuffs
+  allocation: [0.2, 0.4, 0.4]
+- id: "ARCH-SUPP"
+  name: "Support"
+  aiProfile: "Healer"
+  allocation: [0.1, 0.4, 0.5]
+- id: "ARCH-RANG"
+  name: "Ranged"
+  aiProfile: "Aggressor"
+  allocation: [0.2, 0.7, 0.1]
+- id: "ARCH-SUMM"
+  name: "Summoner"
+  aiProfile: "Healer" # Placeholder AI
+  allocation: [0.1, 0.3, 0.6]
+- id: "ARCH-SWAR"
+  name: "Swarm"
+  aiProfile: "Aggressor"
+  allocation: [0.4, 0.5, 0.1]

@@ -1,9 +1,9 @@
 import { Entity } from 'ecs-lib';
 import {
     SkillInfoComponent as JobInfoComponent, // Re-using for name/description
-    SkillInfoData as JobInfoData,
-    ProgressionComponent, ProgressionData,
-    SkillListComponent, SkillListData
+    type SkillInfoData as JobInfoData,
+    ProgressionComponent, type ProgressionData,
+    SkillListComponent, type SkillListData
 } from '../components/skill';
 
 // Blueprint for raw job data from YAML

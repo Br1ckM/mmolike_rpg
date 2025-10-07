@@ -1,4 +1,5 @@
 import { Component } from 'ecs-lib'
+import type { ProgressionData } from './skill';
 
 /* ---------- Identity & control ---------- */
 
@@ -85,11 +86,16 @@ export interface ProfessionsData {
     knownProfessions: string[];
 }
 
+export interface ConsumableBeltData {
+    itemIds: (string | null)[];
+}
+
 /* ---------- Component registrations ---------- */
 
 export const InfoComponent = Component.register<InfoData>();
 export const ControllableComponent = Component.register<ControllableData>();
 export const CoreStatsComponent = Component.register<CoreStatsData>();
+export const ProgressionComponent = Component.register<ProgressionData>();
 
 // After removing health/mana here:
 export const DerivedStatsComponent = Component.register<DerivedStatsData>();
@@ -99,6 +105,7 @@ export const JobsComponent = Component.register<JobsData>();
 export const InventoryComponent = Component.register<InventoryData>();
 export const ProfessionsComponent = Component.register<ProfessionsData>();
 export const SkillBookComponent = Component.register<SkillBookData>();
+export const ConsumableBeltComponent = Component.register<ConsumableBeltData>();
 
 // Resource components:
 export const HealthComponent = Component.register<HealthData>();

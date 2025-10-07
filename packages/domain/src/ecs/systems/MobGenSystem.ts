@@ -11,12 +11,12 @@ import {
 } from '../components/mob';
 import { AIProfileComponent } from '../components/combat';
 import { StatCalculationSystem } from './StatCalculationSystem';
-import { InfoComponent } from '../components/character';
+import { InfoComponent, ProgressionComponent } from '../components/character';
+import type { GameConfig } from '../../ContentService';
 
 interface MobTemplate {
     id: string;
     name: string;
-    level: number;
     familyId: string;
     tierId: MobTierData['id'];
     archIds: string[];
@@ -33,15 +33,18 @@ export class MobGenSystem {
         families: Map<string, MobFamilyData>;
         tiers: Map<string, MobTierData>;
         archetypes: Map<string, MobArchetypeData>;
+        config: GameConfig;
     };
+    private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
         this.world = world;
         this.eventBus = eventBus;
         this.content = loadedContent;
+        this.config = loadedContent.config;
     }
 
-    public generateMob(protoId: string): Character | null {
+    public generateMob(protoId: string, level: number): Character | null {
         // 1) Look up blueprints
         const mobTemplate = this.content.mobs.get(protoId);
         if (!mobTemplate) {
@@ -61,7 +64,7 @@ export class MobGenSystem {
         }
 
         // 2) Stat point budget
-        const statPointBudget = (mobTemplate.level * 10) * tier.statPointMultiplier;
+        const statPointBudget = (level * this.config.mob_generation.stat_points_per_level) * tier.statPointMultiplier;
 
         // 3) Allocation from archetypes
         let finalAllocation: [number, number, number] = [0, 0, 0];
@@ -106,6 +109,7 @@ export class MobGenSystem {
                 race: family.id,
                 avatarUrl: '',
             },
+            progression: { level, xp: 0 },
             controllable: { isPlayer: false },
             coreStats: finalStats,
 
@@ -159,8 +163,9 @@ export class MobGenSystem {
 
         const info = InfoComponent.oneFrom(mobEntity);
         if (info) {
-            console.log(`Generated Mob: ${info.data.name} (Lvl ${mobTemplate.level})`);
+            console.log(`Generated Mob: ${info.data.name} (Lvl ${level})`);
         }
         return mobEntity;
     }
 }
+

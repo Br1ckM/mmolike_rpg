@@ -1,0 +1,41 @@
+- id: "pool_bunnykin"
+  mobs:
+    - "bun-001"
+    - "bun-002"
+    - "bun-003"
+    - "bun-004"
+
+- id: "pool_boar"
+  mobs:
+    - "boa-001"
+    - "boa-002"
+
+- id: "pool_poacher"
+  mobs:
+    - "poa-001"
+    - "poa-002"
+    - "poa-003"
+    - "poa-004"
+
+- id: "pool_slimefolk"
+  mobs:
+    - "slm-001"
+    - "slm-002"
+    - "slm-003"
+    - "slm-004"
+    - "slm-005"
+
+- id: "pool_wolfkin"
+  mobs:
+    - "wlf-001"
+    - "wlf-002"
+    - "wlf-003"
+    - "wlf-004"
+    - "wlf-005"
+    - "wlf-006"
+    - "wlf-007"
+    - "wlf-008"
+    - "wlf-009"
+    - "wlf-010"
+    - "wlf-011"
+

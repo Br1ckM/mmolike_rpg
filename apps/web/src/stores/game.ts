@@ -29,16 +29,23 @@ interface CombatLogEvent {
     type: 'damage' | 'heal' | 'crit';
 }
 
+interface CombatResult {
+    winningTeamId: string;
+}
+
 
 export const useGameStore = defineStore('game', () => {
     const dialogue = ref<DialogueState | null>(null);
     const combat = ref<CombatState | null>(null);
+    const combatResult = ref<CombatResult | null>(null);
     const notifications = ref<{ message: string; type: string }[]>([]);
     const combatLog = ref<CombatLogEvent[]>([]);
     const notificationUnsubscribe = ref<(() => void) | null>(null);
     const dialogueUnsubscribe = ref<(() => void) | null>(null);
     const combatUnsubscribe = ref<(() => void) | null>(null);
+    const combatResultUnsubscribe = ref<(() => void) | null>(null);
     const activeService = ref<'Shop' | 'Trainer' | null>(null);
+    const playerLeveledUpUnsubscribe = ref<(() => void) | null>(null);
 
     async function initialize() {
         await App.isReady;
@@ -70,6 +77,21 @@ export const useGameStore = defineStore('game', () => {
 
         combatUnsubscribe.value = App.queries.subscribe<CombatState>('combatState', (newCombatState) => {
             combat.value = newCombatState;
+            if (newCombatState) {
+                // Reset result when new combat starts
+                combatResult.value = null;
+            }
+        });
+
+        combatResultUnsubscribe.value = App.queries.subscribe<CombatResult>('combatResult', (result) => {
+            combatResult.value = result;
+        });
+
+        playerLeveledUpUnsubscribe.value = App.queries.subscribe<{ newLevel: number }>('playerLeveledUp', ({ newLevel }) => {
+            notifications.value.push({
+                type: 'success',
+                message: `Congratulations! You have reached Level ${newLevel}!`,
+            });
         });
 
         notificationUnsubscribe.value = App.queries.subscribe<{ message: string, type: string }>('notification', (notification) => {
@@ -114,6 +136,12 @@ export const useGameStore = defineStore('game', () => {
         activeService.value = null;
     }
 
+    function clearCombatState() {
+        combat.value = null;
+        combatResult.value = null;
+        combatLog.value = [];
+    }
+
 
     return {
         dialogue,
@@ -121,9 +149,10 @@ export const useGameStore = defineStore('game', () => {
         notifications,
         combatLog,
         activeService,
+        combatResult,
         initialize,
         selectDialogueResponse,
-        clearActiveService
+        clearActiveService,
+        clearCombatState,
     };
 });
-

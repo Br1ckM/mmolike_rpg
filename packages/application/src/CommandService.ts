@@ -84,4 +84,8 @@ export class CommandService {
             actionType: 'MOVE_ROW',
         });
     }
+
+    public useItemInBelt(characterId: number, beltIndex: number, combatEntityId?: string): void {
+        this.domainEventBus.emit('useItemInBeltRequest', { characterId, beltIndex, combatEntityId });
+    }
 }

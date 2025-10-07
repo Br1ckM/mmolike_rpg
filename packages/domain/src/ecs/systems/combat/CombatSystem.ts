@@ -2,8 +2,9 @@ import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../../EventBus';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
-import { DerivedStatsComponent, HealthComponent } from '../../components/character';
+import { DerivedStatsComponent, HealthComponent, ProgressionComponent } from '../../components/character';
 import { SkillComponent, type SkillEffectData, type TargetType, type TargetPattern, type SkillCost } from '../../components/skill';
+import { type GameConfig } from '../../../ContentService';
 
 
 /**
@@ -15,12 +16,14 @@ export class CombatSystem {
     private eventBus: EventBus;
     private content: any;
     private contentIdToEntityIdMap: Map<string, number>;
+    private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any, contentIdToEntityIdMap: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
         this.content = loadedContent;
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
+        this.config = loadedContent.config;
 
         this.eventBus.on('combatStarted', this.onCombatStarted.bind(this));
         this.eventBus.on('actionTaken', this.onActionTaken.bind(this));
@@ -68,7 +71,7 @@ export class CombatSystem {
     private onActionTaken(payload: {
         combatEntityId: string;
         actorId: string;
-        actionType: 'SKILL' | 'MOVE_ROW';
+        actionType: 'SKILL' | 'MOVE_ROW' | 'ITEM';
         skillId?: string;
         targetId?: string;
     }): void {
@@ -79,6 +82,10 @@ export class CombatSystem {
         switch (payload.actionType) {
             case 'MOVE_ROW':
                 this.resolveMoveRow(payload.actorId);
+                break;
+            case 'ITEM':
+                // The effect was already applied by the ConsumableSystem. We just need to advance the turn.
+                console.log(`[CombatSystem] Acknowledging ITEM action for actor ${payload.actorId}.`);
                 break;
             case 'SKILL':
                 console.log(`[CombatSystem] Resolving SKILL: ${payload.skillId}`);
@@ -237,7 +244,7 @@ export class CombatSystem {
         const targetCombatant = CombatantComponent.oneFrom(target)!.data;
 
         const scalingStatValue = (actorStats as any)[effect.scalingStat as keyof typeof actorStats] || 0;
-        let damage = (scalingStatValue * 0.5) + effect.power - targetStats.defense;
+        let damage = (scalingStatValue * this.config.damage_formula.scaling_stat_multiplier) + (effect.power * this.config.damage_formula.power_multiplier) - targetStats.defense;
 
         const isCritical = (Math.random() * 100) <= actorStats.critChance;
         if (isCritical) {
@@ -271,7 +278,7 @@ export class CombatSystem {
 
         const actorStats = DerivedStatsComponent.oneFrom(actor)!.data;
         const scalingStatValue = (actorStats as any)[effect.scalingStat as keyof typeof actorStats] || 0;
-        const healAmount = (scalingStatValue * 0.5) + effect.power;
+        const healAmount = (scalingStatValue * this.config.damage_formula.scaling_stat_multiplier) + (effect.power * this.config.damage_formula.power_multiplier);
 
         const previousHealth = targetHealth.current;
         targetHealth.current = Math.min(targetHealth.max, targetHealth.current + healAmount);
@@ -343,7 +350,8 @@ export class CombatSystem {
             combat.combatants.forEach(id => {
                 const combatantEntity = this.world.getEntity(parseInt(id, 10))!;
                 if (CombatantComponent.oneFrom(combatantEntity)?.data.teamId === 'team2') {
-                    this.eventBus.emit('enemyDefeated', { enemyId: id, characterId: parseInt(playerId!, 10) });
+                    const level = ProgressionComponent.oneFrom(combatEntity)?.data.level ?? 1;
+                    this.eventBus.emit('enemyDefeated', { enemyId: id, characterId: parseInt(playerId!, 10), level });
                 }
             });
         }

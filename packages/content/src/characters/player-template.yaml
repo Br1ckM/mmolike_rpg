@@ -8,6 +8,10 @@ components:
   controllable:
     isPlayer: true
 
+  progression:
+    level: 1
+    xp: 0
+
   coreStats:
     strength: 10
     dexterity: 10
@@ -68,7 +72,15 @@ components:
     bagIds:
       - 'inventory_starting_satchel'
     walletId: 'wallet_player'
-    
+
+  consumableBelt:
+    itemIds:
+      - null
+      - null
+      - null
+      - null
+      - null
+      
   professions:
     knownProfessions:
       - 'prof_blacksmithing_novice'

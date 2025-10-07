@@ -13,6 +13,7 @@ import { ActiveEffectComponent } from '../components/combat';
 import { EffectDefinitionComponent } from '../components/effects';
 import { type MobArchetypeData, ActiveTraitsComponent } from '../components/mob';
 import { type TraitData } from '../components/traits';
+import { type GameConfig } from '../../ContentService';
 
 /** The keys we store in DerivedStats (no resource pools here) */
 type DerivedKeys =
@@ -29,12 +30,15 @@ export class StatCalculationSystem {
     private content: {
         effects: Map<string, any>;
         traits: Map<string, TraitData>;
+        config: GameConfig;
     };
+    private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
         this.world = world;
         this.eventBus = eventBus;
         this.content = loadedContent;
+        this.config = loadedContent.config;
 
         eventBus.on('characterEquipmentChanged', this.onCharacterChange.bind(this));
         eventBus.on('effectApplied', this.onCharacterChange.bind(this));
@@ -49,41 +53,42 @@ export class StatCalculationSystem {
 
     public update(entity: Entity, archetypes?: MobArchetypeData[]): void {
         const core = CoreStatsComponent.oneFrom(entity)?.data;
+
         if (!core) return;
 
-        // ---- Base calculations ----
+        // ---- Base calculations from config ----
         const derived: DerivedMap = {
-            attack: core.strength * 2,
-            magicAttack: core.intelligence * 2,
-            defense: core.dexterity * 1.5,
-            magicResist: core.intelligence * 1.5,
-            critChance: 5,
-            critDamage: 150,
-            dodge: core.dexterity * 0.5,
-            haste: 0,
-            accuracy: 80,
+            attack: core.strength * this.config.stat_scalings.attack_from_strength,
+            magicAttack: core.intelligence * this.config.stat_scalings.magic_attack_from_intelligence,
+            defense: core.dexterity * this.config.stat_scalings.defense_from_dexterity,
+            magicResist: core.intelligence * this.config.stat_scalings.magic_resist_from_intelligence,
+            critChance: this.config.base_stats.crit_chance,
+            critDamage: this.config.base_stats.crit_damage,
+            dodge: core.dexterity * this.config.stat_scalings.dodge_from_dexterity,
+            haste: this.config.base_stats.haste,
+            accuracy: this.config.base_stats.accuracy,
         };
 
         // Resource capacities (NOT stored in DerivedStats)
-        let healthCap = core.strength * 10;
-        let manaCap = core.intelligence * 5;
+        let healthCap = core.strength * this.config.stat_scalings.health_from_strength;
+        let manaCap = core.intelligence * this.config.stat_scalings.mana_from_intelligence;
 
         // Helpers to route stat modifications
         const applyFlat = (key: AnyStatKey, value: number) => {
             if (key === 'health') healthCap += value;
             else if (key === 'mana') manaCap += value;
-            else derived[key] += value;
+            else derived[key as DerivedKeys] += value;
         };
         const applyPercent = (key: AnyStatKey, value: number) => {
             if (key === 'health') healthCap *= value;         // archetype.percent assumed multiplicative (e.g., 1.10)
             else if (key === 'mana') manaCap *= value;
-            else derived[key] *= value;
+            else derived[key as DerivedKeys] *= value;
         };
         const applyPercentAdditive = (key: AnyStatKey, value: number) => {
             // effects/traits that give +X% typically arrive as 0.10; multiply by (1+value)
             if (key === 'health') healthCap *= (1 + value);
             else if (key === 'mana') manaCap *= (1 + value);
-            else derived[key] *= (1 + value);
+            else derived[key as DerivedKeys] *= (1 + value);
         };
 
         // ---- Archetype modifiers ----
@@ -187,8 +192,12 @@ export class StatCalculationSystem {
             else mana.current = Math.min(mana.current, mana.max);
         }
 
-        // ---- Persist derived stats (no health/mana) ----
+        // *** FIX: Remove the old component before adding the new one ***
+        const derivedStatsComp = DerivedStatsComponent.oneFrom(entity);
+        if (derivedStatsComp) {
+            entity.remove(derivedStatsComp);
+        }
         entity.add(new DerivedStatsComponent(derived));
-        console.log(`Stats recalculated for entity ${entity.id}`);
     }
 }
+

@@ -1,6 +1,7 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { Character } from '../entities/character';
+import { ProgressionComponent } from '../components/character';
 
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -22,7 +23,7 @@ export class LootResolutionSystem {
         eventBus.on('gatherResourceRequested', this.onGatherResource.bind(this));
     }
 
-    private onEnemyDefeated(payload: { enemyId: string; characterId: number; }): void {
+    private onEnemyDefeated(payload: { enemyId: string; characterId: number; level: number }): void {
         const lootTableData = this.content.lootTables.get(payload.enemyId);
         if (!lootTableData) return;
 
@@ -33,6 +34,7 @@ export class LootResolutionSystem {
                     this.eventBus.emit('generateItemRequest', {
                         baseItemId: entry.id,
                         characterId: payload.characterId,
+                        itemLevel: payload.level, // Pass the mob's level
                     });
                 }
                 // ... handle currency or static item drops here
@@ -41,6 +43,10 @@ export class LootResolutionSystem {
     }
 
     private onGatherResource(payload: { characterId: number; lootTableId: string }): void {
+        const character = this.world.getEntity(payload.characterId);
+        if (!character) return;
+
+        const playerLevel = ProgressionComponent.oneFrom(character)?.data.level || 1;
         const lootTableData = this.content.lootTables.get(payload.lootTableId);
         if (!lootTableData) {
             console.error(`Loot table "${payload.lootTableId}" not found.`);
@@ -57,6 +63,7 @@ export class LootResolutionSystem {
                         this.eventBus.emit('generateItemRequest', {
                             baseItemId: entry.id,
                             characterId: payload.characterId,
+                            itemLevel: playerLevel, // Item level matches player level for gathering
                         });
                     }
 

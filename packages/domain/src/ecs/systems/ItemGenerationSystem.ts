@@ -10,18 +10,12 @@ import {
     AffixesComponent,
     ItemInfoComponent
 } from '../components/item';
+import { type GameContent, type GameConfig } from '../../ContentService'; // <-- UPDATED IMPORT
 
 // A simple utility function for rolling random numbers in a range.
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-/**
- * A data structure to hold all the game content loaded from YAML files.
- * This would be loaded once when the application starts.
- */
-interface GameContent {
-    baseItems: Map<string, { components: ItemData }>;
-    affixes: Map<string, AffixData & { id: string, name: string, type: 'prefix' | 'suffix' }>;
-}
+// The local GameContent interface has been removed to avoid type conflicts.
 
 /**
  * Listens for `generateItemRequest` events and handles the logic
@@ -31,21 +25,33 @@ export class ItemGenerationSystem {
     private world: ECS;
     private content: GameContent;
     private eventBus: EventBus;
+    private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: GameContent) {
         this.world = world;
         this.content = loadedContent;
         this.eventBus = eventBus;
+        this.config = loadedContent.config;
 
-        // This system's only trigger is this specific event.
         eventBus.on('generateItemRequest', this.onGenerateItemRequest.bind(this));
     }
 
-    /**
-     * The core handler for creating a new item.
-     */
-    private onGenerateItemRequest(payload: { baseItemId: string; characterId: number; }): void {
-        const { baseItemId, characterId } = payload;
+    private rollForRarity(): ItemRarity {
+        const roll = Math.random();
+        let cumulativeChance = 0;
+        const rarities = Object.entries(this.config.rarity_chances).sort(([, a], [, b]) => a - b);
+
+        for (const [rarity, chance] of rarities) {
+            cumulativeChance += chance;
+            if (roll < cumulativeChance) {
+                return rarity as ItemRarity;
+            }
+        }
+        return 'Common'; // Fallback
+    }
+
+    private onGenerateItemRequest(payload: { baseItemId: string; characterId: number; itemLevel: number }): void {
+        const { baseItemId, characterId, itemLevel } = payload;
         const character = this.world.getEntity(characterId) as Character;
         const baseItemTemplate = this.content.baseItems.get(baseItemId);
 
@@ -54,63 +60,80 @@ export class ItemGenerationSystem {
             return;
         }
 
-        const { components: baseComponents } = baseItemTemplate;
+        const baseComponents: ItemData = JSON.parse(JSON.stringify(baseItemTemplate.components));
 
-        // --- Only apply affixes and rarity to 'equipment' type items ---
-        if (baseComponents.info.itemType !== 'equipment') {
-            // It's a reagent, consumable, etc. Just create the base item.
-
-            // Create a mutable copy of the components to avoid side effects
-            const newItemData = JSON.parse(JSON.stringify(baseComponents));
-
-            // If the item is stackable, initialize its current stack size to 1
-            if (newItemData.stackable) {
-                newItemData.stackable.current = 1;
+        if (baseComponents.info.itemType !== 'equipment' || !baseComponents.equipable) {
+            if (baseComponents.stackable) {
+                baseComponents.stackable.current = 1;
             }
-
-            const itemEntity = new Item(newItemData);
-            this.world.addEntity(itemEntity);
-            this.giveItemToCharacter(character, itemEntity);
-            return; // Stop execution here
+            const nonEquipItem = new Item(baseComponents);
+            this.world.addEntity(nonEquipItem);
+            this.giveItemToCharacter(character, nonEquipItem);
+            return;
         }
 
+        // 1. Roll for Rarity
+        const rarity = this.rollForRarity();
+        const affixRules = this.config.rarity_affixes[rarity.toLowerCase()];
+        const affixesToApply: (AffixData & { effects: { stat: string, value: number }[] })[] = [];
 
-        // --- Rarity and Affix Generation Logic (Now only runs for equipment) ---
-        const rarityRoll = Math.random();
-        let rarity: ItemRarity = 'Common';
-        const affixesToApply: AffixData[] = [];
+        // 2. Select Affixes based on Rarity Rules
+        if (affixRules) {
+            const prefixes = [...this.content.affixes.values()].filter(a => a.type === 'prefix');
+            const suffixes = [...this.content.affixes.values()].filter(a => a.type === 'suffix');
 
-        if (rarityRoll < 0.1) {
-            rarity = 'Rare';
-            const prefix = this.getRandomAffix('prefix');
-            const suffix = this.getRandomAffix('suffix');
-            if (prefix) affixesToApply.push(prefix);
-            if (suffix) affixesToApply.push(suffix);
-        } else if (rarityRoll < 0.4) {
-            rarity = 'Uncommon';
-            const affix = this.getRandomAffix(Math.random() < 0.5 ? 'prefix' : 'suffix');
-            if (affix) affixesToApply.push(affix);
+            const numPrefixes = Array.isArray(affixRules.prefixes) ? randomNumber(affixRules.prefixes[0], affixRules.prefixes[1]) : affixRules.prefixes;
+            const numSuffixes = Array.isArray(affixRules.suffixes) ? randomNumber(affixRules.suffixes[0], affixRules.suffixes[1]) : affixRules.suffixes;
+
+            for (let i = 0; i < numPrefixes && prefixes.length > 0; i++) {
+                const randIndex = Math.floor(Math.random() * prefixes.length);
+                affixesToApply.push(prefixes.splice(randIndex, 1)[0]);
+            }
+            for (let i = 0; i < numSuffixes && suffixes.length > 0; i++) {
+                const randIndex = Math.floor(Math.random() * suffixes.length);
+                affixesToApply.push(suffixes.splice(randIndex, 1)[0]);
+            }
         }
 
-        const newItemData: ItemData = {
-            ...baseComponents,
-            info: {
-                ...baseComponents.info,
-                name: this.generateItemName(baseComponents.info.name, affixesToApply),
-                rarity: rarity,
-            },
-            affixes: affixesToApply,
-        };
+        const newItemData: ItemData = { ...baseComponents, info: { ...baseComponents.info, rarity }, affixes: affixesToApply };
+
+        // 3. Calculate Power Budget
+        const { base, per_level } = this.content.config.player_progression.gear_stat_budget;
+        const targetBudget = base + (per_level * (itemLevel - 1));
+
+        let currentStatValue = 0;
+        if (newItemData.equipable) {
+            currentStatValue = Object.values(newItemData.equipable.baseStats).reduce((sum, val) => sum + val, 0);
+            for (const affix of affixesToApply) {
+                for (const effect of affix.effects) {
+                    currentStatValue += Math.abs(effect.value);
+                }
+            }
+        }
+
+        // 4. Scale Stats to Budget
+        const scalingFactor = targetBudget / Math.max(1, currentStatValue);
+        if (newItemData.equipable) {
+            for (const stat in newItemData.equipable.baseStats) {
+                newItemData.equipable.baseStats[stat] = Math.round(newItemData.equipable.baseStats[stat] * scalingFactor);
+            }
+            for (const affix of affixesToApply) {
+                for (const effect of affix.effects) {
+                    newItemData.equipable.baseStats[effect.stat] = (newItemData.equipable.baseStats[effect.stat] || 0) + Math.round(effect.value * scalingFactor);
+                }
+            }
+        }
+
+        newItemData.info.name = this.generateItemName(baseComponents.info.name, affixesToApply as any);
 
         const itemEntity = new Item(newItemData);
         this.world.addEntity(itemEntity);
 
-        console.log(`Generated item: ${newItemData.info.name}`);
-
+        console.log(`Generated Lvl ${itemLevel} [${rarity}] item: ${newItemData.info.name}`);
         this.giveItemToCharacter(character, itemEntity);
     }
 
-    private generateItemName(baseName: string, affixes: (AffixData & { name: string })[]): string {
+    private generateItemName(baseName: string, affixes: (AffixData & { name: string, type: 'prefix' | 'suffix' })[]): string {
         const prefix = affixes.find(a => a.type === 'prefix');
         const suffix = affixes.find(a => a.type === 'suffix');
 
@@ -121,12 +144,6 @@ export class ItemGenerationSystem {
         return name;
     }
 
-    private getRandomAffix(type: 'prefix' | 'suffix'): (AffixData & { name: string }) | null {
-        const allOfType = [...this.content.affixes.values()].filter(a => a.type === type);
-        if (allOfType.length === 0) return null;
-        return allOfType[Math.floor(Math.random() * allOfType.length)];
-    }
-
     private giveItemToCharacter(character: Character, item: Entity): void {
         this.eventBus.emit('addItemToInventory', {
             characterId: character.id,
@@ -134,4 +151,3 @@ export class ItemGenerationSystem {
         });
     }
 }
-

@@ -4,25 +4,35 @@ import Button from '@/volt/Button.vue';
 import CombatantCard from './CombatantCard.vue';
 import CombatBar from './CombatBar.vue';
 import CombatSkillList from './CombatSkillList.vue';
+import CombatItemBelt from './CombatItemBelt.vue';
+import CombatEndScreen from './CombatEndScreen.vue';
 import { useGameStore } from '@/stores/game';
+import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { App } from 'mmolike_rpg-application';
 
 const gameStore = useGameStore();
-const { combat, combatLog } = storeToRefs(gameStore);
+const playerStore = usePlayerStore();
+const { combat, combatLog, combatResult } = storeToRefs(gameStore);
+const { player } = storeToRefs(playerStore);
 
 // --- State Management ---
-const playerActionMode = ref<'idle' | 'selecting-skill' | 'targeting'>('idle');
+const playerActionMode = ref<'idle' | 'selecting-skill' | 'selecting-item' | 'targeting'>('idle');
 const isSelectingSkill = computed(() => playerActionMode.value === 'selecting-skill');
+const isSelectingItem = computed(() => playerActionMode.value === 'selecting-item');
 const isTargeting = computed(() => playerActionMode.value === 'targeting');
 
 const selectedTargets = ref<string[]>([]);
 const selectedSkillId = ref<string | null>(null);
+const selectedBeltIndex = ref<number | null>(null);
 
 const overlayTitle = computed(() => {
     if (playerActionMode.value === 'selecting-skill') {
         return 'Select a Skill';
+    }
+    if (playerActionMode.value === 'selecting-item') {
+        return 'Select an Item';
     }
     if (playerActionMode.value === 'targeting') {
         const skillName = activeCombatant.value?.SkillBookComponent.hydratedSkills.find((s: any) => s.id === selectedSkillId.value)?.name || 'action';
@@ -99,6 +109,9 @@ const handleAction = (actionId: string) => {
         case 'skills':
             playerActionMode.value = 'selecting-skill';
             break;
+        case 'item':
+            playerActionMode.value = 'selecting-item';
+            break;
         case 'defend':
             App.commands.defend(combat.value.combatEntityId, String(activeCombatant.value.id));
             break;
@@ -118,6 +131,12 @@ const onSkillSelected = (skill: any) => {
         playerActionMode.value = 'targeting';
         selectedTargets.value = [];
     }
+};
+
+const onItemInBeltSelected = ({ item, index }: { item: any; index: number }) => {
+    if (!player.value || !combat.value) return;
+    App.commands.useItemInBelt(player.value.id, index, combat.value.combatEntityId);
+    cancelSelection();
 };
 
 const handleSelectTarget = (targetId: string) => {
@@ -144,6 +163,7 @@ const cancelSelection = () => {
     playerActionMode.value = 'idle';
     selectedTargets.value = [];
     selectedSkillId.value = null;
+    selectedBeltIndex.value = null;
 };
 
 const doNothing = () => { };
@@ -160,7 +180,8 @@ const doNothing = () => { };
         <div v-if="combat"
             class="h-full flex flex-col items-center justify-center p-4 bg-gray-800 bg-opacity-50 flex-grow relative">
 
-            <!-- Overlays -->
+            <CombatEndScreen v-if="combatResult" :result="combatResult" @close="gameStore.clearCombatState()" />
+
             <div v-if="playerActionMode !== 'idle'"
                 class="absolute inset-0 bg-black/50 z-20 flex items-center justify-center pointer-events-none">
                 <div
@@ -171,12 +192,13 @@ const doNothing = () => { };
                         :skills="activeCombatant.SkillBookComponent.hydratedSkills" :caster="activeCombatant"
                         @select="onSkillSelected" />
 
+                    <CombatItemBelt v-if="isSelectingItem" @select-item="onItemInBeltSelected" />
+
                     <Button label="Cancel" severity="danger" @click="cancelSelection" class="mt-4 w-full" />
                 </div>
             </div>
 
             <div class="grid grid-cols-5 gap-4 w-full max-w-5xl h-full">
-                <!-- Player Side -->
                 <div class="col-span-2 grid grid-cols-2 grid-rows-4 gap-y-2">
                     <template v-for="(row, i) in playerGrid" :key="`player-row-${i}`">
                         <div class="flex items-center justify-center">
@@ -190,10 +212,8 @@ const doNothing = () => { };
                     </template>
                 </div>
 
-                <!-- Spacer -->
                 <div></div>
 
-                <!-- Enemy Side -->
                 <div class="col-span-2 grid grid-cols-2 grid-rows-4 gap-y-2">
                     <template v-for="(row, i) in enemyGrid" :key="`enemy-row-${i}`">
                         <div class="flex items-center justify-center">

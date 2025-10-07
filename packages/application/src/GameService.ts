@@ -14,6 +14,7 @@ import { type EffectDefinitionData } from '../../domain/src/ecs/components/effec
 import { Trait } from '../../domain/src/ecs/entities/trait';
 import { type TraitData } from '../../domain/src/ecs/components/traits';
 import { Job, type JobEntityData } from '../../domain/src/ecs/entities/job';
+import { ProgressionSystem } from '../../domain/src/ecs/systems/PlayerProgressionSystem';
 
 
 // Import all domain systems
@@ -60,6 +61,7 @@ import {
     SkillBookComponent,
     JobsComponent,
     ManaComponent,
+    ConsumableBeltComponent,
     type EquipmentSlot,
 
 } from '../../domain/src/ecs/components/character';
@@ -80,7 +82,7 @@ import {
 import { QuestStatusComponent, QuestComponent, QuestObjectiveComponent } from '../../domain/src/ecs/components/quest';
 import { LocationComponent } from '../../domain/src/ecs/components/world';
 import { DialogueComponent, VendorComponent, TrainerComponent } from '../../domain/src/ecs/components/npc'
-import { SkillInfoComponent, SkillComponent } from '../../domain/src/ecs/components/skill';
+import { SkillInfoComponent, SkillComponent, ProgressionComponent } from '../../domain/src/ecs/components/skill';
 
 
 // Helper to get all components from an entity using public accessors
@@ -108,6 +110,8 @@ const getEntityDTO = (entity: Entity | null) => {
     checkAndAddComponent(VendorComponent, 'VendorComponent');
     checkAndAddComponent(TrainerComponent, 'TrainerComponent');
     checkAndAddComponent(CombatantComponent, 'CombatantComponent');
+    checkAndAddComponent(ConsumableBeltComponent, 'ConsumableBeltComponent');
+    checkAndAddComponent(ProgressionComponent, 'ProgressionComponent');
 
     // Item Components
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
@@ -134,7 +138,7 @@ export class GameService {
     public eventBus: EventBus;
     public content: GameContent;
     public player: Character | null = null;
-    private systems: any[];
+    public systems: any[];
     private contentIdToEntityIdMap = new Map<string, number>();
 
     constructor(contentService: ContentService) {
@@ -173,7 +177,8 @@ export class GameService {
         const questLogSystem = new QuestLogSystem(this.world, this.eventBus, this.contentIdToEntityIdMap);
         const mobGenSystem = new MobGenSystem(this.world, this.eventBus, this.content);
         const scheduleSystem = new ScheduleSystem(this.eventBus, worldState);
-        const interactionSystem = new InteractionSystem(this.world, this.eventBus)
+        const interactionSystem = new InteractionSystem(this.world, this.eventBus);
+        const progressionSystem = new ProgressionSystem(this.world, this.eventBus, this.content);
 
         this.systems.push(
             statCalculationSystem,
@@ -181,6 +186,7 @@ export class GameService {
             mobGenSystem,
             scheduleSystem,
             interactionSystem,
+            progressionSystem,
             new ItemGenerationSystem(this.world, this.eventBus, this.content),
             new InventorySystem(this.world, this.eventBus),
             new EquipmentSystem(this.world, this.eventBus),
@@ -302,6 +308,10 @@ export class GameService {
 
         // --- Player Creation ---
         const playerTemplate = this.content.mobs.get('PLAYER_TEMPLATE');
+
+        // *** NEW DEBUG LOG ***
+        console.log('[GameService.startGame] Retrieved player template from content.mobs map:', JSON.parse(JSON.stringify(playerTemplate)));
+
         if (!playerTemplate) {
             throw new Error('Player template could not be found in game content.');
         }
@@ -417,7 +427,9 @@ export class GameService {
             professions: ProfessionsComponent.oneFrom(this.player)?.data,
             skillBook: SkillBookComponent.oneFrom(this.player)?.data,
             jobs: JobsComponent.oneFrom(this.player)?.data,
+            consumableBelt: ConsumableBeltComponent.oneFrom(this.player)?.data,
             quests: hydratedQuests,
+            progression: ProgressionComponent.oneFrom(this.player)?.data,
         };
     }
 

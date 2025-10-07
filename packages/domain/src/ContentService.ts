@@ -15,6 +15,22 @@ interface ContentTemplate<T> {
     components: T;
 }
 
+export interface RarityAffixConfig {
+    prefixes: number | [number, number];
+    suffixes: number | [number, number];
+    total_max: number;
+}
+
+export interface GameConfig {
+    stat_scalings: { [key: string]: number };
+    base_stats: { [key: string]: number };
+    damage_formula: { [key: string]: number };
+    mob_generation: { [key: string]: number };
+    rarity_chances: { [key: string]: number };
+    rarity_affixes: { [key: string]: RarityAffixConfig };
+    player_progression: PlayerProgressionConfig;
+}
+
 // This interface now correctly defines the shape of the parsed content maps.
 export interface GameContent {
     mobs: Map<string, any>;
@@ -33,11 +49,21 @@ export interface GameContent {
     skills: Map<string, ContentTemplate<SkillEntityData>>;
     effects: Map<string, ContentTemplate<EffectDefinitionData>>;
     jobs: Map<string, ContentTemplate<JobEntityData>>;
+    spawnPools: Map<string, any>;
+    config: GameConfig;
 }
 
-// The raw input from YAML imports will be an object where each value is an array.
+// The raw input from YAML imports will be an object where each value is an array OR an object for config.
 export interface RawGameContent {
-    [key: string]: any[];
+    [key: string]: any[] | any;
+}
+
+export interface PlayerProgressionConfig {
+    core_stats_per_level: number;
+    gear_stat_budget: {
+        base: number;
+        per_level: number;
+    };
 }
 
 export class ContentService implements GameContent {
@@ -57,6 +83,8 @@ export class ContentService implements GameContent {
     public skills!: Map<string, ContentTemplate<SkillEntityData>>;
     public effects!: Map<string, ContentTemplate<EffectDefinitionData>>;
     public jobs!: Map<string, ContentTemplate<JobEntityData>>;
+    public spawnPools!: Map<string, any>;
+    public config!: GameConfig;
 
     constructor(rawContent: RawGameContent) {
         this.loadAllContent(rawContent);
@@ -64,10 +92,12 @@ export class ContentService implements GameContent {
     }
 
     private loadAllContent(rawContent: RawGameContent): void {
-        for (const [key, itemArray] of Object.entries(rawContent)) {
-            if (Array.isArray(itemArray)) {
+        for (const [key, contentData] of Object.entries(rawContent)) {
+            if (key === 'config') {
+                this.config = contentData as GameConfig;
+            } else if (Array.isArray(contentData)) {
                 // Convert each array into a Map and assign it to the correct property.
-                (this as any)[key] = new Map(itemArray.map(item => [item.id, item]));
+                (this as any)[key] = new Map(contentData.map(item => [item.id, item]));
             }
         }
     }
@@ -78,3 +108,4 @@ export class ContentService implements GameContent {
         }
     }
 }
+

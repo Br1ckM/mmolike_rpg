@@ -1,22 +1,289 @@
 # packages/content/src/characters/mobs.yaml
 - id: "mob_wolf"
   name: "Wolf"
-  level: 2
   familyId: "FAM-CANINE"
   tierId: "Standard"
-  archIds: ["ARCH-BRUTE"]
+  archIds: ["ARCH-BRUT"]
   skills: []
+
 - id: "goblin_scout"
   name: "Goblin Scout"
-  level: 1
   familyId: "FAM-GOBLIN"
   tierId: "Fodder"
-  archIds: ["ARCH-SCOUT"]
+  archIds: ["ARCH-SKIR"]
   skills: []
+
 - id: "hopper"
   name: "Hopper"
-  level: 1
   familyId: "FAM-PEST"
   tierId: "Fodder"
-  archIds: ["ARCH-SCOUT"]
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "mob_boar"
+  name: "Wild Boar"
+  familyId: "FAM-BEAST"
+  tierId: "Standard"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "bun-001"
+  name: "Bunnykin Raider"
+  familyId: "FAM-BUN"
+  tierId: "Fodder"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "bun-002"
+  name: "Bunnykin Trickster"
+  familyId: "FAM-BUN"
+  tierId: "Standard"
+  archIds: ["ARCH-CONT"]
+  skills: []
+
+- id: "bun-003"
+  name: "Bunnykin Matron"
+  familyId: "FAM-BUN"
+  tierId: "Standard"
+  archIds: ["ARCH-SUPP"]
+  skills: []
+
+- id: "bun-004"
+  name: "Bunnykin Burrower"
+  familyId: "FAM-BUN"
+  tierId: "Standard"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "boa-001"
+  name: "Timberbrook Piglet"
+  familyId: "FAM-BOA"
+  tierId: "Fodder"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "boa-002"
+  name: "Timberbrook Boar"
+  familyId: "FAM-BOA"
+  tierId: "Standard"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "poa-001"
+  name: "Poacher Scout"
+  familyId: "FAM-POA"
+  tierId: "Standard"
+  archIds: ["ARCH-RANG"]
+  skills: []
+
+- id: "poa-002"
+  name: "Poacher Skirmisher"
+  familyId: "FAM-POA"
+  tierId: "Standard"
+  archIds: ["ARCH-RANG"]
+  skills: []
+
+- id: "poa-003"
+  name: "Poacher Houndmaster"
+  familyId: "FAM-POA"
+  tierId: "Standard"
+  archIds: ["ARCH-SUMM"]
+  skills: []
+
+- id: "poa-004"
+  name: "Poacher Hound-Dog"
+  familyId: "FAM-POA"
+  tierId: "Fodder"
+  archIds: ["ARCH-SWAR"]
+  skills: []
+
+- id: "slm-001"
+  name: "Slimefolk Dribbler"
+  familyId: "FAM-SLM"
+  tierId: "Fodder"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "slm-002"
+  name: "Slimefolk Engulfer"
+  familyId: "FAM-SLM"
+  tierId: "Standard"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "slm-003"
+  name: "Slimefolk Splitter"
+  familyId: "FAM-SLM"
+  tierId: "Standard"
+  archIds: ["ARCH-SWAR"]
+  skills: []
+
+- id: "slm-004"
+  name: "Slimefolk Mimicform"
+  familyId: "FAM-SLM"
+  tierId: "Standard"
+  archIds: ["ARCH-CONT"]
+  skills: []
+
+- id: "slm-005"
+  name: "Slimefolk Cultivator"
+  familyId: "FAM-SLM"
+  tierId: "Standard"
+  archIds: ["ARCH-SUPP"]
+  skills: []
+
+- id: "wlf-001"
+  name: "Wolfkin Cub"
+  familyId: "FAM-WLF"
+  tierId: "Fodder"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "wlf-002"
+  name: "Wolfkin Scout"
+  familyId: "FAM-WLF"
+  tierId: "Fodder"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "wlf-003"
+  name: "Wolfkin Huntress"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-RANG"]
+  skills: []
+
+- id: "wlf-004"
+  name: "Wolfkin Brute"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "wlf-005"
+  name: "Wolfkin Skirmisher"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+- id: "wlf-006"
+  name: "Wolfkin Packcaller"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-SUMM"]
+  skills: []
+
+- id: "wlf-007"
+  name: "Wolfkin Howlsinger"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-SUPP"]
+  skills: []
+
+- id: "wlf-008"
+  name: "Wolfkin Ritual Fang"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-CAST"]
+  skills: []
+
+- id: "wlf-009"
+  name: "Wolfkin Bonetamer"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-SUMM"]
+  skills: []
+
+- id: "wlf-010"
+  name: "Wolfkin Ashfang"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-CAST"]
+  skills: []
+
+- id: "wlf-011"
+  name: "Wolfkin Frostfang"
+  familyId: "FAM-WLF"
+  tierId: "Standard"
+  archIds: ["ARCH-SKIR"]
+  skills: []
+
+# Elite Tier
+- id: "bun-700"
+  name: "Bunnykin Trickster Leader"
+  familyId: "FAM-BUN"
+  tierId: "Elite"
+  archIds: ["ARCH-CONT"]
+  skills: []
+
+- id: "boa-700"
+  name: "Rutting Boar"
+  familyId: "FAM-BOA"
+  tierId: "Elite"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "poa-700"
+  name: "Poacher Captain"
+  familyId: "FAM-POA"
+  tierId: "Elite"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "wlf-700"
+  name: "Wolfkin Bone-Seer"
+  familyId: "FAM-WLF"
+  tierId: "Elite"
+  archIds: ["ARCH-CAST"]
+  skills: []
+
+- id: "wlf-701"
+  name: "Wolfkin Denmother"
+  familyId: "FAM-WLF"
+  tierId: "Elite"
+  archIds: ["ARCH-SUMM"]
+  skills: []
+
+- id: "wlf-702"
+  name: "Wolfkin Champion"
+  familyId: "FAM-WLF"
+  tierId: "Elite"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+- id: "wlf-703"
+  name: "Wolfkin Alpha-Guard"
+  familyId: "FAM-WLF"
+  tierId: "Elite"
+  archIds: ["ARCH-BRUT"]
+  skills: []
+
+# Boss Tier
+- id: "wlf-900"
+  name: "Wolfkin Matriarch"
+  familyId: "FAM-WLF"
+  tierId: "Boss"
+  archIds: ["ARCH-SUMM", "ARCH-BRUT", "ARCH-CONT"]
+  skills: []
+
+- id: "bun-900"
+  name: "The Burrow Queen"
+  familyId: "FAM-BUN"
+  tierId: "Boss"
+  archIds: ["ARCH-BRUT", "ARCH-CAST"]
+  skills: []
+
+- id: "slm-900"
+  name: "Slimefold Idol"
+  familyId: "FAM-SLM"
+  tierId: "Boss"
+  archIds: ["ARCH-CONT"]
+  skills: []
+
+- id: "wlf-901"
+  name: "Wolfkin Dreadhowler"
+  familyId: "FAM-WLF"
+  tierId: "Boss"
+  archIds: ["ARCH-CAST", "ARCH-SKIR"]
   skills: []
