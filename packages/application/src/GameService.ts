@@ -37,6 +37,7 @@ import { TraitSystem } from '../../domain/src/ecs/systems/TraitSystem';
 import { WorldClockSystem } from '../../domain/src/ecs/systems/WorldClockSystem';
 import { TravelSystem } from '../../domain/src/ecs/systems/TravelSystem';
 import { ScheduleSystem } from '../../domain/src/ecs/systems/ScheduleSystem';
+import { VoreSystem } from '../../domain/src/ecs/systems/VoreSystem';
 import { CombatInitiationSystem } from '../../domain/src/ecs/systems/combat/CombatInitiationSystem';
 import { CombatSystem } from '../../domain/src/ecs/systems/combat/CombatSystem';
 import { AISystem } from '../../domain/src/ecs/systems/combat/AISystem';
@@ -62,6 +63,11 @@ import {
     JobsComponent,
     ManaComponent,
     ConsumableBeltComponent,
+    AppearanceComponent,
+    VoreRoleComponent,
+    VoreComponent,
+    type AppearanceAttribute,
+    type VoreRole,
     type EquipmentSlot,
 
 } from '../../domain/src/ecs/components/character';
@@ -112,6 +118,9 @@ const getEntityDTO = (entity: Entity | null) => {
     checkAndAddComponent(CombatantComponent, 'CombatantComponent');
     checkAndAddComponent(ConsumableBeltComponent, 'ConsumableBeltComponent');
     checkAndAddComponent(ProgressionComponent, 'ProgressionComponent');
+    checkAndAddComponent(AppearanceComponent, 'AppearanceComponent');
+    checkAndAddComponent(VoreRoleComponent, 'VoreRoleComponent');
+    checkAndAddComponent(VoreComponent, 'VoreComponent');
 
     // Item Components
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
@@ -140,6 +149,10 @@ export class GameService {
     public player: Character | null = null;
     public systems: any[];
     private contentIdToEntityIdMap = new Map<string, number>();
+    public settings = {
+        showNsfwContent: false,
+        showVoreContent: false, // <-- ADDED
+    };
 
     constructor(contentService: ContentService) {
         this.world = new ECS();
@@ -179,6 +192,7 @@ export class GameService {
         const scheduleSystem = new ScheduleSystem(this.eventBus, worldState);
         const interactionSystem = new InteractionSystem(this.world, this.eventBus);
         const progressionSystem = new ProgressionSystem(this.world, this.eventBus, this.content);
+        const voreSystem = new VoreSystem(this.world, this.eventBus);
 
         this.systems.push(
             statCalculationSystem,
@@ -187,6 +201,7 @@ export class GameService {
             scheduleSystem,
             interactionSystem,
             progressionSystem,
+            voreSystem,
             new ItemGenerationSystem(this.world, this.eventBus, this.content),
             new InventorySystem(this.world, this.eventBus),
             new EquipmentSystem(this.world, this.eventBus),
@@ -361,106 +376,101 @@ export class GameService {
     public getPlayerState(): any {
         if (!this.player) return null;
 
-        const inventoryComponent = InventoryComponent.oneFrom(this.player)?.data;
-        let hydratedInventory = null;
+        // Start with a fresh DTO of all raw component data
+        const playerDTO = getEntityDTO(this.player) as any;
+        if (!playerDTO) return null;
 
+        // Hydrate Inventory
+        const inventoryComponent = playerDTO.InventoryComponent;
         if (inventoryComponent) {
-            // Get wallet data
             const walletEntity = this.world.getEntity(parseInt(inventoryComponent.walletId, 10));
-            const walletData = CurrencyComponent.oneFrom(walletEntity!)?.data;
-
-            // Get bags and their items
-            const bagsData = inventoryComponent.bagIds.map(bagId => {
+            const bagsData = inventoryComponent.bagIds.map((bagId: string) => {
                 const bagEntity = this.world.getEntity(parseInt(bagId, 10));
                 if (!bagEntity) return null;
+                const bagDTO = getEntityDTO(bagEntity) as any;
+                if (bagDTO && bagDTO.SlotsComponent) {
+                    bagDTO.items = bagDTO.SlotsComponent.items.map((itemId: string | null) =>
+                        itemId ? getEntityDTO(this.world.getEntity(parseInt(itemId, 10)) || null) : null
+                    );
+                }
+                return bagDTO;
+            }).filter((b: any) => b !== null);
 
-                const bagSlots = SlotsComponent.oneFrom(bagEntity)?.data;
-                const items = bagSlots
-                    ? bagSlots.items.map(itemId => {
-                        if (!itemId) return null;
-                        const itemEntity = this.world.getEntity(parseInt(itemId, 10));
-                        return getEntityDTO(itemEntity ?? null); // Get all components for the item
-                    })
-                    : [];
-
-                return {
-                    ...getEntityDTO(bagEntity),
-                    items, // Add the hydrated items array
-                };
-            }).filter(b => b !== null);
-
-            hydratedInventory = {
-                wallet: walletData,
+            playerDTO.inventory = {
+                wallet: getEntityDTO(walletEntity || null)?.CurrencyComponent,
                 bags: bagsData,
             };
+            delete playerDTO.InventoryComponent;
         }
 
-        const hydratedQuests = QuestStatusComponent.allFrom(this.player).map(statusComponent => {
-            const questId = this.contentIdToEntityIdMap.get(statusComponent.data.questId);
-            if (!questId) return null;
-
-            const questEntity = this.world.getEntity(questId);
+        // Hydrate Quests
+        const questStatusComponents = QuestStatusComponent.allFrom(this.player);
+        playerDTO.quests = questStatusComponents.map(statusComponent => {
+            const questEntityId = this.contentIdToEntityIdMap.get(statusComponent.data.questId);
+            if (!questEntityId) return null;
+            const questEntity = this.world.getEntity(questEntityId);
             if (!questEntity) return null;
-
-            const questInfo = QuestComponent.oneFrom(questEntity)?.data;
-            const questObjectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;
-
             return {
-                ...statusComponent.data, // Contains status and progress
-                info: questInfo,         // Contains name, description
-                objectives: questObjectives, // Contains objective details
+                ...statusComponent.data,
+                info: QuestComponent.oneFrom(questEntity)?.data,
+                objectives: QuestObjectiveComponent.oneFrom(questEntity)?.data,
             };
         }).filter(q => q !== null);
 
-        const skillBookComponent = SkillBookComponent.oneFrom(this.player)?.data;
-        let hydratedSkillBook = null;
-
+        // Hydrate Skills
+        const skillBookComponent = playerDTO.SkillBookComponent;
         if (skillBookComponent) {
-            const hydratedSkills = skillBookComponent.knownSkills.map(skillId => {
+            const hydratedSkills = skillBookComponent.knownSkills.map((skillId: string) => {
                 const numericSkillId = this.contentIdToEntityIdMap.get(skillId);
                 const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : undefined;
-
-                if (!skillEntity) {
-                    return { id: skillId, name: 'Unknown Skill', type: 'unknown', description: '', icon: 'pi-question', rank: 1 };
-                }
-
+                if (!skillEntity) return null;
                 const info = SkillInfoComponent.oneFrom(skillEntity)?.data;
                 const skill = SkillComponent.oneFrom(skillEntity)?.data;
                 const progression = ProgressionComponent.oneFrom(skillEntity)?.data;
-
                 return {
                     id: skillId,
                     name: info?.name || 'Unknown',
                     description: info?.description || '',
                     type: skill?.type || 'unknown',
-                    icon: `pi ${info?.iconName || 'pi-question'}`,
+                    icon: `pi ${info?.iconName ? `pi-${info.iconName.toLowerCase()}` : 'pi-question'}`,
                     rank: progression?.level || 1,
                 };
-            });
-            hydratedSkillBook = {
-                knownSkills: hydratedSkills
-            };
+            }).filter((s: any) => s !== null);
+            playerDTO.skillBook = { knownSkills: hydratedSkills };
         }
 
-        return {
-            id: this.player.id,
-            name: this.player.name,
-            isPlayer: this.player.isPlayer(),
-            info: InfoComponent.oneFrom(this.player)?.data,
-            controllable: ControllableComponent.oneFrom(this.player)?.data,
-            coreStats: CoreStatsComponent.oneFrom(this.player)?.data,
-            derivedStats: DerivedStatsComponent.oneFrom(this.player)?.data,
-            health: HealthComponent.oneFrom(this.player)?.data,
-            mana: ManaComponent.oneFrom(this.player)?.data,
-            equipment: EquipmentComponent.oneFrom(this.player)?.data,
-            inventory: hydratedInventory,
-            professions: ProfessionsComponent.oneFrom(this.player)?.data,
-            skillBook: hydratedSkillBook,
-            jobs: JobsComponent.oneFrom(this.player)?.data,
-            consumableBelt: ConsumableBeltComponent.oneFrom(this.player)?.data,
-            quests: hydratedQuests,
-            progression: ProgressionComponent.oneFrom(this.player)?.data,
-        };
+        // --- START NEW VORE HYDRATION ---
+        const voreComponent = playerDTO.VoreComponent;
+        if (voreComponent) {
+            const allContents: any[] = [];
+            for (const [voreType, stomach] of Object.entries(voreComponent as any)) {
+                const s = stomach as { contents: any[] };
+                s.contents.forEach((prey: any) => {
+                    allContents.push({
+                        name: prey.name,
+                        digestionTimer: prey.digestionTimer,
+                        voreType: voreType.charAt(0).toUpperCase() + voreType.slice(1) // Capitalize (e.g., "oral" -> "Oral")
+                    });
+                });
+            }
+            playerDTO.vore = { contents: allContents };
+            delete playerDTO.VoreComponent;
+        }
+        // --- END NEW VORE HYDRATION ---
+
+
+        // Filter Appearance Data based on settings
+        if (playerDTO.AppearanceComponent) {
+            playerDTO.AppearanceComponent.attributes = playerDTO.AppearanceComponent.attributes.filter(
+                (attr: AppearanceAttribute) => {
+                    if (attr.isExtreme) return this.settings.showNsfwContent && this.settings.showVoreContent;
+                    if (attr.isSensitive) return this.settings.showNsfwContent;
+                    return true;
+                }
+            );
+        }
+
+        return playerDTO;
     }
 
     public getHubState(): any {
@@ -519,14 +529,10 @@ export class GameService {
 
             if (combatantDTO && combatantDTO.SkillBookComponent) {
                 const hydratedSkills = combatantDTO.SkillBookComponent.knownSkills.map((skillId: any) => {
-                    // --- FIX START ---
-                    // Add a type check to handle cases where an object might have slipped through.
+
                     if (typeof skillId !== 'string') {
-                        // If it's not a string, it's likely already a hydrated object from a previous pass.
-                        // We can just return it as-is.
                         return skillId;
                     }
-                    // --- FIX END ---
 
                     const numericSkillId = this.contentIdToEntityIdMap.get(skillId);
                     const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : undefined;

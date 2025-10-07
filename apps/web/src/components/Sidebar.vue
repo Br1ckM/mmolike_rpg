@@ -16,6 +16,12 @@ const bottomNavLinks = [
   { name: 'About / FAQ', path: '/about' },
   { name: 'Settings', path: '/settings' },
 ];
+
+// This will only be true in development builds
+const isDev = import.meta.env.DEV;
+if (isDev) {
+  bottomNavLinks.unshift({ name: 'Admin Panel', path: '/admin' });
+}
 </script>
 
 <template>

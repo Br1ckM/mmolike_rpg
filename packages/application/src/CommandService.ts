@@ -1,4 +1,5 @@
 import { EventBus } from '../../domain/src/ecs/EventBus';
+import { type VoreRole } from '../../domain/src/ecs/components/character';
 
 /**
  * Provides methods for the Presentation Layer to issue player commands.
@@ -87,5 +88,23 @@ export class CommandService {
 
     public useItemInBelt(characterId: number, beltIndex: number, combatEntityId?: string): void {
         this.domainEventBus.emit('useItemInBeltRequest', { characterId, beltIndex, combatEntityId });
+    }
+
+    // --- Content Filtering & Vore Commands ---
+
+    public updateContentFilter(showNsfwContent: boolean, showVoreContent: boolean): void {
+        this.domainEventBus.emit('updateContentFilter', { showNsfwContent, showVoreContent });
+    }
+
+    public setPlayerVoreRole(characterId: number, newRole: VoreRole): void {
+        this.domainEventBus.emit('setPlayerVoreRole', { characterId, newRole });
+    }
+
+    public regurgitate(predatorId: number): void {
+        this.domainEventBus.emit('regurgitateRequest', { predatorId });
+    }
+    // --- NEW DEV COMMAND ---
+    public dev_addPreyToStomach(playerId: number, preyData: any): void {
+        this.domainEventBus.emit('dev_addPreyToStomach', { playerId, preyData });
     }
 }

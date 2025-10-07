@@ -92,3 +92,27 @@
       type: "active"
       effects:
         - { type: "ApplyEffect", target: "Self", effectId: "effect_defending", power: 0, scalingStat: "attack", targeting: { pattern: "SINGLE" } }
+
+- id: "skill_devour"
+  components:
+    info:
+      name: "Devour"
+      description: "Attempt to swallow a weakened foe whole."
+      iconName: "heart-fill"
+    skill:
+      type: "active"
+      costs:
+        - { stat: "mana", amount: 25 }
+      effects:
+        - { type: "Damage", target: "Enemy", power: 0, scalingStat: "attack", targeting: { pattern: "SINGLE" } }
+
+- id: "skill_regurgitate"
+  components:
+    info:
+      name: "Regurgitate"
+      description: "Release a creature from your stomach."
+      iconName: "undo"
+    skill:
+      type: "active"
+      effects:
+        - { type: "Heal", target: "Self", power: 0, scalingStat: "magicAttack", targeting: { pattern: "SINGLE" } }

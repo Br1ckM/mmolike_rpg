@@ -5,13 +5,15 @@ import { onMounted } from 'vue';
 
 import { usePlayerStore } from '@/stores/player'
 import { useGameStore } from '@/stores/game';
+import { useSettingsStore } from '@/stores/settings';
 
 onMounted(() => {
-    const playerStore = usePlayerStore();
-    const gameStore = useGameStore();
+  const playerStore = usePlayerStore();
+  const gameStore = useGameStore();
+  const settingsStore = useSettingsStore(); // Initialize the settings store
 
-    playerStore.initialize();
-    gameStore.initialize();
+  playerStore.initialize();
+  gameStore.initialize();
 })
 </script>
 

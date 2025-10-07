@@ -46,11 +46,13 @@ components:
         skills:
           - 'basic_attack'
           - 'skill_defend'
-
+          
   skillBook:
     knownSkills:
       - 'basic_attack'
       - 'skill_defend'
+      - 'skill_devour' # Vore Skill
+      - 'skill_regurgitate' # Release Skill
   
   equipment:
     helm: null
@@ -85,3 +87,45 @@ components:
     knownProfessions:
       - 'prof_blacksmithing_novice'
       - 'prof_alchemy_novice'
+      
+  appearance:
+    attributes:
+      - label: 'Bust Size'
+        name: 'bustSize'
+        value: 'DD'
+        unit: ''
+        isSensitive: true
+        isExtreme: false
+      - label: 'Prey Capacity'
+        name: 'preyCapacity'
+        value: 120
+        unit: 'lbs'
+        isSensitive: false
+        isExtreme: false
+      - label: 'Cock Size'
+        name: 'cockSize'
+        value: 12
+        unit: 'inches'
+        isSensitive: true
+        isExtreme: true
+      
+  vorerole:
+    role: 'Neither'
+    
+  vore:
+    oral:
+      capacity: 10
+      digestionRate: 1
+      contents: []
+    anal:
+      capacity: 5
+      digestionRate: 0.8
+      contents: []
+    cock:
+      capacity: 8
+      digestionRate: 0.5
+      contents: []
+    breast:
+      capacity: 6
+      digestionRate: 0.6
+      contents: []

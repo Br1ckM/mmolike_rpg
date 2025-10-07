@@ -6,6 +6,7 @@ import CombatBar from './CombatBar.vue';
 import CombatSkillList from './CombatSkillList.vue';
 import CombatItemBelt from './CombatItemBelt.vue';
 import CombatEndScreen from './CombatEndScreen.vue';
+import CombatVoreMenu from './CombatVoreMenu.vue'; // <-- NEW IMPORT
 import { useGameStore } from '@/stores/game';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
@@ -18,9 +19,10 @@ const { combat, combatLog, combatResult } = storeToRefs(gameStore);
 const { player } = storeToRefs(playerStore);
 
 // --- State Management ---
-const playerActionMode = ref<'idle' | 'selecting-skill' | 'selecting-item' | 'targeting'>('idle');
+const playerActionMode = ref<'idle' | 'selecting-skill' | 'selecting-item' | 'targeting' | 'vore-menu'>('idle'); // <-- ADD 'vore-menu'
 const isSelectingSkill = computed(() => playerActionMode.value === 'selecting-skill');
 const isSelectingItem = computed(() => playerActionMode.value === 'selecting-item');
+const isVoreMenuOpen = computed(() => playerActionMode.value === 'vore-menu'); // <-- NEW
 const isTargeting = computed(() => playerActionMode.value === 'targeting');
 
 const selectedTargets = ref<string[]>([]);
@@ -33,6 +35,9 @@ const overlayTitle = computed(() => {
     }
     if (playerActionMode.value === 'selecting-item') {
         return 'Select an Item';
+    }
+    if (playerActionMode.value === 'vore-menu') {
+        return 'Vore Actions'; // <-- NEW TITLE
     }
     if (playerActionMode.value === 'targeting') {
         const skillName = activeCombatant.value?.SkillBookComponent.hydratedSkills.find((s: any) => s.id === selectedSkillId.value)?.name || 'action';
@@ -61,7 +66,7 @@ const isPlayerTurn = computed(() => {
 });
 
 
-// --- Grid Logic ---
+// --- Grid Logic (Unchanged) ---
 const TEAM_SIZE = 4;
 const playerGrid = computed(() => {
     const grid: { front: any; back: any }[] = Array(TEAM_SIZE).fill(null).map(() => ({ front: null, back: null }));
@@ -112,6 +117,9 @@ const handleAction = (actionId: string) => {
         case 'item':
             playerActionMode.value = 'selecting-item';
             break;
+        case 'vore-menu': // <-- NEW CASE
+            playerActionMode.value = 'vore-menu';
+            break;
         case 'defend':
             App.commands.defend(combat.value.combatEntityId, String(activeCombatant.value.id));
             break;
@@ -121,17 +129,41 @@ const handleAction = (actionId: string) => {
     }
 };
 
+// This function handles selection from the Vore Menu OR the Skill List
 const onSkillSelected = (skill: any) => {
     selectedSkillId.value = skill.id;
 
-    if (skill.target === 'Self') {
-        selectedTargets.value = [String(activeCombatant.value.id)];
-        confirmAction();
+    // Check if the action is purely internal (like Regurgitate/Heal Self) or requires a target
+    if (skill.target === 'Self' || skill.id === 'skill_regurgitate') {
+        // Regurgitate doesn't target another combatant, it just triggers the system action
+        if (skill.id === 'skill_regurgitate') {
+            // Note: The direct Regurgitate action is handled in CombatVoreMenu.vue now,
+            // but we keep this flow for consistency if a skill list contained it.
+        } else {
+            selectedTargets.value = [String(activeCombatant.value.id)];
+            confirmAction();
+        }
     } else {
         playerActionMode.value = 'targeting';
         selectedTargets.value = [];
     }
+
+    // If we're coming from the Vore Menu, this action should trigger targeting OR confirm immediately.
+    if (playerActionMode.value === 'vore-menu') {
+        playerActionMode.value = 'targeting';
+    }
 };
+
+// Handles selection from the dedicated Vore menu (only sends Devour skill for targeting)
+const onVoreActionSelected = (action: { id: string, name: string, target: string }) => {
+    if (action.id === 'regurgitate') {
+        // Regurgitate is handled entirely in CombatVoreMenu.vue (calling command directly)
+        cancelSelection(); // Close the menu as action is complete
+    } else {
+        // Devour must select a target
+        onSkillSelected({ id: action.id, name: action.name, target: action.target });
+    }
+}
 
 const onItemInBeltSelected = ({ item, index }: { item: any; index: number }) => {
     if (!player.value || !combat.value) return;
@@ -188,11 +220,22 @@ const doNothing = () => { };
                     class="bg-surface-800 p-4 rounded-lg shadow-xl border border-primary-500 pointer-events-auto max-w-lg w-full">
                     <p class="text-lg font-bold text-primary-400 text-center mb-4">{{ overlayTitle }}</p>
 
+                    <!-- Skill Selection (default) -->
                     <CombatSkillList v-if="isSelectingSkill && activeCombatant"
                         :skills="activeCombatant.SkillBookComponent.hydratedSkills" :caster="activeCombatant"
                         @select="onSkillSelected" />
 
-                    <CombatItemBelt v-if="isSelectingItem" @select-item="onItemInBeltSelected" />
+                    <!-- Vore Menu Selection (new) -->
+                    <CombatVoreMenu v-else-if="isVoreMenuOpen" @select-action="onSkillSelected" />
+
+                    <!-- Item Selection -->
+                    <CombatItemBelt v-else-if="isSelectingItem" @select-item="onItemInBeltSelected" />
+
+                    <!-- Target Selection (no list here, targets are selected in the main grid) -->
+                    <div v-else-if="isTargeting" class="text-center text-surface-400 p-4">
+                        Click on an enemy to select them as your target.
+                    </div>
+
 
                     <Button label="Cancel" severity="danger" @click="cancelSelection" class="mt-4 w-full" />
                 </div>

@@ -2,7 +2,7 @@ import { GameService } from './GameService';
 import { CommandService } from './CommandService';
 import { QueryService } from './QueryService';
 import { GameLoop } from './GameLoop';
-import { ContentService, type GameContent, type RawGameContent } from '../../domain/src/ContentService';
+import { ContentService, type RawGameContent } from '../../domain/src/ContentService';
 
 // Import the parsed YAML content directly
 import affixes from '../../content/src/affixes.yaml';
@@ -32,7 +32,6 @@ import tiers from '../../content/src/tiers.yaml';
 import archetypes from '../../content/src/archetypes.yaml';
 import spawnPools from '../../content/src/spawn_pools.yaml';
 import config from '../../content/src/config.yaml';
-import playerProgression from '../../content/src/player_progression.yaml';
 
 
 class Application {
@@ -48,8 +47,6 @@ class Application {
     private async initialize(): Promise<void> {
         console.log('[LOAD DIAGNOSTIC] Application initialize started.');
 
-        // 1. Aggregate all the imported content into one object.
-        // Combine item arrays into a single Map<string, any> keyed by an identifier (id/name/key or index fallback)
         const combinedBaseItemsArray = [
             ...baseItems,
             ...collectibles,
@@ -60,12 +57,6 @@ class Application {
             ...questItems,
             ...reagants
         ];
-        const baseItemsMap = new Map<string, any>(
-            combinedBaseItemsArray.map((it, idx) => [
-                (it as any).id ?? (it as any).key ?? (it as any).name ?? `item_${idx}`,
-                it
-            ])
-        );
 
         const allContent: RawGameContent = {
             affixes,
@@ -84,24 +75,31 @@ class Application {
             archetypes,
             spawnPools,
             config,
-            playerProgression,
-            // Combine items and characters into their respective categories
             baseItems: combinedBaseItemsArray,
-            // Use an array for mobs, as expected by RawGameContent
-            mobs: [playerTemplate, ...npcs, ...mobs] // Add other characters/mobs here as objects
+            mobs: [playerTemplate, ...npcs, ...mobs]
         };
 
-        console.log('[DEBUG 1] Raw Player Template:', playerTemplate);
-        console.log('[DEBUG 1] Raw Inventories:', inventories);
-
-        // 2. Create the ContentService with the pre-parsed data.
         const contentService = new ContentService(allContent as unknown as RawGameContent);
 
-        // 3. Initialize the rest of the application.
         this.game = new GameService(contentService);
         this.commands = new CommandService(this.game.eventBus);
         this.queries = new QueryService(this.game, this.game.eventBus);
         this.loop = new GameLoop(this.game);
+
+        // --- START FIX ---
+        // Listen for filter updates and immediately trigger a player state refresh.
+        this.game.eventBus.on('updateContentFilter', (settings) => {
+            console.log('[Application] Received filter update:', settings);
+            this.game.settings.showNsfwContent = settings.showNsfwContent;
+            this.game.settings.showVoreContent = settings.showVoreContent;
+
+            // If the player exists, emit an event to force the QueryService to re-publish the player state
+            // with the newly applied filters.
+            if (this.game.player) {
+                this.game.eventBus.emit('playerStateModified', { characterId: this.game.player.id });
+            }
+        });
+        // --- END FIX ---
 
         this.game.startGame();
         this.loop.start();
@@ -111,3 +109,4 @@ class Application {
 }
 
 export const App = new Application();
+

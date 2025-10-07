@@ -1,5 +1,5 @@
 import { Component } from 'ecs-lib'
-import type { ProgressionData } from './skill';
+import type { ProgressionData } from '../components/skill';
 
 /* ---------- Identity & control ---------- */
 
@@ -23,7 +23,6 @@ export interface CoreStatsData {
 
 /**
  * Derived, recomputed numbers (no current/max pools here).
- * NOTE: health/mana removed; use Health/Mana components for resource pools.
  */
 export interface DerivedStatsData {
     attack: number;
@@ -39,16 +38,12 @@ export interface DerivedStatsData {
 
 /* ---------- Resources (mutable pools) ---------- */
 
-/** Generic resource pool with current and capacity (max). */
 export interface ResourceData {
     current: number;
     max: number;
 }
 
-/** Data for an entity's current and maximum health points. */
 export type HealthData = ResourceData;
-
-/** Data for an entity's current and maximum mana points. */
 export type ManaData = ResourceData;
 
 /* ---------- Abilities & progression ---------- */
@@ -90,6 +85,68 @@ export interface ConsumableBeltData {
     itemIds: (string | null)[];
 }
 
+/* ---------- Physical Appearance System ---------- */
+
+export interface AppearanceAttribute {
+    name: string;
+    value: string | number;
+    unit?: string;
+    label: string;
+    isSensitive?: boolean;
+    isExtreme?: boolean;
+}
+
+export interface AppearanceComponentData {
+    attributes: AppearanceAttribute[];
+}
+
+/* ---------- Vore Components (Refactored) ---------- */
+
+export type VoreRole = 'Neither' | 'Prey' | 'Predator' | 'Both';
+export type VoreMethodType = 'Oral' | 'Anal' | 'Cock' | 'Breast'; // The METHOD of vore
+export type VoreContainerType = 'Stomach' | 'Bowels' | 'Womb' | 'Breasts'; // The CONTAINER for prey
+
+/** Tracks the character's primary Vore role preference. */
+export interface VoreRoleComponentData {
+    role: VoreRole;
+}
+
+/** Defines the current state of a vore container. */
+export interface VoreContainerData {
+    capacity: number;
+    contents: StomachContent[];
+    digestionRate: number;
+}
+
+/** An entry for a single entity currently held inside a container. */
+export interface StomachContent {
+    entityId: number;
+    name: string;
+    size: number;
+    digestionTimer: number;
+    preyData: PreyComponentData;
+}
+
+/** Identifies an entity as a capable Predator. */
+export interface PredatorComponentData {
+    /** The vore skills/methods this predator can perform. e.g. ['skill_devour_oral'] */
+    availableVoreSkills: string[];
+}
+
+/** Identifies an entity as a viable Prey item. */
+export interface PreyComponentData {
+    name: string;
+    size: number;
+    digestionTime: number;
+    nutritionValue: number;
+    strugglePower: number;
+    onDigestedEffects?: string[];
+}
+
+/** Holds all vore containers for a Predator, keyed by the container type. */
+export type VoreComponentData = Partial<Record<VoreContainerType, VoreContainerData>>;
+
+
 /* ---------- Component registrations ---------- */
 
 export const InfoComponent = Component.register<InfoData>();
@@ -97,7 +154,6 @@ export const ControllableComponent = Component.register<ControllableData>();
 export const CoreStatsComponent = Component.register<CoreStatsData>();
 export const ProgressionComponent = Component.register<ProgressionData>();
 
-// After removing health/mana here:
 export const DerivedStatsComponent = Component.register<DerivedStatsData>();
 
 export const EquipmentComponent = Component.register<EquipmentData>();
@@ -106,7 +162,14 @@ export const InventoryComponent = Component.register<InventoryData>();
 export const ProfessionsComponent = Component.register<ProfessionsData>();
 export const SkillBookComponent = Component.register<SkillBookData>();
 export const ConsumableBeltComponent = Component.register<ConsumableBeltData>();
+export const AppearanceComponent = Component.register<AppearanceComponentData>();
 
-// Resource components:
 export const HealthComponent = Component.register<HealthData>();
 export const ManaComponent = Component.register<ManaData>();
+
+// Vore components:
+export const VoreRoleComponent = Component.register<VoreRoleComponentData>();
+export const PredatorComponent = Component.register<PredatorComponentData>();
+export const PreyComponent = Component.register<PreyComponentData>();
+export const VoreComponent = Component.register<VoreComponentData>();
+

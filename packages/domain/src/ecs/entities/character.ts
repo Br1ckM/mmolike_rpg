@@ -13,6 +13,8 @@ import {
     SkillBookComponent,
     ConsumableBeltComponent,
     ProgressionComponent,
+    AppearanceComponent, // <-- Add Component
+    type AppearanceComponentData, // <-- FIX: Corrected import name
     type InfoData,
     type ControllableData,
     type CoreStatsData,
@@ -31,18 +33,14 @@ import type { ProgressionData } from '../components/skill';
 
 /**
  * CharacterData (v2)
- * - Preferred: provide health/mana as resource components.
- * - Back-compat: if health/mana are missing, we fall back to derivedStats.{health,mana} as capacity.
  */
 export interface CharacterData {
     info: InfoData;
     controllable: ControllableData;
     coreStats: CoreStatsData;
-    derivedStats: DerivedStatsData; // attack, defense, etc. (no health/mana)
-    /** New preferred shape */
+    derivedStats: DerivedStatsData;
     health?: HealthData;
     mana?: ManaData;
-    /** Optional alternative nesting if your YAML groups resources */
     resources?: {
         health?: HealthData;
         mana?: ManaData;
@@ -54,6 +52,7 @@ export interface CharacterData {
     skillBook?: SkillBookData;
     consumableBelt?: ConsumableBeltData;
     progression?: ProgressionData;
+    appearance?: AppearanceComponentData; // <-- FIX: Use correct type and make it optional
 }
 
 function clampResource(r: ResourceData): ResourceData {
@@ -62,12 +61,6 @@ function clampResource(r: ResourceData): ResourceData {
     return { current, max };
 }
 
-/**
- * Build a ResourceData from:
- * 1) explicit component data (preferred), else
- * 2) legacy derived capacity (treated as max; current = max by default).
- * Flip spawnEmpty to true if you want current = 0 instead.
- */
 function normalizeResource(
     explicit?: ResourceData,
     legacyCapacity?: number,
@@ -91,18 +84,18 @@ export class Character extends Entity {
         this.add(new InfoComponent(data.info));
         this.add(new ControllableComponent(data.controllable));
         this.add(new CoreStatsComponent(data.coreStats));
-        this.add(new DerivedStatsComponent(data.derivedStats)); // no health/mana inside
+        this.add(new DerivedStatsComponent(data.derivedStats));
 
-        // Resource components (prefer explicit; fall back to legacy derived capacity)
+        // Resource components
         const healthData = normalizeResource(
             data.health ?? data.resources?.health,
             (data as any)?.derivedStats?.health,
-      /* spawnEmpty */ false,
+            false,
         );
         const manaData = normalizeResource(
             data.mana ?? data.resources?.mana,
             (data as any)?.derivedStats?.mana,
-      /* spawnEmpty */ false,
+            false,
         );
 
         this.add(new HealthComponent(healthData));
@@ -112,12 +105,13 @@ export class Character extends Entity {
         this.add(new JobsComponent(data.jobs));
         this.add(new EquipmentComponent(data.equipment));
 
-        // Optional, player-only-ish
+        // Optional components
         if (data.inventory) this.add(new InventoryComponent(data.inventory));
         if (data.professions) this.add(new ProfessionsComponent(data.professions));
         if (data.skillBook) this.add(new SkillBookComponent(data.skillBook));
         if (data.consumableBelt) this.add(new ConsumableBeltComponent(data.consumableBelt));
         if (data.progression) this.add(new ProgressionComponent(data.progression));
+        if (data.appearance) this.add(new AppearanceComponent(data.appearance)); // <-- Add the component if data exists
     }
 
     // Helper methods
@@ -129,3 +123,4 @@ export class Character extends Entity {
         return ControllableComponent.oneFrom(this).data.isPlayer;
     }
 }
+

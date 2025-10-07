@@ -1,4 +1,4 @@
-import type { EquipmentSlot } from "./components/character";
+import type { EquipmentSlot, VoreRole } from "./components/character";
 import type { DialogueResponse } from "./components/dialogue";
 
 // Define the structure for all possible event payloads
@@ -34,7 +34,7 @@ interface EventMap {
         npcAvatarUrl: string;
         text: string;
         responses: DialogueResponse[];
-        history: { speaker: 'NPC' | 'Player'; text: string }[]; // <-- ADD THIS
+        history: { speaker: 'NPC' | 'Player'; text: string }[];
     };
     'dialogueEnded': {};
     'vendorScreenOpened': { characterId: number; npcId: number; };
@@ -56,6 +56,8 @@ interface EventMap {
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The player's party
         team2: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The enemy group
     };
+    'contentFilterChanged': { showNsfwContent: boolean; showVoreContent: boolean; };
+    'setPlayerVoreRoleRequest': { characterId: number; newRole: VoreRole; };
 
     /** Fired by CombatInitiationSystem when the battle has been set up. */
     'combatStarted': { combatEntityId: string; combatants: string[]; };
@@ -110,6 +112,22 @@ interface EventMap {
         type: 'info' | 'success' | 'error' | 'warn';
         message: string;
     };
+    // Vore-related events
+    'setPlayerVoreRole': { characterId: number; newRole: VoreRole };
+    'updateContentFilter': { showNsfwContent: boolean; showVoreContent: boolean; };
+    'preyDevoured': { predatorId: number; preyId: number };
+    'preyDigested': { predatorId: number; digestedPreyData: any };
+    'regurgitateRequest': { predatorId: number; }
+    'dev_addPreyToStomach': { // <-- NEW EVENT
+        playerId: number;
+        preyData: {
+            name: string;
+            size: number;
+            digestionTime: number;
+            nutritionValue: number;
+            strugglePower: number;
+        }
+    };
 }
 
 type EventKey = keyof EventMap;
@@ -152,3 +170,4 @@ export class EventBus {
         }
     }
 }
+

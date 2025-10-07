@@ -7,6 +7,8 @@ import Button from '@/volt/Button.vue';
 import CharacterIdentityAndStats from '@/components/character/CharacterIdentityAndStats.vue';
 import CharacterEquipmentPanel from '@/components/character/CharacterEquipmentPanel.vue';
 import CharacterSkillsList from '@/components/character/CharacterSkillsList.vue';
+import CharacterAppearancePanel from '@/components/character/CharacterAppearancePanel.vue';
+import StomachStatusPanel from '@/components/character/StomachStatusPanel.vue'; // <-- NEW IMPORT
 </script>
 
 <template>
@@ -21,6 +23,10 @@ import CharacterSkillsList from '@/components/character/CharacterSkillsList.vue'
         </div>
 
         <CharacterIdentityAndStats />
+
+        <CharacterAppearancePanel />
+
+        <StomachStatusPanel /> <!-- <-- NEW COMPONENT -->
 
         <CharacterEquipmentPanel />
 
