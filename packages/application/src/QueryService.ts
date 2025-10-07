@@ -120,5 +120,9 @@ export class QueryService {
             const hubState = this.gameService.getHubState();
             this.publish('hubState', hubState);
         });
+
+        this.domainEventBus.on('vendorInventoryUpdated', (payload) => {
+            this.publish('vendorInventoryUpdated', payload);
+        });
     }
 }

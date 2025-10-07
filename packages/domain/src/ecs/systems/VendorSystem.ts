@@ -2,8 +2,8 @@ import ECS from 'ecs-lib';
 import { Entity, Component } from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { VendorComponent } from '../components/npc';
-import { InventoryComponent } from '../components/character';
-import { CurrencyComponent, type CurrencyData, SlotsComponent, VendorValueComponent } from '../components/item';
+import { InventoryComponent, ProgressionComponent } from '../components/character';
+import { CurrencyComponent, type CurrencyData, SlotsComponent, VendorValueComponent, ItemInfoComponent } from '../components/item';
 
 /**
  * Manages all buy and sell transactions between a player and an NPC vendor.
@@ -30,9 +30,42 @@ export class VendorSystem {
 
     private onVendorScreenOpened(payload: { characterId: number; npcId: number; }): void {
         this.activeVendorSession = payload;
-        console.log(`Vendor session started between character ${payload.characterId} and NPC ${payload.npcId}.`);
-        // In a real game, you would immediately emit a 'vendorInventoryUpdated' event here
-        // to populate the UI with the vendor's and player's items.
+        const character = this.world.getEntity(payload.characterId);
+        const npc = this.world.getEntity(payload.npcId);
+        if (!character || !npc) return;
+
+        // For now, vendor inventory is static. This could be expanded.
+        const vendorItems = [
+            { id: 1001, name: 'Minor Health Potion', cost: 10, icon: 'pi-plus-circle' },
+            { id: 1002, name: 'Basic Sword', cost: 50, icon: 'pi-bolt' },
+            { id: 1003, name: 'Leather Cap', cost: 35, icon: 'pi-user' }
+        ];
+
+        // Find items in the player's inventory that have a vendor value.
+        const playerSellableItems: any[] = [];
+        const inventory = InventoryComponent.oneFrom(character)?.data;
+        if (inventory) {
+            inventory.bagIds.forEach(bagId => {
+                const bagEntity = this.world.getEntity(parseInt(bagId, 10));
+                const slots = SlotsComponent.oneFrom(bagEntity!)?.data;
+                if (slots) {
+                    slots.items.forEach(itemId => {
+                        if (itemId) {
+                            const itemEntity = this.world.getEntity(parseInt(itemId, 10));
+                            if (itemEntity && VendorValueComponent.oneFrom(itemEntity)) {
+                                playerSellableItems.push({
+                                    id: itemEntity.id,
+                                    name: ItemInfoComponent.oneFrom(itemEntity)!.data.name,
+                                    value: Math.floor(VendorValueComponent.oneFrom(itemEntity)!.data.gold * 0.5)
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        this.eventBus.emit('vendorInventoryUpdated', { vendorItems, playerSellableItems });
     }
 
     private handleBuyItem(payload: { characterId: number; npcId: number; itemEntityId: number; }): void {
@@ -50,6 +83,8 @@ export class VendorSystem {
             return;
         }
 
+        const playerLevel = ProgressionComponent.oneFrom(character)?.data.level || 1;
+
         // Deduct gold
         playerWallet.data.gold -= price;
 
@@ -59,6 +94,7 @@ export class VendorSystem {
         this.eventBus.emit('generateItemRequest', {
             baseItemId: itemToBuy.id.toString(), // Assuming the entityId is the baseId
             characterId: character.id,
+            itemLevel: playerLevel,
         });
 
         console.log(`Character ${character.id} bought item ${itemToBuy.id} for ${price} gold.`);

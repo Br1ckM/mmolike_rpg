@@ -16,8 +16,25 @@ export class TrainerSystem {
         this.eventBus = eventBus;
 
         // Listen for events from the Application Layer
+        this.eventBus.on('trainingScreenOpened', this.onTrainingScreenOpened.bind(this));
         this.eventBus.on('learnSkillRequested', this.handleLearnSkill.bind(this));
         this.eventBus.on('unlockJobRequested', this.handleUnlockJob.bind(this));
+    }
+
+    private onTrainingScreenOpened(payload: { characterId: number; npcId: number }): void {
+        // This is a placeholder. In a real system, you would:
+        // 1. Get the NPC's TrainerComponent to see what they teach.
+        // 2. Get the Player's SkillBookComponent to see what they know.
+        // 3. Filter the list to only show learnable skills.
+        // 4. Get skill costs from the skill definitions.
+        const availableSkills = [
+            { id: 'skill_power_strike', name: 'Power Strike', cost: 100, description: 'A powerful overhead swing.' },
+            { id: 'skill_fortify', name: 'Fortify', cost: 250, description: 'Temporarily increases defense.' },
+        ];
+
+        // This event does not exist yet, we'll add it in the next step.
+        // For now, let's log it to show the data is ready.
+        console.log("Trainer data ready to be emitted:", { availableSkills });
     }
 
     private handleLearnSkill(payload: { characterId: number; npcId: number; skillId: string; }): void {

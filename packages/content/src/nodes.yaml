@@ -131,4 +131,4 @@
         left: "40%"
     interactionTarget:
       type: "Hunt"
-      targetId: "enc_wulfkin_hunt"
+      targetId: "hunt_wulfkin_pack"

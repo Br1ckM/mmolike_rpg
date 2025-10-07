@@ -16,20 +16,6 @@ const {
     experience
 } = storeToRefs(playerStore);
 
-// --- MOCK DATA for structure and Tooltips ---
-const mockDerivedStats = ref({
-    derived: [ // Derived Stats (Now an Array for easier listing/tooltips)
-        { name: 'Attack', value: 70, icon: 'pi pi-bolt', tooltip: 'Calculated from Strength and Main Hand damage.' },
-        { name: 'Defense', value: 45, icon: 'pi pi-shield', tooltip: 'Calculated from Constitution and Armor Rating.' },
-        { name: 'Magic Attack', value: 20, icon: 'pi pi-star', tooltip: 'Calculated from Intelligence and Spell Power.' },
-        { name: 'Magic Resist', value: 48, icon: 'pi pi-shield-fill', tooltip: 'Calculated from Spirit and Magic Resist Rating.' },
-        { name: 'Crit Chance', value: '15%', icon: 'pi pi-bullseye', tooltip: 'Chance to deal double damage.' },
-        { name: 'Crit Damage', value: '156%', icon: 'pi pi-plus-circle', tooltip: 'Damage multiplier when critical.' },
-        { name: 'Dodge', value: '18%', icon: 'pi pi-times-circle', tooltip: 'Chance to completely avoid damage.' },
-        { name: 'Haste', value: '5%', icon: 'pi pi-forward', tooltip: 'Increases attack and spell speed.' },
-    ],
-});
-
 const coreTiles = computed<Record<'STR' | 'DEX' | 'INT', number>>(() => ({
     STR: player.value?.coreStats?.strength ?? 0,
     DEX: player.value?.coreStats?.dexterity ?? 0,
@@ -98,7 +84,7 @@ const getStatTileStyles = (statName: string) => {
                         ]">
                             <p class="font-bold uppercase text-sm" :class="getStatTileStyles(name).color">{{ name }}</p>
                             <p class="font-mono text-3xl font-bold" :class="getStatTileStyles(name).valueClass">{{ value
-                            }}</p>
+                                }}</p>
                         </div>
                     </div>
                 </div>

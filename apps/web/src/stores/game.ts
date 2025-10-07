@@ -33,6 +33,21 @@ interface CombatResult {
     winningTeamId: string;
 }
 
+// --- NEW TYPES ---
+interface VendorItem {
+    id: number;
+    name: string;
+    cost: number;
+    icon: string;
+}
+
+interface TrainerSkill {
+    id: string;
+    name: string;
+    cost: number;
+    description: string;
+}
+
 
 export const useGameStore = defineStore('game', () => {
     const dialogue = ref<DialogueState | null>(null);
@@ -46,6 +61,12 @@ export const useGameStore = defineStore('game', () => {
     const combatResultUnsubscribe = ref<(() => void) | null>(null);
     const activeService = ref<'Shop' | 'Trainer' | null>(null);
     const playerLeveledUpUnsubscribe = ref<(() => void) | null>(null);
+
+    // --- NEW STATE ---
+    const vendorItems = ref<VendorItem[]>([]);
+    const trainerSkills = ref<TrainerSkill[]>([]);
+    const vendorUnsubscribe = ref<(() => void) | null>(null);
+
 
     async function initialize() {
         await App.isReady;
@@ -73,6 +94,16 @@ export const useGameStore = defineStore('game', () => {
         App.queries.subscribe('trainingScreenOpened', () => {
             dialogue.value = null;
             activeService.value = 'Trainer';
+            // Placeholder data until TrainerSystem is fully implemented
+            trainerSkills.value = [
+                { id: 'skill_power_strike', name: 'Power Strike', cost: 100, description: 'A powerful overhead swing.' },
+                { id: 'skill_fortify', name: 'Fortify', cost: 250, description: 'Temporarily increases defense.' },
+            ];
+        });
+
+        // --- NEW SUBSCRIPTION ---
+        vendorUnsubscribe.value = App.queries.subscribe<any>('vendorInventoryUpdated', (payload) => {
+            vendorItems.value = payload.vendorItems;
         });
 
         combatUnsubscribe.value = App.queries.subscribe<CombatState>('combatState', (newCombatState) => {
@@ -150,6 +181,8 @@ export const useGameStore = defineStore('game', () => {
         combatLog,
         activeService,
         combatResult,
+        vendorItems, // <-- EXPORT
+        trainerSkills, // <-- EXPORT
         initialize,
         selectDialogueResponse,
         clearActiveService,

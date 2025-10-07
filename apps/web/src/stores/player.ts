@@ -1,4 +1,3 @@
-// src/stores/player.ts
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
@@ -40,6 +39,15 @@ export interface UIBag {
   items: (UIItem | null)[];
 }
 
+export interface UISkill {
+  id: string;
+  name: string;
+  description: string;
+  type: 'active' | 'passive';
+  icon: string;
+  rank: number;
+}
+
 // Define a type for the player state DTO for better type safety
 interface PlayerState {
   id: number;
@@ -53,10 +61,12 @@ interface PlayerState {
     wallet: { [currency: string]: number };
     bags: any[];
   } | null;
-  consumableBelt?: { // It can be optional if not all characters have it
+  consumableBelt?: {
     itemIds: (string | null)[];
   };
   quests: any[];
+  equipment: { [key: string]: string | null };
+  skillBook: { knownSkills: UISkill[] } | null;
 }
 
 interface QuestObjective {
@@ -194,6 +204,31 @@ export const usePlayerStore = defineStore('player', () => {
     };
   });
 
+  const allSkills = computed((): UISkill[] => player.value?.skillBook?.knownSkills ?? []);
+
+  const activeSkills = computed(() =>
+    allSkills.value.filter(skill => skill.type === 'active')
+  );
+
+  const passiveSkills = computed(() =>
+    allSkills.value.filter(skill => skill.type === 'passive')
+  );
+
+  const equippedItems = computed(() => {
+    if (!player.value?.equipment) return [];
+
+    const allItemsById = new Map<number, UIItem>();
+    bags.value.forEach(bag => {
+      bag.items.forEach(item => {
+        if (item) allItemsById.set(item.id, item);
+      });
+    });
+
+    return Object.values(player.value.equipment)
+      .filter((itemId): itemId is string => !!itemId)
+      .map(itemId => allItemsById.get(parseInt(itemId, 10)))
+      .filter((item): item is UIItem => !!item);
+  });
 
   // --- Actions ---
   async function initialize() {
@@ -249,5 +284,8 @@ export const usePlayerStore = defineStore('player', () => {
     inspectItem,
     closeInspector,
     experience,
+    activeSkills,
+    passiveSkills,
+    equippedItems,
   };
 });

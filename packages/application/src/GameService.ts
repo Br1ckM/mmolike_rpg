@@ -412,6 +412,36 @@ export class GameService {
             };
         }).filter(q => q !== null);
 
+        const skillBookComponent = SkillBookComponent.oneFrom(this.player)?.data;
+        let hydratedSkillBook = null;
+
+        if (skillBookComponent) {
+            const hydratedSkills = skillBookComponent.knownSkills.map(skillId => {
+                const numericSkillId = this.contentIdToEntityIdMap.get(skillId);
+                const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : undefined;
+
+                if (!skillEntity) {
+                    return { id: skillId, name: 'Unknown Skill', type: 'unknown', description: '', icon: 'pi-question', rank: 1 };
+                }
+
+                const info = SkillInfoComponent.oneFrom(skillEntity)?.data;
+                const skill = SkillComponent.oneFrom(skillEntity)?.data;
+                const progression = ProgressionComponent.oneFrom(skillEntity)?.data;
+
+                return {
+                    id: skillId,
+                    name: info?.name || 'Unknown',
+                    description: info?.description || '',
+                    type: skill?.type || 'unknown',
+                    icon: `pi ${info?.iconName || 'pi-question'}`,
+                    rank: progression?.level || 1,
+                };
+            });
+            hydratedSkillBook = {
+                knownSkills: hydratedSkills
+            };
+        }
+
         return {
             id: this.player.id,
             name: this.player.name,
@@ -425,7 +455,7 @@ export class GameService {
             equipment: EquipmentComponent.oneFrom(this.player)?.data,
             inventory: hydratedInventory,
             professions: ProfessionsComponent.oneFrom(this.player)?.data,
-            skillBook: SkillBookComponent.oneFrom(this.player)?.data,
+            skillBook: hydratedSkillBook,
             jobs: JobsComponent.oneFrom(this.player)?.data,
             consumableBelt: ConsumableBeltComponent.oneFrom(this.player)?.data,
             quests: hydratedQuests,
