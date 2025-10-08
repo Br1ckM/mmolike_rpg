@@ -41,7 +41,7 @@ export interface UIAppearanceAttribute {
 export interface UIStomachContent {
   name: string;
   digestionTimer: number;
-  voreType?: string; // <-- FIX: Add the missing property
+  voreType?: string;
 }
 
 // --- Backend Data Structures ---
@@ -64,6 +64,7 @@ interface PlayerState {
   AppearanceComponent?: { attributes: { name: string, value: string | number, label: string, unit?: string }[] };
   VoreRoleComponent?: { role: UIVoreRole };
   vore?: { contents: UIStomachContent[] };
+  ancestry?: any;
 }
 
 interface QuestObjective {

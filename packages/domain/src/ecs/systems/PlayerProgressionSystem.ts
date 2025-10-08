@@ -1,7 +1,8 @@
 import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { CoreStatsComponent, ProgressionComponent } from '../components/character';
+import { CoreStatsComponent } from '../components/character';
+import { ProgressionComponent } from '../components/skill';
 import { type GameContent, type GameConfig } from '../../ContentService';
 
 // A simple formula for XP required for the next level.

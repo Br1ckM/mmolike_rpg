@@ -1,5 +1,5 @@
 import { GameService } from './GameService';
-import { EventBus } from '../../domain/src/ecs/EventBus';
+import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
 
 // Define a generic callback type for subscribers
 type Subscriber<T> = (data: T) => void;

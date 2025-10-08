@@ -16,7 +16,7 @@ base_stats:
   crit_chance: 5
   crit_damage: 150 # Represented as a percentage (e.g., 150 = 150%)
   accuracy: 90
-  haste: 0
+  speed: 0
 
 damage_formula:
   # Multipliers applied in the final damage calculation.
@@ -27,7 +27,7 @@ damage_formula:
 
 mob_generation:
   # The number of core stat points a mob gets for each level.
-  stat_points_per_level: 10
+  stat_points_per_level: 3
 
 rarity_chances:
   # The chance for an equipment drop to be of a certain rarity.

@@ -7,18 +7,19 @@ import {
     EquipmentComponent,
     HealthComponent,
     ManaComponent,
+    InfoComponent,
 } from '../components/character';
 import { EquipableComponent } from '../components/item';
 import { ActiveEffectComponent } from '../components/combat';
 import { EffectDefinitionComponent } from '../components/effects';
 import { type MobArchetypeData, ActiveTraitsComponent } from '../components/mob';
 import { type TraitData } from '../components/traits';
-import { type GameConfig } from '../../ContentService';
+import { type GameConfig, type AncestryData } from '../../ContentService';
 
 /** The keys we store in DerivedStats (no resource pools here) */
 type DerivedKeys =
     | 'attack' | 'magicAttack' | 'defense' | 'magicResist'
-    | 'critChance' | 'critDamage' | 'dodge' | 'haste' | 'accuracy';
+    | 'critChance' | 'critDamage' | 'dodge' | 'speed' | 'accuracy';
 
 type DerivedMap = Record<DerivedKeys, number>;
 type CapacityKeys = 'health' | 'mana';
@@ -31,6 +32,7 @@ export class StatCalculationSystem {
         effects: Map<string, any>;
         traits: Map<string, TraitData>;
         config: GameConfig;
+        ancestries?: Map<string, AncestryData>;
     };
     private config: GameConfig;
 
@@ -53,25 +55,41 @@ export class StatCalculationSystem {
 
     public update(entity: Entity, archetypes?: MobArchetypeData[]): void {
         const core = CoreStatsComponent.oneFrom(entity)?.data;
+        const info = InfoComponent.oneFrom(entity)?.data; // <-- Get the info component
 
         if (!core) return;
 
+        // Create a mutable copy of core stats to apply ancestry bonus
+        const modifiedCore = { ...core };
+
+        // ---- Apply Ancestry Modifiers ----
+        if (info?.ancestryId) {
+            const ancestryData = this.content.ancestries?.get(info.ancestryId);
+            if (ancestryData?.statModifiers) {
+                modifiedCore.strength += ancestryData.statModifiers.strength || 0;
+                modifiedCore.dexterity += ancestryData.statModifiers.dexterity || 0;
+                modifiedCore.intelligence += ancestryData.statModifiers.intelligence || 0;
+            }
+        }
+
         // ---- Base calculations from config ----
+        // vvv Use the 'modifiedCore' stats from now on vvv
         const derived: DerivedMap = {
-            attack: core.strength * this.config.stat_scalings.attack_from_strength,
-            magicAttack: core.intelligence * this.config.stat_scalings.magic_attack_from_intelligence,
-            defense: core.dexterity * this.config.stat_scalings.defense_from_dexterity,
-            magicResist: core.intelligence * this.config.stat_scalings.magic_resist_from_intelligence,
+            attack: modifiedCore.strength * this.config.stat_scalings.attack_from_strength,
+            magicAttack: modifiedCore.intelligence * this.config.stat_scalings.magic_attack_from_intelligence,
+            defense: modifiedCore.dexterity * this.config.stat_scalings.defense_from_dexterity,
+            magicResist: modifiedCore.intelligence * this.config.stat_scalings.magic_resist_from_intelligence,
             critChance: this.config.base_stats.crit_chance,
             critDamage: this.config.base_stats.crit_damage,
-            dodge: core.dexterity * this.config.stat_scalings.dodge_from_dexterity,
-            haste: this.config.base_stats.haste,
+            dodge: modifiedCore.dexterity * this.config.stat_scalings.dodge_from_dexterity,
+            speed: this.config.base_stats.speed,
             accuracy: this.config.base_stats.accuracy,
         };
 
         // Resource capacities (NOT stored in DerivedStats)
-        let healthCap = core.strength * this.config.stat_scalings.health_from_strength;
-        let manaCap = core.intelligence * this.config.stat_scalings.mana_from_intelligence;
+        let healthCap = modifiedCore.strength * this.config.stat_scalings.health_from_strength;
+        let manaCap = modifiedCore.intelligence * this.config.stat_scalings.mana_from_intelligence;
+
 
         // Helpers to route stat modifications
         const applyFlat = (key: AnyStatKey, value: number) => {

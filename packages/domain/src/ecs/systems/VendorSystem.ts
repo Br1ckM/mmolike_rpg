@@ -2,7 +2,8 @@ import ECS from 'ecs-lib';
 import { Entity, Component } from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { VendorComponent } from '../components/npc';
-import { InventoryComponent, ProgressionComponent } from '../components/character';
+import { InventoryComponent } from '../components/character';
+import { ProgressionComponent } from '../components/skill';
 import { CurrencyComponent, type CurrencyData, SlotsComponent, VendorValueComponent, ItemInfoComponent } from '../components/item';
 
 /**

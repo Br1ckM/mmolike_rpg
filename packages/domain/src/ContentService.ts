@@ -51,6 +51,7 @@ export interface GameContent {
     jobs: Map<string, ContentTemplate<JobEntityData>>;
     spawnPools: Map<string, any>;
     config: GameConfig;
+    ancestries: Map<string, AncestryData>;
 }
 
 // The raw input from YAML imports will be an object where each value is an array OR an object for config.
@@ -64,6 +65,13 @@ export interface PlayerProgressionConfig {
         base: number;
         per_level: number;
     };
+}
+
+export interface AncestryData {
+    id: string;
+    name: string;
+    description: string;
+    statModifiers: { [key: string]: number };
 }
 
 export class ContentService implements GameContent {
@@ -85,6 +93,7 @@ export class ContentService implements GameContent {
     public jobs!: Map<string, ContentTemplate<JobEntityData>>;
     public spawnPools!: Map<string, any>;
     public config!: GameConfig;
+    public ancestries!: Map<string, AncestryData>;
 
     constructor(rawContent: RawGameContent) {
         this.loadAllContent(rawContent);

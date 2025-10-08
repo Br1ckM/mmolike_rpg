@@ -34,7 +34,7 @@ export class CombatInitiationSystem {
             }
 
             const stats = DerivedStatsComponent.oneFrom(entity)?.data;
-            const initiative = (stats?.haste || 0) + Math.random() * 10; // Simple initiative roll
+            const initiative = (stats?.speed || 0) + Math.random() * 10; // Simple initiative roll
 
             const combatantData = {
                 teamId: payload.team1.includes(participant) ? 'team1' : 'team2',

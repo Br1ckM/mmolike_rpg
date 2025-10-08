@@ -8,13 +8,29 @@ import { CombatSystem } from 'mmolike_rpg-domain/ecs/systems/combat/CombatSystem
 import { StatCalculationSystem } from 'mmolike_rpg-domain/ecs/systems/StatCalculationSystem';
 import { EquipmentSystem } from 'mmolike_rpg-domain/ecs/systems/EquipmentSystem';
 import { Item } from 'mmolike_rpg-domain/ecs/entities/item';
+import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus'
+
+// Dev tools
+import MobInspector from '@/components/dev/MobInspector.vue';
 
 
 // --- Correct Component Imports ---
 import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
-import { HealthComponent, ControllableComponent, ProgressionComponent, CoreStatsComponent, ManaComponent, DerivedStatsComponent, InfoComponent, EquipmentComponent } from 'mmolike_rpg-domain/ecs/components/character';
+import { HealthComponent, ControllableComponent, CoreStatsComponent, ManaComponent, DerivedStatsComponent, InfoComponent, EquipmentComponent } from 'mmolike_rpg-domain/ecs/components/character';
+import { ProgressionComponent } from 'mmolike_rpg-domain/ecs/components/skill';
 import type { ItemData } from 'mmolike_rpg-domain/ecs/entities/item';
 import { Entity } from 'ecs-lib';
+import { Character } from 'mmolike_rpg-domain/ecs/entities/character';
+import { PlayerLocationComponent } from 'mmolike_rpg-domain/ecs/components/world';
+
+// Diagnostic: print the SkillComponent registration object in this module instance
+import { SkillComponent, SkillInfoComponent } from 'mmolike_rpg-domain/ecs/components/skill';
+try {
+    console.log('[Simulator] SkillComponent ref:', SkillComponent);
+    console.log('[Simulator] SkillInfoComponent ref:', SkillInfoComponent);
+} catch (err) {
+    console.warn('[Simulator] Could not print SkillComponent refs:', err);
+}
 
 // --- Import all game content directly ---
 import affixes from 'mmolike_rpg-content/affixes.yaml';
@@ -59,11 +75,26 @@ const encounterOptions = ref<{ id: string, name: string }[]>([]);
 
 // This function runs a single, headless combat simulation.
 async function runSingleCombat(contentService: ContentService) {
-    const gameService = new GameService(contentService);
-    gameService.startGame(); // This initializes a fresh world, player, systems, etc.
+    const gameService = new GameService(contentService, new EventBus()); // Pass a new EventBus
+    gameService.startGame();
 
-    // --- Adjust Player to Match Selected Level ---
-    const player = gameService.player!;
+    // --- START FIX: Manually Create Player for Simulation ---
+
+    // 1. Get the player template
+    const playerTemplate = contentService.mobs.get('PLAYER_TEMPLATE');
+    if (!playerTemplate) throw new Error("Simulator failed: Player template not found.");
+    const playerData: CharacterData = JSON.parse(JSON.stringify(playerTemplate.components));
+
+    // 2. Create and add the player entity to the simulation's world
+    const player = new Character(playerData as any);
+    player.add(new PlayerLocationComponent({ // Add location so systems can find it
+        currentZoneId: 'loc_timberbrook_fields',
+        currentSubLocationId: 'loc_cloverfell_village',
+    }));
+    gameService.world.addEntity(player);
+    gameService.player = player; // Manually assign the player to the service instance
+
+    // --- END FIX ---
     const progression = ProgressionComponent.oneFrom(player)!.data;
     const statCalcSystem = gameService.systems.find(s => s instanceof StatCalculationSystem);
 
@@ -206,6 +237,7 @@ async function runSimulation() {
     isRunning.value = true;
     results.value = null;
 
+    // --- START: Declarations moved outside the loop for efficiency ---
     let playerWins = 0;
     let totalRounds = 0;
     let totalHealthRemaining = 0;
@@ -229,27 +261,19 @@ async function runSimulation() {
         ...reagants
     ];
 
+    // Create the content service once, outside the loop, using the original player template.
+    const allContent = {
+        affixes, archetypes, baseItems: combinedBaseItemsArray, dialogueTrees, effects,
+        encounters, families, jobs, locations, lootTables, mobs: [playerTemplate, ...npcs, ...mobs],
+        nodes, quests, skills, tiers, traits, spawnPools, config,
+    };
+    const contentService = new ContentService(allContent as any);
+    // --- END: Declarations moved ---
+
+
     for (let i = 0; i < numSims; i++) {
-        const dynamicPlayerTemplate = JSON.parse(JSON.stringify(playerTemplate));
-
-        const levelDifference = playerLevel.value - dynamicPlayerTemplate.components.progression.level;
-        if (levelDifference > 0) {
-            const statsToGain = levelDifference * config.player_progression.core_stats_per_level;
-            const pointsPerStat = Math.floor(statsToGain / 3);
-
-            dynamicPlayerTemplate.components.coreStats.strength += pointsPerStat + (statsToGain % 3);
-            dynamicPlayerTemplate.components.coreStats.dexterity += pointsPerStat;
-            dynamicPlayerTemplate.components.coreStats.intelligence += pointsPerStat;
-            dynamicPlayerTemplate.components.progression.level = playerLevel.value;
-        }
-
-        const allContent = {
-            affixes, archetypes, baseItems: combinedBaseItemsArray, dialogueTrees, effects,
-            encounters, families, jobs, locations, lootTables, mobs: [dynamicPlayerTemplate, ...npcs, ...mobs],
-            nodes, quests, skills, tiers, traits, spawnPools, config,
-        };
-
-        const contentService = new ContentService(allContent as any);
+        // We no longer need to modify the player template here.
+        // runSingleCombat will handle leveling the player for each simulation run.
         const result: any = await runSingleCombat(contentService);
 
         if (result.winner === 'team1') {
@@ -276,8 +300,6 @@ async function runSimulation() {
             aggregateDamageDealtBy[name] = (aggregateDamageDealtBy[name] || 0) + total;
         }
 
-        // This logic is tricky because entities are destroyed. A better approach would be to get names from the initial combat state.
-        // For now, we'll placeholder this.
         for (const id in result.enemyDefeatRounds) {
             const enemyName = "Enemy";
             if (!timeToDefeat[enemyName]) {
@@ -355,6 +377,8 @@ onMounted(() => {
                         <span v-if="isRunning">Running...</span>
                         <span v-else>Run Simulation</span>
                     </Button>
+                    <!-- Mob Inspector Panel -->
+                    <MobInspector />
                 </div>
 
                 <!-- Results -->

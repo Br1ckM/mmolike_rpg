@@ -1,7 +1,7 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { Character } from '../entities/character';
-import { ProgressionComponent } from '../components/character';
+import { ProgressionComponent } from '../components/skill';
 
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 

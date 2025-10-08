@@ -11,7 +11,8 @@ import {
 } from '../components/mob';
 import { AIProfileComponent } from '../components/combat';
 import { StatCalculationSystem } from './StatCalculationSystem';
-import { InfoComponent, ProgressionComponent } from '../components/character';
+import { InfoComponent } from '../components/character';
+import { ProgressionComponent } from '../components/skill';
 import type { GameConfig } from '../../ContentService';
 
 interface MobTemplate {
@@ -122,7 +123,7 @@ export class MobGenSystem {
                 critChance: 0,
                 critDamage: 0,
                 dodge: 0,
-                haste: 0,
+                speed: 0,
                 accuracy: 0,
             },
 

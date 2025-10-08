@@ -1,5 +1,5 @@
 import { Component } from 'ecs-lib'
-import type { ProgressionData } from '../components/skill';
+import { ProgressionComponent, type ProgressionData } from '../components/skill';
 
 /* ---------- Identity & control ---------- */
 
@@ -7,6 +7,7 @@ export interface InfoData {
     name: string;
     race: string;
     avatarUrl: string;
+    ancestryId?: string;
 }
 
 export interface ControllableData {
@@ -32,7 +33,7 @@ export interface DerivedStatsData {
     critChance: number;
     critDamage: number;
     dodge: number;
-    haste: number;
+    speed: number;
     accuracy: number;
 }
 
@@ -152,7 +153,6 @@ export type VoreComponentData = Partial<Record<VoreContainerType, VoreContainerD
 export const InfoComponent = Component.register<InfoData>();
 export const ControllableComponent = Component.register<ControllableData>();
 export const CoreStatsComponent = Component.register<CoreStatsData>();
-export const ProgressionComponent = Component.register<ProgressionData>();
 
 export const DerivedStatsComponent = Component.register<DerivedStatsData>();
 

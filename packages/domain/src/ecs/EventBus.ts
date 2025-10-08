@@ -118,6 +118,11 @@ interface EventMap {
     'preyDevoured': { predatorId: number; preyId: number };
     'preyDigested': { predatorId: number; digestedPreyData: any };
     'regurgitateRequest': { predatorId: number; }
+    'characterCreationRequested': {
+        name: string;
+        pronouns: string;
+        ancestryId: string;
+    };
     'dev_addPreyToStomach': { // <-- NEW EVENT
         playerId: number;
         preyData: {
@@ -127,6 +132,7 @@ interface EventMap {
             nutritionValue: number;
             strugglePower: number;
         }
+
     };
 }
 

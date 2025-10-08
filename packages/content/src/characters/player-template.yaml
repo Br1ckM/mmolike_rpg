@@ -3,6 +3,7 @@ components:
   info:
     name: Jim
     race: Human
+    ancestryId: 'ancestry_human'
     avatarUrl: 'https://placehold.co/600x400@2x.png'
   
   controllable:
@@ -33,7 +34,7 @@ components:
     critChance: 5
     critDamage: 150
     dodge: 5
-    haste: 0
+    speed: 0
     accuracy: 80
   
   jobs:
@@ -90,24 +91,50 @@ components:
       
   appearance:
     attributes:
+      # --- General ---
+      - label: 'Height'
+        name: 'height'
+        value: 72
+        unit: ' inches'
+      - label: 'Weight'
+        name: 'weight'
+        value: 185
+        unit: ' lbs'
+      - label: 'Build'
+        name: 'build'
+        value: 'Athletic'
+        unit: ''
+      - label: 'Hair Color'
+        name: 'hairColor'
+        value: 'Brown'
+        unit: ''
+      - label: 'Eye Color'
+        name: 'eyeColor'
+        value: 'Hazel'
+        unit: ''
+      - label: 'Skin Tone'
+        name: 'skinTone'
+        value: 'Fair'
+        unit: ''
+
+      # --- Sensitive ---
       - label: 'Bust Size'
         name: 'bustSize'
         value: 'DD'
         unit: ''
         isSensitive: true
-        isExtreme: false
-      - label: 'Prey Capacity'
-        name: 'preyCapacity'
-        value: 120
-        unit: 'lbs'
-        isSensitive: false
-        isExtreme: false
       - label: 'Cock Size'
         name: 'cockSize'
         value: 12
-        unit: 'inches'
+        unit: ' inches'
         isSensitive: true
-        isExtreme: true
+        isExtreme: true # Extreme content requires both filters
+
+      # --- Vore-related (not sensitive by default) ---
+      - label: 'Prey Capacity'
+        name: 'preyCapacity'
+        value: 120
+        unit: ' lbs'
       
   vorerole:
     role: 'Neither'

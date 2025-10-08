@@ -1,12 +1,12 @@
 - id: "Fodder"
   name: "Fodder"
-  statPointMultiplier: 0.8
+  statPointMultiplier: 0.5
 - id: "Standard"
   name: "Standard"
-  statPointMultiplier: 1.0
+  statPointMultiplier: 0.8
 - id: "Elite"
   name: "Elite"
-  statPointMultiplier: 1.2
+  statPointMultiplier: 1
 - id: "Boss"
   name: "Boss"
   statPointMultiplier: 1.5

@@ -2,7 +2,8 @@ import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../../EventBus';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
-import { DerivedStatsComponent, HealthComponent, ProgressionComponent } from '../../components/character';
+import { DerivedStatsComponent, HealthComponent } from '../../components/character';
+import { ProgressionComponent, SkillInfoComponent } from '../../components/skill';
 import { SkillComponent, type SkillEffectData, type TargetType, type TargetPattern, type SkillCost } from '../../components/skill';
 import { type GameConfig } from '../../../ContentService';
 
@@ -24,6 +25,13 @@ export class CombatSystem {
         this.content = loadedContent;
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
         this.config = loadedContent.config;
+
+        // Diagnostic: print the SkillComponent registration object identity so we can detect duplicate module instances
+        try {
+            console.log('[CombatSystem] SkillComponent ref:', SkillComponent);
+        } catch (err) {
+            console.warn('[CombatSystem] Could not log SkillComponent ref:', err);
+        }
 
         this.eventBus.on('combatStarted', this.onCombatStarted.bind(this));
         this.eventBus.on('actionTaken', this.onActionTaken.bind(this));
@@ -98,7 +106,42 @@ export class CombatSystem {
                     break;
                 }
 
-                const skillData = SkillComponent.oneFrom(skillEntity)!.data;
+                const skillData = SkillComponent.oneFrom(skillEntity)?.data;
+
+                // Add a check to ensure skillData was found
+                if (!skillData) {
+                    console.error(`[CombatSystem] FATAL: Could not retrieve SkillComponent data for skill entity ${skillEntity.id} (string ID: ${payload.skillId}). The entity may be malformed or not a valid skill.`);
+                    // Try to log helpful diagnostics about what we found in content mapping
+                    const mappedNumeric = this.contentIdToEntityIdMap.get(payload.skillId!);
+                    console.error(`[CombatSystem] Diagnostics: contentIdToEntityIdMap.get('${payload.skillId}') => ${mappedNumeric}`);
+                    const rawFromContent = this.content.skills.get(payload.skillId!);
+                    console.error(`[CombatSystem] Diagnostics: this.content.skills.get('${payload.skillId}') => ${rawFromContent ? `object(entity id ${rawFromContent.id})` : 'undefined'}`);
+                    // Extra diagnostics: inspect the returned object's shape and available components
+                    try {
+                        console.error('[CombatSystem] Skill entity raw dump:', rawFromContent);
+                        console.error('[CombatSystem] Skill entity keys:', Object.keys(rawFromContent || {}));
+                        const infoComp = SkillInfoComponent.oneFrom(rawFromContent as any);
+                        const progComp = ProgressionComponent.oneFrom(rawFromContent as any);
+                        console.error(`[CombatSystem] SkillInfoComponent present: ${!!infoComp}, ProgressionComponent present: ${!!progComp}`);
+                    } catch (err) {
+                        console.error('[CombatSystem] Error while dumping skill entity diagnostics:', err);
+                    }
+
+                    // Fallback: resolve to a basic attack effect so the turn can proceed without crash
+                    console.warn(`[CombatSystem] Falling back to Basic Attack effect for actor ${payload.actorId} against target ${payload.targetId}`);
+                    this.resolveDamageEffect(combatEntity, actor, this.world.getEntity(parseInt(payload.targetId!, 10))!, {
+                        type: 'Damage',
+                        power: 5,
+                        scalingStat: 'attack',
+                        target: 'Enemy',
+                        targeting: { pattern: 'SINGLE' }
+                    });
+
+                    // End the actor's turn and start next
+                    this.eventBus.emit('turnEnded', { combatEntityId: payload.combatEntityId, endedTurnForId: payload.actorId });
+                    this.startNextTurn(combatEntity);
+                    return; // Return instead of break to exit the function here
+                }
 
                 if (!this.canAffordCost(actor, skillData.costs)) {
                     console.log(`Character ${actor.id} cannot afford the cost of skill ${payload.skillId}.`);
@@ -172,10 +215,36 @@ export class CombatSystem {
 
         const actor = this.world.getEntity(parseInt(actorId, 10))!;
         const initialTarget = this.world.getEntity(parseInt(targetId, 10))!;
+        // Resolve skillEntity via mapping to numeric entity id first (preferred)
+        let skillEntity: Entity | undefined;
+        let skillData: any | undefined;
 
-        const skillEntity = this.content.skills.get(skillId);
-        if (!skillEntity) {
-            console.error(`Skill ${skillId} not found!`);
+        const numericSkillId = this.contentIdToEntityIdMap.get(skillId);
+        if (numericSkillId) {
+            skillEntity = this.world.getEntity(numericSkillId);
+            if (skillEntity) {
+                skillData = SkillComponent.oneFrom(skillEntity)?.data;
+            }
+        }
+
+        // If still not found, check content map for a raw template or an entity reference
+        if (!skillData) {
+            const raw = this.content.skills.get(skillId);
+            if (raw) {
+                // If raw looks like an ECS entity instance with components attached
+                const maybeData = SkillComponent.oneFrom(raw as any)?.data;
+                if (maybeData) {
+                    skillEntity = raw as any;
+                    skillData = maybeData;
+                } else if ((raw as any).components && (raw as any).components.skill) {
+                    // Raw template from ContentService before entity materialization
+                    skillData = (raw as any).components.skill;
+                }
+            }
+        }
+
+        if (!skillData) {
+            console.error(`Skill ${skillId} not found or missing SkillComponent data! Falling back to basic attack.`);
             // Fallback to a basic attack if skill is not found
             this.resolveDamageEffect(combatEntity, actor, initialTarget, {
                 type: 'Damage',
@@ -186,8 +255,6 @@ export class CombatSystem {
             });
             return;
         }
-
-        const skillData = SkillComponent.oneFrom(skillEntity)!.data;
 
         for (const effect of skillData.effects) {
             const affectedTargets = this.resolveTargets(initialTarget, effect.targeting.pattern, combatEntity);

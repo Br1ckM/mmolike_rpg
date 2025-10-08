@@ -12,8 +12,9 @@ import {
     ManaComponent,
     SkillBookComponent,
     ConsumableBeltComponent,
-    ProgressionComponent,
-    AppearanceComponent, // <-- Add Component
+    AppearanceComponent,
+    VoreRoleComponent,
+    VoreComponent,
     type AppearanceComponentData, // <-- FIX: Corrected import name
     type InfoData,
     type ControllableData,
@@ -27,9 +28,9 @@ import {
     type ManaData,
     type ResourceData,
     type SkillBookData,
-    type ConsumableBeltData,
+    type ConsumableBeltData
 } from '../components/character';
-import type { ProgressionData } from '../components/skill';
+import { type ProgressionData, ProgressionComponent } from '../components/skill';
 
 /**
  * CharacterData (v2)
@@ -112,6 +113,8 @@ export class Character extends Entity {
         if (data.consumableBelt) this.add(new ConsumableBeltComponent(data.consumableBelt));
         if (data.progression) this.add(new ProgressionComponent(data.progression));
         if (data.appearance) this.add(new AppearanceComponent(data.appearance)); // <-- Add the component if data exists
+        if ((data as any).vorerole) this.add(new VoreRoleComponent((data as any).vorerole));
+        if ((data as any).vore) this.add(new VoreComponent((data as any).vore));
     }
 
     // Helper methods

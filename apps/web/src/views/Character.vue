@@ -9,6 +9,7 @@ import CharacterEquipmentPanel from '@/components/character/CharacterEquipmentPa
 import CharacterSkillsList from '@/components/character/CharacterSkillsList.vue';
 import CharacterAppearancePanel from '@/components/character/CharacterAppearancePanel.vue';
 import StomachStatusPanel from '@/components/character/StomachStatusPanel.vue'; // <-- NEW IMPORT
+import CharacterAncestryPanel from '@/components/character/CharacterAncestryPanel.vue'
 </script>
 
 <template>
@@ -21,15 +22,11 @@ import StomachStatusPanel from '@/components/character/StomachStatusPanel.vue'; 
             </div>
             <Button label="View Talent Tree" icon="pi pi-sitemap" severity="secondary" size="small" />
         </div>
-
         <CharacterIdentityAndStats />
-
+        <CharacterAncestryPanel />
         <CharacterAppearancePanel />
-
-        <StomachStatusPanel /> <!-- <-- NEW COMPONENT -->
-
+        <StomachStatusPanel />
         <CharacterEquipmentPanel />
-
         <CharacterSkillsList />
 
     </div>

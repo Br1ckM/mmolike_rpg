@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import Sidebar from '@/components/Sidebar.vue';
 import CombatModal from '@/components/combat/CombatModal.vue';
-import { onMounted } from 'vue';
-
-import { usePlayerStore } from '@/stores/player'
-import { useGameStore } from '@/stores/game';
-import { useSettingsStore } from '@/stores/settings';
-
-onMounted(() => {
-  const playerStore = usePlayerStore();
-  const gameStore = useGameStore();
-  const settingsStore = useSettingsStore(); // Initialize the settings store
-
-  playerStore.initialize();
-  gameStore.initialize();
-})
+// No longer need onMounted or the stores here
 </script>
 
 <template>

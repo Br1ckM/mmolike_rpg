@@ -1,0 +1,32 @@
+- id: "ancestry_human"
+  name: "Human"
+  description: "Adaptable and ambitious, humans are the most common sight in the known world, their settlements dotting every corner of the map."
+  # Additive modifiers applied directly to core stats
+  statModifiers:
+    strength: 1
+    dexterity: 1
+    intelligence: 1
+
+- id: "ancestry_elf"
+  name: "Elf"
+  description: "Graceful and perceptive, elves have a deep connection to the natural world and a keen eye for detail. They are often found in ancient forests."
+  statModifiers:
+    strength: 0
+    dexterity: 2
+    intelligence: 1
+
+- id: "ancestry_dwarf"
+  name: "Dwarf"
+  description: "Stout and resilient, dwarves are master artisans and warriors, most at home in their mountain halls. They value tradition and craftsmanship above all."
+  statModifiers:
+    strength: 2
+    dexterity: 1
+    intelligence: 0
+
+- id: "ancestry_halfling"
+  name: "Halfling"
+  description: "Small in stature but great in spirit, halflings are known for their affable nature, surprising courage, and love of simple comforts."
+  statModifiers:
+    strength: 0
+    dexterity: 2
+    intelligence: 1

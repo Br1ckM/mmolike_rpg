@@ -22,7 +22,7 @@ const coreTiles = computed<Record<'STR' | 'DEX' | 'INT', number>>(() => ({
     INT: player.value?.coreStats?.intelligence ?? 0,
 }));
 
-type DerivedKey = | 'attack' | 'magicAttack' | 'defense' | 'magicResist' | 'critChance' | 'critDamage' | 'dodge' | 'haste' | 'accuracy';
+type DerivedKey = | 'attack' | 'magicAttack' | 'defense' | 'magicResist' | 'critChance' | 'critDamage' | 'dodge' | 'speed' | 'accuracy';
 
 const DERIVED_META: Record<DerivedKey, { label: string; icon: string; tooltip: string; isPercent?: boolean }> = {
     attack: { label: 'Attack', icon: 'pi pi-bolt', tooltip: 'From STR, gear, and modifiers.' },
@@ -32,7 +32,7 @@ const DERIVED_META: Record<DerivedKey, { label: string; icon: string; tooltip: s
     critChance: { label: 'Crit Chance', icon: 'pi pi-bullseye', tooltip: 'Chance to crit.', isPercent: true },
     critDamage: { label: 'Crit Damage', icon: 'pi pi-plus-circle', tooltip: 'Crit damage multiplier.', isPercent: true },
     dodge: { label: 'Dodge', icon: 'pi pi-times-circle', tooltip: 'Chance to evade attacks.', isPercent: true },
-    haste: { label: 'Haste', icon: 'pi pi-forward', tooltip: 'Attack/spell speed bonus.', isPercent: true },
+    speed: { label: 'speed', icon: 'pi pi-forward', tooltip: 'Attack/spell speed bonus.', isPercent: true },
     accuracy: { label: 'Accuracy', icon: 'pi pi-check', tooltip: 'Chance to hit.', isPercent: true },
 }
 
@@ -84,7 +84,7 @@ const getStatTileStyles = (statName: string) => {
                         ]">
                             <p class="font-bold uppercase text-sm" :class="getStatTileStyles(name).color">{{ name }}</p>
                             <p class="font-mono text-3xl font-bold" :class="getStatTileStyles(name).valueClass">{{ value
-                                }}</p>
+                            }}</p>
                         </div>
                     </div>
                 </div>

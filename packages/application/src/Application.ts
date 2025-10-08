@@ -2,7 +2,9 @@ import { GameService } from './GameService';
 import { CommandService } from './CommandService';
 import { QueryService } from './QueryService';
 import { GameLoop } from './GameLoop';
-import { ContentService, type RawGameContent } from '../../domain/src/ContentService';
+import { ContentService, type RawGameContent, type GameContent } from 'mmolike_rpg-domain/ContentService';
+import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus'; // Make sure EventBus is imported
+
 
 // Import the parsed YAML content directly
 import affixes from '../../content/src/affixes.yaml';
@@ -32,6 +34,7 @@ import tiers from '../../content/src/tiers.yaml';
 import archetypes from '../../content/src/archetypes.yaml';
 import spawnPools from '../../content/src/spawn_pools.yaml';
 import config from '../../content/src/config.yaml';
+import ancestries from '../../content/src/ancestries.yaml';
 
 
 class Application {
@@ -40,8 +43,14 @@ class Application {
     public queries!: QueryService;
     private loop!: GameLoop;
     public isReady: Promise<void>;
+    public directQueries: { getStaticContent: (key: keyof GameContent) => any[] };
+
     constructor() {
         this.isReady = this.initialize();
+
+        this.directQueries = {
+            getStaticContent: (key: keyof GameContent) => this.game.getStaticContent(key),
+        };
     }
 
     private async initialize(): Promise<void> {
@@ -59,6 +68,7 @@ class Application {
         ];
 
         const allContent: RawGameContent = {
+            ancestries,
             affixes,
             dialogueTrees,
             effects,
@@ -80,26 +90,12 @@ class Application {
         };
 
         const contentService = new ContentService(allContent as unknown as RawGameContent);
+        const eventBus = new EventBus();
 
-        this.game = new GameService(contentService);
+        this.game = new GameService(contentService, eventBus);
         this.commands = new CommandService(this.game.eventBus);
         this.queries = new QueryService(this.game, this.game.eventBus);
         this.loop = new GameLoop(this.game);
-
-        // --- START FIX ---
-        // Listen for filter updates and immediately trigger a player state refresh.
-        this.game.eventBus.on('updateContentFilter', (settings) => {
-            console.log('[Application] Received filter update:', settings);
-            this.game.settings.showNsfwContent = settings.showNsfwContent;
-            this.game.settings.showVoreContent = settings.showVoreContent;
-
-            // If the player exists, emit an event to force the QueryService to re-publish the player state
-            // with the newly applied filters.
-            if (this.game.player) {
-                this.game.eventBus.emit('playerStateModified', { characterId: this.game.player.id });
-            }
-        });
-        // --- END FIX ---
 
         this.game.startGame();
         this.loop.start();

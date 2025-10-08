@@ -12,11 +12,13 @@ export class AISystem {
     private world: ECS;
     private eventBus: EventBus;
     private content: any; // To access skill definitions
+    private contentIdToEntityIdMap: Map<string, number> | undefined;
 
-    constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
+    constructor(world: ECS, eventBus: EventBus, loadedContent: any, contentIdToEntityIdMap?: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
         this.content = loadedContent;
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
         this.eventBus.on('turnStarted', this.onTurnStarted.bind(this));
     }
@@ -80,9 +82,14 @@ export class AISystem {
         let maxPower = 0;
 
         for (const skillId of knownSkills) {
-            const skillEntity = this.content.skills.get(skillId);
-            const skillData = SkillComponent.oneFrom(skillEntity)?.data;
-            const damageEffect = skillData?.effects.find(e => e.type === 'Damage');
+            // Prefer resolving to an actual skill entity via the contentId->entityId map
+            let skillData: any | undefined;
+            const numericSkillId = this.contentIdToEntityIdMap?.get(skillId);
+            const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : this.content.skills.get(skillId);
+            if (skillEntity) {
+                skillData = SkillComponent.oneFrom(skillEntity)?.data;
+            }
+            const damageEffect = skillData?.effects?.find((e: any) => e.type === 'Damage');
             if (damageEffect && damageEffect.power > maxPower) {
                 maxPower = damageEffect.power;
                 bestSkillId = skillId;
@@ -97,6 +104,8 @@ export class AISystem {
         };
     }
 
+    // packages/domain/src/ecs/systems/combat/AISystem.ts
+
     private getHealerAction(actor: Entity, combatEntityId: string): { targetId: string, skillId: string } | null {
         const combatEntity = this.world.getEntity(parseInt(combatEntityId, 10));
         if (!combatEntity) return null;
@@ -106,13 +115,22 @@ export class AISystem {
         const knownSkills = SkillBookComponent.oneFrom(actor)?.data.knownSkills || [];
 
         // --- Healer Tactic ---
-        // 1. Find the best healing skill.
-        const healSkill = knownSkills.map(id => this.content.skills.get(id)).find(skillEntity =>
-            SkillComponent.oneFrom(skillEntity)?.data.effects.some(e => e.type === 'Heal')
-        );
+        // 1. Find the best healing skill's ID.
+        let healSkillId: string | undefined;
+        for (const skillId of knownSkills) {
+            // Resolve via contentId->entityId map when possible so we inspect real Skill entities
+            const numericSkillId = this.contentIdToEntityIdMap?.get(skillId);
+            const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : this.content.skills.get(skillId);
+            // Check if the skill has a healing effect
+            if (skillEntity && SkillComponent.oneFrom(skillEntity)?.data.effects.some((e: any) => e.type === 'Heal')) {
+                healSkillId = skillId;
+                break; // Found one, use it
+            }
+        }
+
 
         // 2. Find an ally (including self) who is injured.
-        if (healSkill) {
+        if (healSkillId) {
             const potentialAllies = combat.combatants
                 .map(id => this.world.getEntity(parseInt(id, 10))!)
                 .filter(entity => CombatantComponent.oneFrom(entity)!.data.teamId === actorCombatant.teamId)
@@ -123,7 +141,7 @@ export class AISystem {
             if (potentialAllies.length > 0) {
                 // Heal the most injured ally
                 return {
-                    skillId: healSkill.id.toString(),
+                    skillId: healSkillId, // <-- FIX: Now returns the correct string ID
                     targetId: potentialAllies[0].entity.id.toString()
                 };
             }

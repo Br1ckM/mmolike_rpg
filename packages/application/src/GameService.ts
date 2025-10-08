@@ -1,52 +1,52 @@
 // packages/application/src/GameService.ts
 
 import ECS, { Entity } from 'ecs-lib';
-import { EventBus } from '../../domain/src/ecs/EventBus';
-import { ContentService, type GameContent } from '../../domain/src/ContentService';
-import { Character, type CharacterData } from '../../domain/src/ecs/entities/character';
-import { Item, type ItemData } from '../../domain/src/ecs/entities/item'
-import { World, Node } from '../../domain/src/ecs/entities/world';
-import { WorldClockComponent, type TimeOfDay, NodeComponent } from '../../domain/src/ecs/components/world';
-import { Quest, type QuestEntityData } from '../../domain/src/ecs/entities/quest';
-import { Skill, type SkillEntityData } from '../../domain/src/ecs/entities/skill';
-import { Effect } from '../../domain/src/ecs/entities/effects';
-import { type EffectDefinitionData } from '../../domain/src/ecs/components/effects';
-import { Trait } from '../../domain/src/ecs/entities/trait';
-import { type TraitData } from '../../domain/src/ecs/components/traits';
-import { Job, type JobEntityData } from '../../domain/src/ecs/entities/job';
-import { ProgressionSystem } from '../../domain/src/ecs/systems/PlayerProgressionSystem';
+import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
+import { ContentService, type GameContent } from 'mmolike_rpg-domain/ContentService';
+import { Character, type CharacterData } from 'mmolike_rpg-domain/ecs/entities/character';
+import { Item, type ItemData } from 'mmolike_rpg-domain/ecs/entities/item'
+import { World, Node } from 'mmolike_rpg-domain/ecs/entities/world';
+import { WorldClockComponent, type TimeOfDay, NodeComponent } from 'mmolike_rpg-domain/ecs/components/world';
+import { Quest, type QuestEntityData } from 'mmolike_rpg-domain/ecs/entities/quest';
+import { Skill, type SkillEntityData } from 'mmolike_rpg-domain/ecs/entities/skill';
+import { Effect } from 'mmolike_rpg-domain/ecs/entities/effects';
+import { type EffectDefinitionData } from 'mmolike_rpg-domain/ecs/components/effects';
+import { Trait } from 'mmolike_rpg-domain/ecs/entities/trait';
+import { type TraitData } from 'mmolike_rpg-domain/ecs/components/traits';
+import { Job, type JobEntityData } from 'mmolike_rpg-domain/ecs/entities/job';
+import { ProgressionSystem } from 'mmolike_rpg-domain/ecs/systems/PlayerProgressionSystem';
 
 
 // Import all domain systems
-import { StatCalculationSystem } from '../../domain/src/ecs/systems/StatCalculationSystem';
-import { ItemGenerationSystem } from '../../domain/src/ecs/systems/ItemGenerationSystem';
-import { InventorySystem } from '../../domain/src/ecs/systems/InventorySystem';
-import { EquipmentSystem } from '../../domain/src/ecs/systems/EquipmentSystem';
-import { ConsumableSystem } from '../../domain/src/ecs/systems/ConsumableSystem';
-import { QuestLogSystem } from '../../domain/src/ecs/systems/QuestLogSystem';
-import { QuestTrackingSystem } from '../../domain/src/ecs/systems/QuestTrackingSystem';
-import { QuestRewardSystem } from '../../domain/src/ecs/systems/QuestRewardSystem';
-import { QuestStateSystem } from '../../domain/src/ecs/systems/QuestStateSystem';
-import { DialogueSystem } from '../../domain/src/ecs/systems/DialogueSystem';
-import { VendorSystem } from '../../domain/src/ecs/systems/VendorSystem';
-import { TrainerSystem } from '../../domain/src/ecs/systems/TrainerSystem';
-import { LootResolutionSystem } from '../../domain/src/ecs/systems/LootResolutionSystem';
-import { MobGenSystem } from '../../domain/src/ecs/systems/MobGenSystem';
-import { EncounterSystem } from '../../domain/src/ecs/systems/EncounterSystem';
-import { TraitSystem } from '../../domain/src/ecs/systems/TraitSystem';
-import { WorldClockSystem } from '../../domain/src/ecs/systems/WorldClockSystem';
-import { TravelSystem } from '../../domain/src/ecs/systems/TravelSystem';
-import { ScheduleSystem } from '../../domain/src/ecs/systems/ScheduleSystem';
-import { VoreSystem } from '../../domain/src/ecs/systems/VoreSystem';
-import { CombatInitiationSystem } from '../../domain/src/ecs/systems/combat/CombatInitiationSystem';
-import { CombatSystem } from '../../domain/src/ecs/systems/combat/CombatSystem';
-import { AISystem } from '../../domain/src/ecs/systems/combat/AISystem';
-import { StatusEffectSystem } from '../../domain/src/ecs/systems/combat/StatusEffectSystem';
-import { NPC, type NPCEntityData } from '../../domain/src/ecs/entities/npc';
-import { Location, type LocationEntityData } from '../../domain/src/ecs/entities/world';
-import { PlayerLocationComponent, ContainerComponent } from '../../domain/src/ecs/components/world';
-import { InteractionSystem } from '../../domain/src/ecs/systems/InteractionSystem';
-import { CombatComponent, CombatantComponent } from '../../domain/src/ecs/components/combat';
+import { StatCalculationSystem } from 'mmolike_rpg-domain/ecs/systems/StatCalculationSystem';
+import { ItemGenerationSystem } from 'mmolike_rpg-domain/ecs/systems/ItemGenerationSystem';
+import { InventorySystem } from 'mmolike_rpg-domain/ecs/systems/InventorySystem';
+import { EquipmentSystem } from 'mmolike_rpg-domain/ecs/systems/EquipmentSystem';
+import { ConsumableSystem } from 'mmolike_rpg-domain/ecs/systems/ConsumableSystem';
+import { QuestLogSystem } from 'mmolike_rpg-domain/ecs/systems/QuestLogSystem';
+import { QuestTrackingSystem } from 'mmolike_rpg-domain/ecs/systems/QuestTrackingSystem';
+import { QuestRewardSystem } from 'mmolike_rpg-domain/ecs/systems/QuestRewardSystem';
+import { QuestStateSystem } from 'mmolike_rpg-domain/ecs/systems/QuestStateSystem';
+import { DialogueSystem } from 'mmolike_rpg-domain/ecs/systems/DialogueSystem';
+import { VendorSystem } from 'mmolike_rpg-domain/ecs/systems/VendorSystem';
+import { TrainerSystem } from 'mmolike_rpg-domain/ecs/systems/TrainerSystem';
+import { LootResolutionSystem } from 'mmolike_rpg-domain/ecs/systems/LootResolutionSystem';
+import { MobGenSystem } from 'mmolike_rpg-domain/ecs/systems/MobGenSystem';
+import { EncounterSystem } from 'mmolike_rpg-domain/ecs/systems/EncounterSystem';
+import { TraitSystem } from 'mmolike_rpg-domain/ecs/systems/TraitSystem';
+import { WorldClockSystem } from 'mmolike_rpg-domain/ecs/systems/WorldClockSystem';
+import { TravelSystem } from 'mmolike_rpg-domain/ecs/systems/TravelSystem';
+import { ScheduleSystem } from 'mmolike_rpg-domain/ecs/systems/ScheduleSystem';
+import { VoreSystem } from 'mmolike_rpg-domain/ecs/systems/VoreSystem';
+import { CombatInitiationSystem } from 'mmolike_rpg-domain/ecs/systems/combat/CombatInitiationSystem';
+import { CombatSystem } from 'mmolike_rpg-domain/ecs/systems/combat/CombatSystem';
+import { AISystem } from 'mmolike_rpg-domain/ecs/systems/combat/AISystem';
+import { StatusEffectSystem } from 'mmolike_rpg-domain/ecs/systems/combat/StatusEffectSystem';
+import { NPC, type NPCEntityData } from 'mmolike_rpg-domain/ecs/entities/npc';
+import { Location, type LocationEntityData } from 'mmolike_rpg-domain/ecs/entities/world';
+import { PlayerLocationComponent, ContainerComponent } from 'mmolike_rpg-domain/ecs/components/world';
+import { InteractionSystem } from 'mmolike_rpg-domain/ecs/systems/InteractionSystem';
+import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
 
 
 // Import Component types for creating the DTO
@@ -70,7 +70,7 @@ import {
     type VoreRole,
     type EquipmentSlot,
 
-} from '../../domain/src/ecs/components/character';
+} from 'mmolike_rpg-domain/ecs/components/character';
 import {
     ItemInfoComponent,
     StackableComponent,
@@ -84,11 +84,11 @@ import {
     QuestItemComponent,
     ReputationComponent,
     VendorValueComponent,
-} from '../../domain/src/ecs/components/item';
-import { QuestStatusComponent, QuestComponent, QuestObjectiveComponent } from '../../domain/src/ecs/components/quest';
-import { LocationComponent } from '../../domain/src/ecs/components/world';
-import { DialogueComponent, VendorComponent, TrainerComponent } from '../../domain/src/ecs/components/npc'
-import { SkillInfoComponent, SkillComponent, ProgressionComponent } from '../../domain/src/ecs/components/skill';
+} from 'mmolike_rpg-domain/ecs/components/item';
+import { QuestStatusComponent, QuestComponent, QuestObjectiveComponent } from 'mmolike_rpg-domain/ecs/components/quest';
+import { LocationComponent } from 'mmolike_rpg-domain/ecs/components/world';
+import { DialogueComponent, VendorComponent, TrainerComponent } from 'mmolike_rpg-domain/ecs/components/npc'
+import { SkillInfoComponent, SkillComponent, ProgressionComponent } from 'mmolike_rpg-domain/ecs/components/skill';
 
 
 // Helper to get all components from an entity using public accessors
@@ -151,17 +151,69 @@ export class GameService {
     private contentIdToEntityIdMap = new Map<string, number>();
     public settings = {
         showNsfwContent: false,
-        showVoreContent: false, // <-- ADDED
+        showVoreContent: false,
     };
 
-    constructor(contentService: ContentService) {
+    constructor(contentService: ContentService, eventBus: EventBus) {
         this.world = new ECS();
-        this.eventBus = new EventBus();
+        this.eventBus = eventBus;
         this.systems = [];
         this.content = contentService as GameContent;
         this.contentIdToEntityIdMap = new Map<string, number>();
 
         console.log('[LOAD DIAGNOSTIC] GameService constructor received content data. Keys:', Object.keys(this.content));
+
+        this.eventBus.on('updateContentFilter', (settings) => {
+            console.log('[GameService] Received filter update:', settings);
+            this.settings.showNsfwContent = settings.showNsfwContent;
+            this.settings.showVoreContent = settings.showVoreContent;
+
+            if (this.player) {
+                this.eventBus.emit('playerStateModified', { characterId: this.player.id });
+            }
+        });
+
+        this.eventBus.on('characterCreationRequested', (options) => {
+            if (this.player) return;
+
+            const playerTemplate = this.content.mobs.get('PLAYER_TEMPLATE');
+            if (!playerTemplate) {
+                throw new Error('Player template could not be found.');
+            }
+
+            const playerData: CharacterData = JSON.parse(JSON.stringify(playerTemplate.components));
+
+            playerData.info.name = options.name;
+            (playerData.info as any).pronouns = options.pronouns;
+            (playerData.info as any).ancestryId = options.ancestryId;
+
+            if (playerData.inventory) {
+                const walletEntityId = this.contentIdToEntityIdMap.get(playerData.inventory.walletId);
+                if (walletEntityId) {
+                    playerData.inventory.walletId = String(walletEntityId);
+                }
+                playerData.inventory.bagIds = playerData.inventory.bagIds.map(bagContentId => {
+                    const bagEntityId = this.contentIdToEntityIdMap.get(bagContentId);
+                    return bagEntityId ? String(bagEntityId) : bagContentId;
+                });
+            }
+
+            this.player = new Character(playerData as any);
+            this.player.add(new PlayerLocationComponent({
+                currentZoneId: String(this.contentIdToEntityIdMap.get('loc_timberbrook_fields')),
+                currentSubLocationId: String(this.contentIdToEntityIdMap.get('loc_cloverfell_village')),
+            }));
+
+            this.world.addEntity(this.player);
+
+            const statCalcSystem = this.systems.find(s => s instanceof StatCalculationSystem) as StatCalculationSystem;
+            if (statCalcSystem) {
+                statCalcSystem.update(this.player);
+            }
+
+            console.log(`Player '${this.player.name}' created!`);
+            this.eventBus.emit('playerStateModified', { characterId: this.player.id });
+        });
     }
 
     /**
@@ -185,7 +237,6 @@ export class GameService {
         });
 
         // --- System Instantiation ---
-        // Pass the 'this.content' object (which is the data) to all systems that need it.
         const statCalculationSystem = new StatCalculationSystem(this.world, this.eventBus, this.content);
         const questLogSystem = new QuestLogSystem(this.world, this.eventBus, this.contentIdToEntityIdMap);
         const mobGenSystem = new MobGenSystem(this.world, this.eventBus, this.content);
@@ -219,7 +270,7 @@ export class GameService {
             new TravelSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
             new CombatInitiationSystem(this.world, this.eventBus),
             new CombatSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
-            new AISystem(this.world, this.eventBus, this.content),
+            new AISystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new StatusEffectSystem(this.world, this.eventBus, this.content)
         );
 
@@ -230,9 +281,15 @@ export class GameService {
             for (const [id, template] of skillEntries) {
                 const entity = new Skill((template as any).components as SkillEntityData);
                 this.world.addEntity(entity);
+                // Diagnostic: log component registration identity to help catch duplicate module instances
+                try {
+                    console.log(`[GameService] Created skill entity for content id '${id}' -> entity ${entity.id}. SkillComponent ref:`, SkillComponent);
+                    console.log(`[GameService] SkillComponent.oneFrom(entity) =>`, SkillComponent.oneFrom(entity));
+                    console.log(`[GameService] SkillInfoComponent.oneFrom(entity) =>`, SkillInfoComponent.oneFrom(entity));
+                } catch (err) {
+                    console.warn('[GameService] Diagnostic logging for skill entity failed:', err);
+                }
                 this.contentIdToEntityIdMap.set(id, entity.id);
-                // Replace raw data with the entity in the content map
-                this.content.skills.set(id, entity as any);
             }
         }
 
@@ -242,7 +299,6 @@ export class GameService {
                 const entity = new Effect((template as any).components.definition as EffectDefinitionData);
                 this.world.addEntity(entity);
                 this.contentIdToEntityIdMap.set(id, entity.id);
-                this.content.effects.set(id, entity as any);
             }
         }
 
@@ -252,7 +308,6 @@ export class GameService {
                 const entity = new Trait(template as TraitData);
                 this.world.addEntity(entity);
                 this.contentIdToEntityIdMap.set(id, entity.id);
-                this.content.traits.set(id, entity as any);
             }
         }
 
@@ -262,7 +317,6 @@ export class GameService {
                 const entity = new Job((template as any).components as JobEntityData);
                 this.world.addEntity(entity);
                 this.contentIdToEntityIdMap.set(id, entity.id);
-                this.content.jobs.set(id, entity as any);
             }
         }
 
@@ -288,7 +342,6 @@ export class GameService {
         // --- Create NPC Entities ---
         if (this.content.mobs) {
             for (const [id, template] of this.content.mobs.entries()) {
-                // We'll filter out the player template for this loop
                 if (id.startsWith('npc_')) {
                     const entity = new NPC(template.components as NPCEntityData);
                     this.world.addEntity(entity);
@@ -306,61 +359,17 @@ export class GameService {
             }
         }
 
-        // In Application.ts, all items were merged into baseItems, so we'll look there.
         const staticItems = this.content.baseItems;
         if (staticItems) {
             for (const [id, template] of staticItems.entries()) {
-                // We identify inventory containers by checking for these specific components
                 if (template.components.slots || template.components.currency) {
                     const itemData: ItemData = template.components;
                     const entity = new Item(itemData);
                     this.world.addEntity(entity);
-                    // Map the string ID from the YAML file to the numeric runtime ID
                     this.contentIdToEntityIdMap.set(id, entity.id);
                 }
             }
         }
-
-        // --- Player Creation ---
-        const playerTemplate = this.content.mobs.get('PLAYER_TEMPLATE');
-
-        // *** NEW DEBUG LOG ***
-        console.log('[GameService.startGame] Retrieved player template from content.mobs map:', JSON.parse(JSON.stringify(playerTemplate)));
-
-        if (!playerTemplate) {
-            throw new Error('Player template could not be found in game content.');
-        }
-
-        // Create a mutable copy of the player data
-        const playerData: CharacterData = JSON.parse(JSON.stringify(playerTemplate.components));
-
-        // --- FIX: Replace string IDs with the new numeric entity IDs ---
-        if (playerData.inventory) {
-            const walletEntityId = this.contentIdToEntityIdMap.get(playerData.inventory.walletId);
-            if (walletEntityId) {
-                playerData.inventory.walletId = String(walletEntityId);
-            }
-
-            playerData.inventory.bagIds = playerData.inventory.bagIds.map(bagContentId => {
-                const bagEntityId = this.contentIdToEntityIdMap.get(bagContentId);
-                return bagEntityId ? String(bagEntityId) : bagContentId;
-            });
-        }
-
-        this.player = new Character(playerData);
-
-        this.player.add(new PlayerLocationComponent({
-            currentZoneId: String(this.contentIdToEntityIdMap.get('loc_timberbrook_fields')),
-            currentSubLocationId: String(this.contentIdToEntityIdMap.get('loc_cloverfell_village')),
-        }));
-
-        this.world.addEntity(this.player);
-        worldState.playerEntity = this.player;
-
-        // --- Initial State Calculation ---
-        statCalculationSystem.update(this.player);
-
-        console.log(`Game started. Player '${this.player.name}' created and added to the world.`);
     }
 
     /**
@@ -376,11 +385,9 @@ export class GameService {
     public getPlayerState(): any {
         if (!this.player) return null;
 
-        // Start with a fresh DTO of all raw component data
         const playerDTO = getEntityDTO(this.player) as any;
         if (!playerDTO) return null;
 
-        // Hydrate Inventory
         const inventoryComponent = playerDTO.InventoryComponent;
         if (inventoryComponent) {
             const walletEntity = this.world.getEntity(parseInt(inventoryComponent.walletId, 10));
@@ -403,7 +410,6 @@ export class GameService {
             delete playerDTO.InventoryComponent;
         }
 
-        // Hydrate Quests
         const questStatusComponents = QuestStatusComponent.allFrom(this.player);
         playerDTO.quests = questStatusComponents.map(statusComponent => {
             const questEntityId = this.contentIdToEntityIdMap.get(statusComponent.data.questId);
@@ -417,7 +423,6 @@ export class GameService {
             };
         }).filter(q => q !== null);
 
-        // Hydrate Skills
         const skillBookComponent = playerDTO.SkillBookComponent;
         if (skillBookComponent) {
             const hydratedSkills = skillBookComponent.knownSkills.map((skillId: string) => {
@@ -439,7 +444,6 @@ export class GameService {
             playerDTO.skillBook = { knownSkills: hydratedSkills };
         }
 
-        // --- START NEW VORE HYDRATION ---
         const voreComponent = playerDTO.VoreComponent;
         if (voreComponent) {
             const allContents: any[] = [];
@@ -449,17 +453,14 @@ export class GameService {
                     allContents.push({
                         name: prey.name,
                         digestionTimer: prey.digestionTimer,
-                        voreType: voreType.charAt(0).toUpperCase() + voreType.slice(1) // Capitalize (e.g., "oral" -> "Oral")
+                        voreType: voreType.charAt(0).toUpperCase() + voreType.slice(1)
                     });
                 });
             }
             playerDTO.vore = { contents: allContents };
             delete playerDTO.VoreComponent;
         }
-        // --- END NEW VORE HYDRATION ---
 
-
-        // Filter Appearance Data based on settings
         if (playerDTO.AppearanceComponent) {
             playerDTO.AppearanceComponent.attributes = playerDTO.AppearanceComponent.attributes.filter(
                 (attr: AppearanceAttribute) => {
@@ -470,7 +471,37 @@ export class GameService {
             );
         }
 
-        return playerDTO;
+        const ancestryData = playerDTO.InfoComponent?.ancestryId
+            ? (this.content as any).ancestries?.get(playerDTO.InfoComponent.ancestryId)
+            : null;
+
+        const finalCoreStats = { ...playerDTO.CoreStatsComponent };
+        if (ancestryData?.statModifiers) {
+            finalCoreStats.strength += ancestryData.statModifiers.strength || 0;
+            finalCoreStats.dexterity += ancestryData.statModifiers.dexterity || 0;
+            finalCoreStats.intelligence += ancestryData.statModifiers.intelligence || 0;
+        }
+
+        const finalState = {
+            id: playerDTO.id,
+            name: playerDTO.InfoComponent?.name,
+            health: playerDTO.HealthComponent,
+            mana: playerDTO.ManaComponent,
+            coreStats: finalCoreStats,
+            derivedStats: playerDTO.DerivedStatsComponent,
+            progression: playerDTO.ProgressionComponent,
+            equipment: playerDTO.EquipmentComponent,
+            inventory: playerDTO.inventory,
+            quests: playerDTO.quests,
+            skillBook: playerDTO.skillBook,
+            vore: playerDTO.vore,
+            ancestry: ancestryData,
+            AppearanceComponent: playerDTO.AppearanceComponent,
+            VoreRoleComponent: playerDTO.VoreRoleComponent,
+            consumableBelt: playerDTO.ConsumableBeltComponent,
+        };
+
+        return finalState;
     }
 
     public getHubState(): any {
@@ -479,30 +510,24 @@ export class GameService {
         const playerLocation = PlayerLocationComponent.oneFrom(this.player)?.data;
         if (!playerLocation) return null;
 
-        // --- FIX: Get data from BOTH the Zone and the Hub ---
-
-        // 1. Get the Hub entity for its name and its NPCs
         const hubEntity = this.world.getEntity(parseInt(playerLocation.currentSubLocationId, 10));
         const hubData = getEntityDTO(hubEntity || null);
         const hubContainer = hubData?.ContainerComponent;
 
-        // 2. Get the Zone entity for its map nodes
         const zoneEntity = this.world.getEntity(parseInt(playerLocation.currentZoneId, 10));
         const zoneData = getEntityDTO(zoneEntity || null);
         const zoneContainer = zoneData?.ContainerComponent;
 
-        // 3. Process the HUB's container specifically for NPCs
         const npcs = (hubContainer?.containedEntityIds || []).map((contentId: string) => {
-            if (!contentId.startsWith('npc_')) return null; // Only process NPCs here
+            if (!contentId.startsWith('npc_')) return null;
             const entityId = this.contentIdToEntityIdMap.get(contentId);
             if (!entityId) return null;
             const entity = this.world.getEntity(entityId) || null;
             return getEntityDTO(entity);
         }).filter((n: any) => n !== null);
 
-        // 4. Process the ZONE's container specifically for Nodes
         const nodes = (zoneContainer?.containedEntityIds || []).map((contentId: string) => {
-            if (!contentId.startsWith('node_')) return null; // Only process Nodes here
+            if (!contentId.startsWith('node_')) return null;
             const entityId = this.contentIdToEntityIdMap.get(contentId);
             if (!entityId) return null;
             const entity = this.world.getEntity(entityId) || null;
@@ -510,9 +535,9 @@ export class GameService {
         }).filter((n: any) => n !== null);
 
         return {
-            location: hubData, // Use the Hub's data for the location name
-            npcs: npcs,       // The NPCs from the Hub
-            nodes: nodes,     // The Nodes from the surrounding Zone
+            location: hubData,
+            npcs: npcs,
+            nodes: nodes,
         };
     }
 
@@ -565,5 +590,38 @@ export class GameService {
             combatants
         };
     }
-}
 
+    public getStaticContent(key: keyof GameContent): any[] {
+        const contentMap = this.content[key];
+        if (contentMap instanceof Map) {
+            return Array.from(contentMap.values());
+        }
+        // Handle the 'mobs' case specifically if needed, or other non-map content
+        if (key === 'mobs' && contentMap instanceof Map) {
+            return Array.from(contentMap.values());
+        }
+        return [];
+    }
+
+    /**
+     * Dev helper: generate a mob preview DTO without adding it to the world.
+     * Returns the same shape as getEntityDTO for easy inspection in the UI.
+     */
+    public generateMobPreview(protoId: string, level: number): any | null {
+        // Find the MobGenSystem if it was instantiated
+        const mobGenSystem = this.systems.find((s: any) => s && s.constructor && s.constructor.name === 'MobGenSystem');
+        if (!mobGenSystem) {
+            console.warn('[GameService] generateMobPreview: MobGenSystem not found.');
+            return null;
+        }
+
+        try {
+            const mobEntity = mobGenSystem.generateMob(protoId, level);
+            // Reuse existing helper
+            return getEntityDTO(mobEntity as any);
+        } catch (err) {
+            console.error('[GameService] generateMobPreview failed:', err);
+            return null;
+        }
+    }
+}

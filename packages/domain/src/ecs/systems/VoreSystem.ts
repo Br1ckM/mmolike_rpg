@@ -163,7 +163,7 @@ export class VoreSystem {
             info: { name: preyDataSnapshot.name, race: 'Prey', avatarUrl: 'pi-eye' },
             controllable: { isPlayer: false },
             coreStats: { strength: 1, dexterity: 1, intelligence: 1 },
-            derivedStats: { attack: 1, magicAttack: 1, defense: 1, magicResist: 1, critChance: 0, critDamage: 0, dodge: 0, haste: 0, accuracy: 0 },
+            derivedStats: { attack: 1, magicAttack: 1, defense: 1, magicResist: 1, critChance: 0, critDamage: 0, dodge: 0, speed: 0, accuracy: 0 },
             health: { current: preyDataSnapshot.nutritionValue, max: preyDataSnapshot.nutritionValue },
             mana: { current: 0, max: 0 },
             jobs: { activeJobId: 'prey', jobList: [] },

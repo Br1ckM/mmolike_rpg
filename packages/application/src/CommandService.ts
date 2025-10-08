@@ -1,5 +1,5 @@
-import { EventBus } from '../../domain/src/ecs/EventBus';
-import { type VoreRole } from '../../domain/src/ecs/components/character';
+import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
+import { type VoreRole } from 'mmolike_rpg-domain/ecs/components/character';
 
 /**
  * Provides methods for the Presentation Layer to issue player commands.
@@ -71,6 +71,10 @@ export class CommandService {
             skillId: 'skill_defend', // Use the defend skill
             targetId: actorId, // Target is self
         });
+    }
+
+    public createCharacter(options: { name: string; pronouns: string; ancestryId: string }): void {
+        this.domainEventBus.emit('characterCreationRequested', options);
     }
 
     public flee(combatEntityId: string, actorId: string): void {
