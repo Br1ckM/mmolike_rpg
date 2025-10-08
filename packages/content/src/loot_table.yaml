@@ -18,3 +18,10 @@
       type: "generated_item"
       chance: 1.0
       quantity: [1, 2]
+
+- id: "loottable_sunpetal"
+  entries:
+    - id: "baseitem_sunpetal_leaf"
+      type: "generated_item"
+      chance: 1.0 # Guarantee the item drops for the quest
+      quantity: [1, 1]

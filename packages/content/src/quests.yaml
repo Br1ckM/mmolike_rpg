@@ -37,3 +37,18 @@
     rewards:
       experience: 100
       gold: 15
+
+- id: "quest_lenna_sunpetal"
+  components:
+    info:
+      name: "A Healing Poultice"
+      description: "Lenna Brightwater, an apprentice herbalist, needs a rare Sunpetal Leaf to finish a healing poultice for a sick villager. She believes they grow in the Whispering Glade."
+      suggestedLevel: 2
+    objectives:
+      - type: "fetch"
+        targetId: "baseitem_sunpetal_leaf"
+        targetName: "Sunpetal Leaf"
+        requiredAmount: 1
+    rewards:
+      experience: 75
+      gold: 10

@@ -10,6 +10,7 @@
         - "npc_mayor_elenor"
         - "npc_grizelda_blacksmith"
         - "npc_lyra_alchemist"
+        - "npc_lenna_herbalist"
 
 - id: "loc_barterbrews_caravan"
   components:
@@ -43,3 +44,4 @@
         - "node_timberfang_camp"
         - "node_the_howling_grounds"
         - "node_wulfkin_hunt"
+        - "node_sunpetal_grove"

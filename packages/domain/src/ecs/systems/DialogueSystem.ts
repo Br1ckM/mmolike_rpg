@@ -136,6 +136,9 @@ export class DialogueSystem {
             case 'START_TRAINING':
                 this.eventBus.emit('trainingScreenOpened', { characterId, npcId });
                 break;
+            case 'RECRUIT_COMPANION':
+                this.eventBus.emit('companionRecruited', { characterId, npcId });
+                break;
         }
     }
 

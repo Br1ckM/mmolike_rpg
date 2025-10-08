@@ -31,3 +31,31 @@
       dialogueTreeId: "dt_lyra_trainer"
     trainer:
       trainableSkillIds: [] # Placeholder for skills
+
+- id: "npc_lenna_herbalist"
+  components:
+    info:
+      name: "Lenna Brightwater"
+      race: "Human"
+      avatarUrl: "https://placehold.co/150x150/22c55e/000?text=LB"
+    dialogue:
+      dialogueTreeId: "dt_lenna_intro"
+    questGiver:
+      questIds:
+        - "quest_lenna_sunpetal"
+    schedule:
+      currentLocationId: "loc_cloverfell_village"
+      defaultSchedule:
+        - time: "Morning"
+          locationId: "loc_cloverfell_village"
+        - time: "Afternoon"
+          locationId: "loc_cloverfell_village"
+        - time: "Evening"
+          locationId: "loc_cloverfell_village"
+        - time: "Night"
+          locationId: "loc_cloverfell_village"
+    companion:
+      recruited: false
+      inActiveParty: false
+      affinity: 0
+      campDialogueTreeId: "dt_lenna_camp"

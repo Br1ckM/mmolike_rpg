@@ -42,7 +42,6 @@ export class QuestLogSystem {
             return; // Stop execution if the quest already exists in the log
         }
 
-        // FIX: Use the map to get the numeric ID instead of parseInt
         const questEntityId = this.contentIdToEntityIdMap.get(payload.questId);
         const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
 
@@ -97,7 +96,6 @@ export class QuestLogSystem {
      * Checks if all objectives for a quest are met.
      */
     private checkForQuestCompletion(character: Entity, statusData: QuestStatusData): void {
-        // FIX: Use the map here as well
         const questEntityId = this.contentIdToEntityIdMap.get(statusData.questId);
         const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
 

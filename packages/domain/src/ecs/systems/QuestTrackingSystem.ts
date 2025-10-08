@@ -15,16 +15,17 @@ export class QuestTrackingSystem {
     private world: ECS;
     private eventBus: EventBus;
     private questLogSystem: QuestLogSystem;
+    private contentIdToEntityIdMap: Map<string, number>;
 
-    constructor(world: ECS, eventBus: EventBus, questLogSystem: QuestLogSystem) {
+    constructor(world: ECS, eventBus: EventBus, questLogSystem: QuestLogSystem, contentIdToEntityIdMap: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
         this.questLogSystem = questLogSystem;
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
         // Listen for events that can advance quests
         this.eventBus.on('enemyDefeated', this.onEnemyDefeated.bind(this));
-        // We'll add 'itemPickedUp' later when that event exists
-        // eventBus.on('itemPickedUp', this.onItemPickedUp.bind(this));
+        this.eventBus.on('itemPickedUp', this.onItemPickedUp.bind(this));
     }
 
     /**
@@ -39,7 +40,8 @@ export class QuestTrackingSystem {
             .filter(status => status.data.status === 'in_progress');
 
         for (const questStatus of activeQuests) {
-            const questEntity = this.world.getEntity(parseInt(questStatus.data.questId, 10));
+            const questEntityId = this.contentIdToEntityIdMap.get(questStatus.data.questId);
+            const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
             if (!questEntity) continue;
 
             const objectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;
@@ -60,8 +62,6 @@ export class QuestTrackingSystem {
         }
     }
 
-    // Example of a handler for 'fetch' quests
-    /*
     private onItemPickedUp(payload: { characterId: number; itemBaseId: string; }): void {
         const character = this.world.getEntity(payload.characterId);
         if (!character) return;
@@ -70,7 +70,8 @@ export class QuestTrackingSystem {
             .filter(status => status.data.status === 'in_progress');
 
         for (const questStatus of activeQuests) {
-            const questEntity = this.world.getEntity(questStatus.data.questId);
+            const questEntityId = this.contentIdToEntityIdMap.get(questStatus.data.questId);
+            const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
             if (!questEntity) continue;
 
             const objectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;
@@ -78,15 +79,15 @@ export class QuestTrackingSystem {
 
             objectives.forEach((objective, index) => {
                 if (objective.type === 'fetch' && objective.targetId === payload.itemBaseId) {
+                    // Tell the QuestLogSystem to update the progress
                     this.questLogSystem.updateObjectiveProgress(
                         character,
                         questStatus.data.questId,
                         index,
-                        1 // This would need to check the inventory count instead
+                        1 // This assumes you are tracking quantity; for now, 1 is sufficient
                     );
                 }
             });
         }
     }
-    */
 }

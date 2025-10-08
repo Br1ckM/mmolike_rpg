@@ -1,12 +1,13 @@
 import { Entity } from 'ecs-lib';
-import { InfoComponent, InfoData } from '../components/character';
-import { QuestGiverComponent, QuestGiverData } from '../components/quest';
+import { InfoComponent, type InfoData } from '../components/character';
+import { QuestGiverComponent, type QuestGiverData } from '../components/quest';
 import {
-    DialogueComponent, DialogueComponentData,
-    VendorComponent, VendorComponentData,
-    TrainerComponent, TrainerComponentData,
-    ServiceProviderComponent, ServiceProviderComponentData,
-    ScheduleComponent, ScheduleComponentData
+    DialogueComponent, type DialogueComponentData,
+    VendorComponent, type VendorComponentData,
+    TrainerComponent, type TrainerComponentData,
+    ServiceProviderComponent, type ServiceProviderComponentData,
+    ScheduleComponent, type ScheduleComponentData,
+    CompanionComponent, type CompanionComponentData
 } from '../components/npc';
 
 /**
@@ -22,6 +23,7 @@ export interface NPCEntityData {
     trainer?: TrainerComponentData;
     serviceProvider?: ServiceProviderComponentData;
     schedule?: ScheduleComponentData;
+    companion?: CompanionComponentData;
 }
 
 /**
@@ -54,6 +56,9 @@ export class NPC extends Entity {
         }
         if (data.schedule) {
             this.add(new ScheduleComponent(data.schedule));
+        }
+        if (data.companion) {
+            this.add(new CompanionComponent(data.companion));
         }
     }
 }

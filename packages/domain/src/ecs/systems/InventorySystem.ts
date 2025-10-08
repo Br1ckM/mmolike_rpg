@@ -28,7 +28,7 @@ export class InventorySystem {
     /**
      * Event handler for when an item needs to be added to a character's inventory.
      */
-    private handleAddItem(payload: { characterId: number; itemEntityId: number; }): void {
+    private handleAddItem(payload: { characterId: number; itemEntityId: number; baseItemId: string; }): void { // <-- FIX: Add baseItemId to payload type
         const character = this.world.getEntity(payload.characterId);
         const item = this.world.getEntity(payload.itemEntityId);
 
@@ -37,6 +37,11 @@ export class InventorySystem {
         const success = this.addItem(character, item);
 
         if (success) {
+            // FIX: Use the baseItemId from the payload for the event
+            this.eventBus.emit('itemPickedUp', {
+                characterId: character.id,
+                itemBaseId: payload.baseItemId
+            });
             // After successfully adding, notify the system that the player's state has changed.
             this.eventBus.emit('playerStateModified', { characterId: character.id });
         } else {
@@ -163,4 +168,3 @@ export class InventorySystem {
         return false;
     }
 }
-

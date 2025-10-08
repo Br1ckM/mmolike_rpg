@@ -68,7 +68,7 @@ export class ItemGenerationSystem {
             }
             const nonEquipItem = new Item(baseComponents);
             this.world.addEntity(nonEquipItem);
-            this.giveItemToCharacter(character, nonEquipItem);
+            this.giveItemToCharacter(character, nonEquipItem, baseItemId);
             return;
         }
 
@@ -130,7 +130,7 @@ export class ItemGenerationSystem {
         this.world.addEntity(itemEntity);
 
         console.log(`Generated Lvl ${itemLevel} [${rarity}] item: ${newItemData.info.name}`);
-        this.giveItemToCharacter(character, itemEntity);
+        this.giveItemToCharacter(character, itemEntity, baseItemId);
     }
 
     private generateItemName(baseName: string, affixes: (AffixData & { name: string, type: 'prefix' | 'suffix' })[]): string {
@@ -144,10 +144,11 @@ export class ItemGenerationSystem {
         return name;
     }
 
-    private giveItemToCharacter(character: Character, item: Entity): void {
+    private giveItemToCharacter(character: Character, item: Entity, baseItemId: string): void {
         this.eventBus.emit('addItemToInventory', {
             characterId: character.id,
             itemEntityId: item.id,
-        });
+            baseItemId: baseItemId
+        } as any);
     }
 }

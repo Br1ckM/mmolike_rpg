@@ -132,3 +132,15 @@
     interactionTarget:
       type: "Hunt"
       targetId: "hunt_wulfkin_pack"
+
+- id: "node_sunpetal_grove"
+  components:
+    node:
+      name: "Sunny Grove"
+      description: "A small, sun-drenched grove where rare herbs might grow."
+      position:
+        top: "35%"
+        left: "85%"
+    interactionTarget:
+      type: "Gather"
+      targetId: "loottable_sunpetal"

@@ -29,7 +29,7 @@ export interface DialogueResponse {
  * connects to and influences other game systems.
  */
 export interface DialogueAction {
-    type: 'GIVE_QUEST' | 'OPEN_VENDOR' | 'START_TRAINING';
+    type: 'GIVE_QUEST' | 'OPEN_VENDOR' | 'START_TRAINING' | 'RECRUIT_COMPANION';
     /** The ID of the quest to give, or other relevant context. */
     questId?: string;
 }

@@ -4,6 +4,7 @@ import { ProgressionComponent, type ProgressionData } from '../components/skill'
 /* ---------- Identity & control ---------- */
 
 export interface InfoData {
+    id?: string;
     name: string;
     race: string;
     avatarUrl: string;

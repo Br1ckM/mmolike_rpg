@@ -7,3 +7,13 @@
       rarity: "Quest"
     questItem:
       questId: "quest_the_lost_artifact"
+
+- id: "baseitem_sunpetal_leaf"
+  components:
+    info:
+      name: "Sunpetal Leaf"
+      description: "A rare, golden leaf that glows with a faint warmth. Valued by herbalists."
+      itemType: "quest"
+      rarity: "Quest"
+    questItem:
+      questId: "quest_lenna_sunpetal"

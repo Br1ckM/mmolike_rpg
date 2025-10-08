@@ -46,6 +46,7 @@ import { NPC, type NPCEntityData } from 'mmolike_rpg-domain/ecs/entities/npc';
 import { Location, type LocationEntityData } from 'mmolike_rpg-domain/ecs/entities/world';
 import { PlayerLocationComponent, ContainerComponent } from 'mmolike_rpg-domain/ecs/components/world';
 import { InteractionSystem } from 'mmolike_rpg-domain/ecs/systems/InteractionSystem';
+import { PartySystem } from 'mmolike_rpg-domain/ecs/systems/PartySystem'
 import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
 
 
@@ -253,11 +254,12 @@ export class GameService {
             interactionSystem,
             progressionSystem,
             voreSystem,
+            new PartySystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
             new ItemGenerationSystem(this.world, this.eventBus, this.content),
             new InventorySystem(this.world, this.eventBus),
             new EquipmentSystem(this.world, this.eventBus),
             new ConsumableSystem(this.world, this.eventBus),
-            new QuestTrackingSystem(this.world, this.eventBus, questLogSystem),
+            new QuestTrackingSystem(this.world, this.eventBus, questLogSystem, this.contentIdToEntityIdMap),
             new QuestRewardSystem(this.world, this.eventBus),
             new QuestStateSystem(this.world, this.eventBus, this.content),
             new DialogueSystem(this.world, this.eventBus, this.content),
@@ -343,7 +345,9 @@ export class GameService {
         if (this.content.mobs) {
             for (const [id, template] of this.content.mobs.entries()) {
                 if (id.startsWith('npc_')) {
-                    const entity = new NPC(template.components as NPCEntityData);
+                    const npcData = template.components as NPCEntityData;
+                    npcData.info.id = id;
+                    const entity = new NPC(npcData);
                     this.world.addEntity(entity);
                     this.contentIdToEntityIdMap.set(id, entity.id);
                 }

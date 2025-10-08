@@ -9,7 +9,7 @@ interface EventMap {
     'playerLeveledUp': { characterId: number; newLevel: number; };
     'lootContainerOpened': { containerId: string; characterId: number; };
     'generateItemRequest': { baseItemId: string; characterId: number; itemLevel: number };
-    'addItemToInventory': { characterId: number; itemEntityId: number; };
+    'addItemToInventory': { characterId: number; itemEntityId: number; baseItemId: string };
     'inventoryFull': { characterId: number; itemEntityId: number; };
     'equipItemRequest': { characterId: number; itemEntityId: number; };
     'unequipItemRequest': { characterId: number; slot: EquipmentSlot; };
@@ -37,6 +37,8 @@ interface EventMap {
         history: { speaker: 'NPC' | 'Player'; text: string }[];
     };
     'dialogueEnded': {};
+    'companionRecruited': { characterId: number; npcId: number; };
+    'partyUpdated': { characterId: number; };
     'vendorScreenOpened': { characterId: number; npcId: number; };
     'trainingScreenOpened': { characterId: number; npcId: number; };
     'buyItemRequested': { characterId: number; npcId: number; itemEntityId: number; };

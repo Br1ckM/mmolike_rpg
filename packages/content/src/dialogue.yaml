@@ -102,3 +102,101 @@
             - type: "START_TRAINING"
         - text: "Not at the moment."
           nextNodeId: "END"
+
+- id: "dt_lenna_intro"
+  startNodeId: "start"
+  nodes:
+    start:
+      id: "start"
+      text: "Oh, hello there. Be careful not to step on the sproutlings. What can I help you with?"
+      responses:
+        - text: "I'm looking for work."
+          nextNodeId: "quest_offer"
+          conditions:
+            - type: "QUEST_STATUS"
+              questId: "quest_lenna_sunpetal"
+              status: "available"
+        - text: "What are you doing out here?"
+          nextNodeId: "about_herbalism"
+        - text: "I have the Sunpetal Leaf you needed."
+          nextNodeId: "quest_turn_in"
+          conditions:
+            - type: "QUEST_STATUS"
+              questId: "quest_lenna_sunpetal"
+              status: "completed"
+        - text: "Just passing through."
+          nextNodeId: "end_generic"
+
+    about_herbalism:
+      id: "about_herbalism"
+      text: "I'm an apprentice herbalist. I'm studying the local flora to create remedies. It's fascinating work!"
+      responses:
+        - text: "[Return to previous topic]"
+          nextNodeId: "start"
+
+    quest_offer:
+      id: "quest_offer"
+      text: "Actually, yes. I'm trying to make a poultice for Old Man Willow, but I'm missing a key ingredient: a Sunpetal Leaf. They're rare, but I've heard they sometimes grow in sunny spots within the Whispering Glade. Could you find one for me?"
+      responses:
+        - text: "I'll find your leaf."
+          nextNodeId: "end_accepted"
+          actions:
+            - type: "GIVE_QUEST"
+              questId: "quest_lenna_sunpetal"
+        - text: "I don't have time for that right now."
+          nextNodeId: "start"
+
+    quest_turn_in:
+      id: "quest_turn_in"
+      text: "You found one! Thank you so much. This will help Old Man Willow immensely. You're a natural adventurer. If you'd have me, I'd be honored to join your travels. I can help with my knowledge of herbs."
+      responses:
+        - text: "Welcome to the team, Lenna."
+          nextNodeId: "end_recruited"
+          actions:
+            - type: "RECRUIT_COMPANION"
+        - text: "I travel alone for now."
+          nextNodeId: "end_generic"
+
+    end_accepted:
+      id: "end_accepted"
+      text: "Thank you! Please be careful out there."
+      responses:
+        - text: "[End Conversation]"
+          nextNodeId: "END"
+
+    end_recruited:
+      id: "end_recruited"
+      text: "Wonderful! I'll pack my things. You can find me at your camp when you're ready."
+      responses:
+        - text: "[End Conversation]"
+          nextNodeId: "END"
+
+    end_generic:
+      id: "end_generic"
+      text: "Safe travels."
+      responses:
+        - text: "[End Conversation]"
+          nextNodeId: "END"
+
+- id: "dt_lenna_camp"
+  startNodeId: "start"
+  nodes:
+    start:
+      id: "start"
+      text: "It's good to rest for a moment. This is a lovely spot."
+      responses:
+        - text: "How's your research coming along?"
+          nextNodeId: "research_talk"
+          # Example of an affinity check for a future conversation
+          # conditions:
+          #   - type: "COMPANION_AFFINITY"
+          #     value: 10
+          #     comparison: "greater_than_or_equal"
+        - text: "[Leave]"
+          nextNodeId: "END"
+    research_talk:
+      id: "research_talk"
+      text: "It's going well! The plants in this region are quite different from what I'm used to. Every day is a new discovery."
+      responses:
+        - text: "Glad to have you with us."
+          nextNodeId: "start"

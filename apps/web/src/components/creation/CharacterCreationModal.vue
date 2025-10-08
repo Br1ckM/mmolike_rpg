@@ -46,7 +46,6 @@ const createCharacter = () => {
         pronouns: pronouns.value,
         ancestryId: ancestryId.value,
     });
-    localStorage.setItem('player_save_exists', 'true');
     uiStore.hideCharacterCreation();
     usePlayerStore().initialize();
     useGameStore().initialize();
