@@ -2,7 +2,7 @@ import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../../EventBus';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
-import { DerivedStatsComponent, HealthComponent } from '../../components/character';
+import { DerivedStatsComponent, HealthComponent, ManaComponent } from '../../components/character';
 import { ProgressionComponent, SkillInfoComponent } from '../../components/skill';
 import { SkillComponent, type SkillEffectData, type TargetType, type TargetPattern, type SkillCost } from '../../components/skill';
 import { type GameConfig } from '../../../ContentService';
@@ -26,7 +26,6 @@ export class CombatSystem {
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
         this.config = loadedContent.config;
 
-        // Diagnostic: print the SkillComponent registration object identity so we can detect duplicate module instances
         try {
             console.log('[CombatSystem] SkillComponent ref:', SkillComponent);
         } catch (err) {
@@ -49,9 +48,10 @@ export class CombatSystem {
             return CombatantComponent.oneFrom(b!)!.data.initiative - CombatantComponent.oneFrom(a!)!.data.initiative;
         });
 
-        combat.currentTurnIndex = -1; // Start before the first person
-        combat.roundNumber = 0; // The first turn will advance this to 1
+        combat.currentTurnIndex = -1;
+        combat.roundNumber = 1;
 
+        this.eventBus.emit('roundStarted', { combatEntityId: combatEntity.id.toString(), roundNumber: combat.roundNumber });
         this.startNextTurn(combatEntity);
     }
 
@@ -61,15 +61,12 @@ export class CombatSystem {
         const combatEntity = this.world.getEntity(parseInt(payload.combatEntityId, 10));
         if (!combatEntity) return;
 
-        // For now, flee is always successful. This can be expanded later with logic.
         console.log(`Actor ${payload.actorId} has fled from combat.`);
 
-        // Find the team of the fleeing actor
         const actor = this.world.getEntity(parseInt(payload.actorId, 10));
         const actorCombatant = CombatantComponent.oneFrom(actor!)?.data;
 
         if (actorCombatant) {
-            // If a player flees, it's a loss for their team.
             const winningTeamId = actorCombatant.teamId === 'team1' ? 'team2' : 'team1';
             this.endCombat(combatEntity, winningTeamId);
         }
@@ -86,19 +83,14 @@ export class CombatSystem {
         const combatEntity = this.world.getEntity(parseInt(payload.combatEntityId, 10));
         if (!combatEntity) return;
 
-        // --- REFACTORED LOGIC ---
-
-        // Step 1: Resolve the specific action that was taken.
         switch (payload.actionType) {
             case 'MOVE_ROW':
                 this.resolveMoveRow(payload.actorId);
                 break;
             case 'ITEM':
-                // The effect was already applied by ConsumableSystem. We just acknowledge it.
                 console.log(`[CombatSystem] Acknowledging ITEM action for actor ${payload.actorId}.`);
                 break;
             case 'SKILL':
-                // This entire block now only handles skill resolution, not turn advancement.
                 console.log(`[CombatSystem] Resolving SKILL: ${payload.skillId}`);
                 const actor = this.world.getEntity(parseInt(payload.actorId, 10))!;
                 const numericSkillId = this.contentIdToEntityIdMap.get(payload.skillId!);
@@ -106,7 +98,7 @@ export class CombatSystem {
 
                 if (!actor || !skillEntity) {
                     console.error("Actor or skill not found for action. Ending turn.");
-                    break; // Just break, let the turn advance naturally.
+                    break;
                 }
 
                 const skillData = SkillComponent.oneFrom(skillEntity)?.data;
@@ -120,7 +112,7 @@ export class CombatSystem {
 
                 if (!this.canAffordCost(actor, skillData.costs)) {
                     console.log(`Character ${actor.id} cannot afford skill ${payload.skillId}. Ending turn.`);
-                    break; // Break, don't execute the skill.
+                    break;
                 }
 
                 this.payCost(actor, skillData.costs);
@@ -128,14 +120,11 @@ export class CombatSystem {
                 break;
         }
 
-        // Step 2: After any action, check if the combat is over.
         if (this.checkForCombatEnd(combatEntity)) {
             console.log("[CombatSystem] Combat has ended after action resolution.");
-            return; // If combat ended, do not proceed to the next turn.
+            return;
         }
 
-        // Step 3: If combat is not over, emit turn ended and start the next turn.
-        // This is now the ONLY place where the turn advances after an action.
         this.eventBus.emit('turnEnded', { combatEntityId: payload.combatEntityId, endedTurnForId: payload.actorId });
         this.startNextTurn(combatEntity);
     }
@@ -145,33 +134,43 @@ export class CombatSystem {
             return true;
         }
 
-        const actorStats = DerivedStatsComponent.oneFrom(actor)?.data;
         const actorHealth = HealthComponent.oneFrom(actor)?.data;
+        const actorMana = ManaComponent.oneFrom(actor)?.data;
+        const actorStats = DerivedStatsComponent.oneFrom(actor)?.data;
 
-        return costs.every(cost => {
+        for (const cost of costs) {
             if (cost.stat === 'health') {
-                return actorHealth ? actorHealth.current > cost.amount : false;
-            }
-            if (actorStats && cost.stat in actorStats) {
+                if (!actorHealth || actorHealth.current <= cost.amount) {
+                    return false;
+                }
+            } else if (cost.stat === 'mana') {
+                if (!actorMana || actorMana.current < cost.amount) {
+                    return false;
+                }
+            } else if (actorStats && cost.stat in actorStats) {
                 const statKey = cost.stat as keyof typeof actorStats;
-                return actorStats[statKey] >= cost.amount;
+                if ((actorStats[statKey] as number) < cost.amount) {
+                    return false;
+                }
+            } else {
+                return false;
             }
-            return false;
-        });
+        }
+
+        return true;
     }
 
     private payCost(actor: Entity, costs?: SkillCost[]): void {
         if (!costs) return;
 
-        const actorStats = DerivedStatsComponent.oneFrom(actor)?.data;
         const actorHealth = HealthComponent.oneFrom(actor)?.data;
+        const actorMana = ManaComponent.oneFrom(actor)?.data;
 
         for (const cost of costs) {
             if (cost.stat === 'health' && actorHealth) {
                 actorHealth.current -= cost.amount;
-            } else if (actorStats && cost.stat in actorStats) {
-                const statKey = cost.stat as keyof typeof actorStats;
-                (actorStats[statKey] as number) -= cost.amount;
+            } else if (cost.stat === 'mana' && actorMana) {
+                actorMana.current -= cost.amount;
             }
         }
     }
@@ -189,7 +188,6 @@ export class CombatSystem {
 
         const actor = this.world.getEntity(parseInt(actorId, 10))!;
         const initialTarget = this.world.getEntity(parseInt(targetId, 10))!;
-        // Resolve skillEntity via mapping to numeric entity id first (preferred)
         let skillEntity: Entity | undefined;
         let skillData: any | undefined;
 
@@ -201,17 +199,14 @@ export class CombatSystem {
             }
         }
 
-        // If still not found, check content map for a raw template or an entity reference
         if (!skillData) {
             const raw = this.content.skills.get(skillId);
             if (raw) {
-                // If raw looks like an ECS entity instance with components attached
                 const maybeData = SkillComponent.oneFrom(raw as any)?.data;
                 if (maybeData) {
                     skillEntity = raw as any;
                     skillData = maybeData;
                 } else if ((raw as any).components && (raw as any).components.skill) {
-                    // Raw template from ContentService before entity materialization
                     skillData = (raw as any).components.skill;
                 }
             }
@@ -219,7 +214,6 @@ export class CombatSystem {
 
         if (!skillData) {
             console.error(`Skill ${skillId} not found or missing SkillComponent data! Falling back to basic attack.`);
-            // Fallback to a basic attack if skill is not found
             this.resolveDamageEffect(combatEntity, actor, initialTarget, {
                 type: 'Damage',
                 power: 5,
@@ -263,7 +257,6 @@ export class CombatSystem {
                     const c = CombatantComponent.oneFrom(e)!.data;
                     return c.teamId === initialTargetCombatant.teamId && c.row === 'Front';
                 });
-            // You can add more cases here for 'ADJACENT', 'ALL_ENEMIES', etc.
             default:
                 return [initialTarget];
         }
@@ -322,7 +315,7 @@ export class CombatSystem {
         const healAmount = (scalingStatValue * this.config.damage_formula.scaling_stat_multiplier) + (effect.power * this.config.damage_formula.power_multiplier);
 
         const previousHealth = targetHealth.current;
-        targetHealth.current = Math.min(targetHealth.max, targetHealth.current + healAmount);
+        targetHealth.current = Math.min(targetHealth.max, targetHealth.current + Math.floor(healAmount));
         const amountHealed = targetHealth.current - previousHealth;
 
         this.eventBus.emit('healthHealed', {
@@ -344,7 +337,6 @@ export class CombatSystem {
     private startNextTurn(combatEntity: Entity): void {
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
 
-        // --- FIX: A more robust and clear loop ---
         for (let i = 0; i < combat.turnQueue.length; i++) {
             const potentialIndex = (combat.currentTurnIndex + 1 + i) % combat.turnQueue.length;
 
@@ -352,7 +344,6 @@ export class CombatSystem {
             const potentialCombatant = this.world.getEntity(parseInt(potentialCombatantId, 10));
 
             if (potentialCombatant && HealthComponent.oneFrom(potentialCombatant)!.data.current > 0) {
-                // If we've wrapped around to the start of the queue, it's a new round.
                 if (potentialIndex <= combat.currentTurnIndex) {
                     combat.roundNumber++;
                     this.eventBus.emit('roundStarted', { combatEntityId: combatEntity.id.toString(), roundNumber: combat.roundNumber });
@@ -363,7 +354,7 @@ export class CombatSystem {
                     combatEntityId: combatEntity.id.toString(),
                     activeCombatantId: potentialCombatantId
                 });
-                return; // Exit successfully
+                return;
             }
         }
     }

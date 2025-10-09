@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setupSystemTest } from '../../harness/setup';
 import { CombatSystem } from '../../../ecs/systems/combat/CombatSystem';
 import { Combat } from '../../../ecs/entities/combat';
-import { CombatComponent } from '../../../ecs/components/combat';
-import { HealthComponent, ManaComponent } from '../../../ecs/components/character';
+import { CombatComponent, CombatantComponent } from '../../../ecs/components/combat';
+import { HealthComponent, ManaComponent, DerivedStatsComponent } from '../../../ecs/components/character';
 
 describe('CombatSystem', () => {
     let harness: ReturnType<typeof setupSystemTest>;
@@ -70,7 +70,7 @@ describe('CombatSystem', () => {
         });
     });
 
-    describe('Action Resolution', () => {
+    describe('Action & Effect Resolution', () => {
         it('should prevent an action if the actor cannot afford the resource cost', () => {
             const { world, mockEventBus, mockContent, createCombatant, createSkill } = harness;
 
@@ -98,6 +98,110 @@ describe('CombatSystem', () => {
             // 5. ASSERT: Verify that no damage was dealt because the action was prevented
             expect(mockEventBus.emit).not.toHaveBeenCalledWith('damageDealt', expect.any(Object));
         });
+
+        it('should reduce actor mana when a skill with a mana cost is used', () => {
+            const { world, mockEventBus, mockContent, createCombatant, createSkill } = harness;
+            createSkill('skill_frostbolt', { skill: { type: 'active', costs: [{ stat: 'mana', amount: 15 }], effects: [] } });
+            const system = new CombatSystem(world, mockEventBus, mockContent, harness.mockContentIdToEntityIdMap);
+            const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
+            const p1Mana = ManaComponent.oneFrom(p1)!;
+            const e1 = createCombatant('e1', 'team2', 'Front', 10, 100);
+            const combatEntity = new Combat({ combatants: [String(p1.id), String(e1.id)] } as any);
+            world.addEntity(combatEntity);
+            system['onCombatStarted']({ combatEntityId: String(combatEntity.id), combatants: [String(p1.id), String(e1.id)] });
+
+            system['onActionTaken']({ combatEntityId: String(combatEntity.id), actorId: String(p1.id), actionType: 'SKILL', skillId: 'skill_frostbolt', targetId: String(e1.id) });
+
+            expect(p1Mana.data.current).toBe(35);
+        });
+
+        it('should deal reduced damage to a back-row target if a front-row combatant exists', () => {
+            const { world, mockEventBus, mockContent, createCombatant, createSkill } = harness;
+            createSkill('skill_arrow_shot', { skill: { type: 'active', effects: [{ type: 'Damage', power: 20, scalingStat: 'attack', target: 'Enemy', targeting: { pattern: 'SINGLE' } }] } });
+            const system = new CombatSystem(world, mockEventBus, mockContent, harness.mockContentIdToEntityIdMap);
+
+            const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
+            DerivedStatsComponent.oneFrom(p1)!.data.attack = 10;
+
+            const e1 = createCombatant('e1', 'team2', 'Front', 10, 100);
+            const e2 = createCombatant('e2', 'team2', 'Back', 5, 100);
+            const e2Health = HealthComponent.oneFrom(e2)!.data;
+
+            const combatEntity = new Combat({ combatants: [String(p1.id), String(e1.id), String(e2.id)] } as any);
+            world.addEntity(combatEntity);
+            system['onCombatStarted']({ combatEntityId: String(combatEntity.id), combatants: [String(p1.id), String(e1.id), String(e2.id)] });
+
+            // Force the attack to always hit by mocking Math.random for this test
+            const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+            try {
+                system['onActionTaken']({ combatEntityId: String(combatEntity.id), actorId: String(p1.id), actionType: 'SKILL', skillId: 'skill_arrow_shot', targetId: String(e2.id) });
+            } finally {
+                randomSpy.mockRestore();
+            }
+
+            expect(e2Health.current).toBe(88);
+        });
+
+        it('should correctly apply a Heal effect', () => {
+            const { world, mockEventBus, mockContent, createCombatant, createSkill } = harness;
+            createSkill('skill_minor_heal', { skill: { type: 'active', effects: [{ type: 'Heal', power: 30, scalingStat: 'magicAttack', target: 'Ally', targeting: { pattern: 'SINGLE' } }] } });
+            const system = new CombatSystem(world, mockEventBus, mockContent, harness.mockContentIdToEntityIdMap);
+
+            const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
+            DerivedStatsComponent.oneFrom(p1)!.data.magicAttack = 10;
+            const p2 = createCombatant('p2', 'team1', 'Front', 15, 100);
+            HealthComponent.oneFrom(p2)!.data.current = 20;
+
+            const combatEntity = new Combat({ combatants: [String(p1.id), String(p2.id)] } as any);
+            world.addEntity(combatEntity);
+            system['onCombatStarted']({ combatEntityId: String(combatEntity.id), combatants: [String(p1.id), String(p2.id)] });
+
+            system['onActionTaken']({ combatEntityId: String(combatEntity.id), actorId: String(p1.id), actionType: 'SKILL', skillId: 'skill_minor_heal', targetId: String(p2.id) });
+
+            expect(HealthComponent.oneFrom(p2)!.data.current).toBe(60);
+        });
+
+        it('should emit "effectApplied" for skills that apply effects', () => {
+            const { world, mockEventBus, mockContent, createCombatant, createSkill } = harness;
+            createSkill('skill_weaken', { skill: { type: 'active', effects: [{ type: 'ApplyEffect', effectId: 'effect_def_down', target: 'Enemy', power: 0, scalingStat: 'attack', targeting: { pattern: 'SINGLE' } }] } });
+            const system = new CombatSystem(world, mockEventBus, mockContent, harness.mockContentIdToEntityIdMap);
+
+            const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
+            const e1 = createCombatant('e1', 'team2', 'Front', 10, 100);
+            const combatEntity = new Combat({ combatants: [String(p1.id), String(e1.id)] } as any);
+            world.addEntity(combatEntity);
+
+            system['onCombatStarted']({ combatEntityId: String(combatEntity.id), combatants: [String(p1.id), String(e1.id)] });
+            system['onActionTaken']({ combatEntityId: String(combatEntity.id), actorId: String(p1.id), actionType: 'SKILL', skillId: 'skill_weaken', targetId: String(e1.id) });
+
+            expect(mockEventBus.emit).toHaveBeenCalledWith('effectApplied', {
+                sourceId: String(p1.id),
+                targetId: String(e1.id),
+                effectId: 'effect_def_down'
+            });
+        });
+    });
+
+    describe('Fleeing', () => {
+        it('should end combat with the opposing team as the winner when a player flees', () => {
+            const { world, mockEventBus, mockContent, createCombatant } = harness;
+            const system = new CombatSystem(world, mockEventBus, mockContent, new Map());
+
+            const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
+            const e1 = createCombatant('e1', 'team2', 'Front', 10, 100);
+
+            const combatEntity = new Combat({ combatants: [String(p1.id), String(e1.id)] } as any);
+            world.addEntity(combatEntity);
+            system['onCombatStarted']({ combatEntityId: String(combatEntity.id), combatants: [String(p1.id), String(e1.id)] });
+
+            system['onFleeAttempt']({ combatEntityId: String(combatEntity.id), actorId: String(p1.id) });
+
+            expect(mockEventBus.emit).toHaveBeenCalledWith('combatEnded', {
+                combatEntityId: String(combatEntity.id),
+                winningTeamId: 'team2'
+            });
+        });
     });
 
     describe('Win/Loss Conditions', () => {
@@ -106,17 +210,15 @@ describe('CombatSystem', () => {
             const system = new CombatSystem(world, mockEventBus, mockContent, new Map());
 
             const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
-            const e1 = createCombatant('e1', 'team2', 'Front', 10, 10); // Low health
-            HealthComponent.oneFrom(p1)!.data.current = 100; // Ensure player is alive
+            const e1 = createCombatant('e1', 'team2', 'Front', 10, 10);
+            HealthComponent.oneFrom(p1)!.data.current = 100;
 
             const combatEntity = new Combat({ combatants: [String(p1.id), String(e1.id)] } as any);
             world.addEntity(combatEntity);
             system['onCombatStarted']({ combatEntityId: String(combatEntity.id), combatants: [String(p1.id), String(e1.id)] });
 
-            // Simulate lethal damage
             HealthComponent.oneFrom(e1)!.data.current = 0;
 
-            // Any action will now trigger the end-of-combat check
             system['onActionTaken']({ combatEntityId: String(combatEntity.id), actorId: String(p1.id), actionType: 'MOVE_ROW' });
 
             expect(mockEventBus.emit).toHaveBeenCalledWith('combatEnded', {
@@ -130,13 +232,12 @@ describe('CombatSystem', () => {
             const system = new CombatSystem(world, mockEventBus, mockContent, new Map());
 
             const p1 = createCombatant('p1', 'team1', 'Front', 20, 100);
-            const e1 = createCombatant('e1', 'team2', 'Front', 10, 0); // Already dead
-            const e2 = createCombatant('e2', 'team2', 'Front', 5, 0);  // Already dead
+            const e1 = createCombatant('e1', 'team2', 'Front', 10, 0);
+            const e2 = createCombatant('e2', 'team2', 'Front', 5, 0);
 
             const combatEntity = new Combat({ combatants: [String(p1.id), String(e1.id), String(e2.id)] } as any);
             world.addEntity(combatEntity);
 
-            // This is a simplified call to the private endCombat method for a direct test
             system['endCombat'](combatEntity, 'team1');
 
             expect(mockEventBus.emit).toHaveBeenCalledWith('enemyDefeated', expect.objectContaining({ enemyId: String(e1.id) }));

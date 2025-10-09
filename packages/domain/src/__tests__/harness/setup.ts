@@ -7,7 +7,7 @@ import { Character, CharacterEntityData } from '../../ecs/entities/character';
 import { Skill, SkillEntityData } from '../../ecs/entities/skill'
 import { Item, ItemData } from '../../ecs/entities/item';
 import { Effect } from '../../ecs/entities/effects';
-import { CoreStatsComponent, HealthComponent, } from '../../ecs/components/character'
+import { CoreStatsComponent, HealthComponent, DerivedStatsComponent, ManaComponent } from '../../ecs/components/character'
 import { CombatantComponent } from '../../ecs/components/combat'
 
 export type MockedEventBus = EventBus & {
@@ -26,12 +26,12 @@ export function setupSystemTest() {
 
     const mockContentIdToEntityIdMap = new Map<string, number>();
 
-    // --- NEW: Mock Content Data ---
     const mockContent = {
         ancestries: new Map([
             ['ancestry_dwarf', { statModifiers: { strength: 2, dexterity: 0, intelligence: -1 } }]
         ]),
         effects: new Map(),
+        skills: new Map(),
         config: {
             stat_scalings: {
                 attack_from_strength: 2,
@@ -47,6 +47,10 @@ export function setupSystemTest() {
                 crit_damage: 150,
                 speed: 100,
                 accuracy: 90
+            },
+            damage_formula: {
+                scaling_stat_multiplier: 1.0,
+                power_multiplier: 1.0,
             }
         }
     };
@@ -66,7 +70,6 @@ export function setupSystemTest() {
         return location;
     };
 
-    // --- NEW: Helpers for creating Items and Effects ---
     const createItem = (id: string, data: ItemData) => {
         const item = new Item(data);
         world.addEntity(item);
@@ -77,21 +80,29 @@ export function setupSystemTest() {
     const createEffect = (id: string, data: any) => {
         const effect = new Effect(data);
         world.addEntity(effect);
-        mockContent.effects.set(id, effect); // Add to our mock content map
+        mockContent.effects.set(id, effect);
         return effect;
     };
 
-    // --- NEW: Helper to create a combat-ready character ---
-    const createCombatant = (id: string, teamId: string, row: 'Front' | 'Back', initiative: number, health: number) => {
+    const createCombatant = (id: string, teamId: string, row: 'Front' | 'Back', initiative: number, health: number, mana: number = 50) => {
         const combatant = new Character({
             info: { id, name: id, race: 'Test', avatarUrl: '' },
             coreStats: { strength: 10, dexterity: 10, intelligence: 10 },
-            derivedStats: {},
-            // Pass health directly into the constructor data
+            derivedStats: {
+                attack: 10,
+                magicAttack: 10,
+                defense: 5,
+                magicResist: 5,
+                critChance: 5,
+                critDamage: 150,
+                dodge: 5,
+                speed: 100,
+                accuracy: 90
+            },
             health: { current: health, max: health },
+            mana: { current: mana, max: mana },
         } as CharacterEntityData);
 
-        // The CombatantComponent is added after construction, which is correct.
         combatant.add(new CombatantComponent({ teamId, row, initiative, hasTakenAction: false }));
         world.addEntity(combatant);
         mockContentIdToEntityIdMap.set(id, combatant.id);
@@ -106,7 +117,7 @@ export function setupSystemTest() {
             ...data,
         } as SkillEntityData);
         world.addEntity(skill);
-        mockContent.skills.set(id, skill); // Add to our mock content map
+        mockContent.skills.set(id, skill);
         mockContentIdToEntityIdMap.set(id, skill.id);
         return skill;
     };
@@ -122,11 +133,11 @@ export function setupSystemTest() {
         world,
         mockEventBus: mockEventBus as unknown as MockedEventBus,
         mockContentIdToEntityIdMap,
-        mockContent, // <-- Expose mock content
+        mockContent,
         player,
         createNpc,
         createLocation,
-        createItem, // <-- Expose new helpers
+        createItem,
         createEffect,
         createCombatant,
         createSkill,

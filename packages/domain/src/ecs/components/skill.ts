@@ -10,7 +10,7 @@ export type TargetPattern = 'SINGLE' | 'ADJACENT' | 'FRONT_ROW' | 'BACK_ROW' | '
 
 /** A flexible skill cost definition. */
 export interface SkillCost {
-    stat: keyof DerivedStatsData | 'health'; // Allow any derived stat or 'health'
+    stat: keyof DerivedStatsData | 'health' | 'mana';
     amount: number;
 }
 

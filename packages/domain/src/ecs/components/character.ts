@@ -166,7 +166,15 @@ export const ConsumableBeltComponent = Component.register<ConsumableBeltData>();
 export const AppearanceComponent = Component.register<AppearanceComponentData>();
 
 export const HealthComponent = Component.register<HealthData>();
-export const ManaComponent = Component.register<ManaData>();
+const _ManaComponent = Component.register<ManaData>();
+
+export class ManaComponent extends _ManaComponent {
+    constructor(data?: Partial<ManaData>) {
+        const max = data?.max ?? 0;
+        const current = typeof data?.current === 'number' ? data!.current : max;
+        super({ current, max });
+    }
+}
 
 // Vore components:
 export const VoreRoleComponent = Component.register<VoreRoleComponentData>();
