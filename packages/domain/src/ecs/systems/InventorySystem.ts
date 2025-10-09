@@ -125,26 +125,35 @@ export class InventorySystem {
         return itemAdded;
     }
 
-    private handleRemoveItem(payload: { characterId: number; itemEntityId: number; reason: 'consume' | 'drop' | 'equip'; }): void {
+    private handleRemoveItem(payload: { characterId: number; itemEntityId: number; quantity: number; reason: 'consume' | 'drop' | 'equip'; }): void {
         const character = this.world.getEntity(payload.characterId);
         const itemToRemove = this.world.getEntity(payload.itemEntityId);
-
         if (!character || !itemToRemove) return;
 
-        const wasRemoved = this.findAndRemoveItemFromBags(character, itemToRemove.id);
+        const stack = StackableComponent.oneFrom(itemToRemove);
 
-        if (wasRemoved) {
-            if (payload.reason === 'equip') {
-                this.eventBus.emit('itemRemovedForEquip', {
-                    characterId: payload.characterId,
-                    itemEntityId: payload.itemEntityId,
-                });
-            } else {
-                this.world.removeEntity(itemToRemove);
-                console.log(`Removed and destroyed item ${itemToRemove.id}.`);
-            }
+        // --- FIX: Logic for handling stackable vs. non-stackable items ---
+        if (stack && stack.data.current > payload.quantity) {
+            // Case 1: Remove a partial amount from a stack
+            stack.data.current -= payload.quantity;
+            console.log(`Removed ${payload.quantity} from stack. New count: ${stack.data.current}`);
+            // We don't remove the item from the slot, just decrement
         } else {
-            console.warn(`Could not find item ${itemToRemove.id} to remove.`);
+            // Case 2: Remove the entire item (or the rest of a stack)
+            const wasRemoved = this.findAndRemoveItemFromBags(character, itemToRemove.id);
+            if (wasRemoved) {
+                if (payload.reason === 'equip') {
+                    this.eventBus.emit('itemRemovedForEquip', {
+                        characterId: payload.characterId,
+                        itemEntityId: payload.itemEntityId,
+                    });
+                } else {
+                    this.world.removeEntity(itemToRemove);
+                    console.log(`Removed and destroyed item ${itemToRemove.id}.`);
+                }
+            } else {
+                console.warn(`Could not find item ${itemToRemove.id} to remove.`);
+            }
         }
     }
 

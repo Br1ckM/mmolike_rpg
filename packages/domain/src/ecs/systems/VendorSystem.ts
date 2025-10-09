@@ -123,6 +123,7 @@ export class VendorSystem {
         this.eventBus.emit('removeItemFromInventory', {
             characterId: character.id,
             itemEntityId: itemToSell.id,
+            quantity: 1,
             reason: 'drop' // Using 'drop' as it destroys the entity
         });
 

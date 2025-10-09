@@ -38,6 +38,7 @@ export class ConsumableSystem {
                 this.eventBus.emit('removeItemFromInventory', {
                     characterId: payload.characterId,
                     itemEntityId,
+                    quantity: 1,
                     reason: 'consume'
                 });
 
@@ -64,6 +65,7 @@ export class ConsumableSystem {
             this.eventBus.emit('removeItemFromInventory', {
                 characterId: character.id,
                 itemEntityId: payload.itemEntityId,
+                quantity: 1,
                 reason: 'consume'
             });
         }

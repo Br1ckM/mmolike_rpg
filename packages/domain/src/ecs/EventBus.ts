@@ -65,6 +65,7 @@ interface EventMap {
     'removeItemFromInventory': {
         characterId: number;
         itemEntityId: number;
+        quantity: number;
         reason: 'consume' | 'drop' | 'equip';
     };
     'itemRemovedForEquip': { characterId: number; itemEntityId: number; };
