@@ -47,6 +47,7 @@ import { Location, type LocationEntityData } from 'mmolike_rpg-domain/ecs/entiti
 import { PlayerLocationComponent, ContainerComponent } from 'mmolike_rpg-domain/ecs/components/world';
 import { InteractionSystem } from 'mmolike_rpg-domain/ecs/systems/InteractionSystem';
 import { PartySystem } from 'mmolike_rpg-domain/ecs/systems/PartySystem'
+import { CampSystem } from 'mmolike_rpg-domain/ecs/systems/CampSystem'
 import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
 
 
@@ -274,7 +275,8 @@ export class GameService {
             new CombatInitiationSystem(this.world, this.eventBus),
             new CombatSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new AISystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
-            new StatusEffectSystem(this.world, this.eventBus, this.content)
+            new StatusEffectSystem(this.world, this.eventBus, this.content),
+            new CampSystem(this.world, this.eventBus),
         );
 
         this.world.addSystem(scheduleSystem);

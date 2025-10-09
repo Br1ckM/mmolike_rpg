@@ -1,13 +1,32 @@
-<script setup lang="ts">
-import Button from '@/volt/Button.vue';
-</script>
 <template>
-    <div>
-        <h2 class="text-2xl font-bold text-surface-0 mb-4">Rest & Recover</h2>
-        <p class="text-surface-300 mb-6">Resting will pass the time and fully restore your party's Health and Mana.</p>
-        <div class="flex gap-4">
-            <Button label="Rest until Morning" icon="pi pi-sun" />
-            <Button label="Rest until Night" icon="pi pi-moon" severity="secondary" />
-        </div>
+    <div class="p-4">
+        <Card>
+            <template #title>
+                <i class="pi pi-sun mr-2"></i> Rest
+            </template>
+            <template #content>
+                <p class="mb-4">
+                    Resting will restore your entire party's health and mana to their maximum values.
+                </p>
+                <Button label="Rest Until Healed" icon="pi pi-check" @click="performRest"
+                    :disabled="!playerStore.player" />
+            </template>
+        </Card>
     </div>
 </template>
+
+<script setup lang="ts">
+import Card from 'primevue/card';
+import Button from 'primevue/button';
+import { App } from 'mmolike_rpg-application';
+import { usePlayerStore } from '@/stores/player';
+
+const playerStore = usePlayerStore();
+
+const performRest = () => {
+    // FIX: The 'id' property is directly on the player object from the store.
+    if (playerStore.player?.id) {
+        App.commands.restAtCamp(playerStore.player.id);
+    }
+};
+</script>

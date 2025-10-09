@@ -115,6 +115,7 @@ interface EventMap {
     'playerLocationChanged': { characterId: number; newLocationId: string; };
     'npcLocationChanged': { npcId: number; newLocationId: string; };
     'interactWithNodeRequested': { characterId: number; nodeId: number; };
+    'restRequested': { characterId: number };
 
     // Content filter / Preferences
     'contentFilterChanged': { showNsfwContent: boolean; showVoreContent: boolean; };

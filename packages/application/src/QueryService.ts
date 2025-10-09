@@ -126,8 +126,6 @@ export class QueryService {
         });
         this.domainEventBus.on('partyUpdated', (payload) => {
             console.log(`[QueryService] Heard 'partyUpdated'. Publishing to stores.`);
-            // We don't need the payload, we just need to tell the stores to refresh.
-            // The partyStore will then call getPlayerState() which has the full companion list.
             this.publish('partyUpdated', payload);
         });
     }

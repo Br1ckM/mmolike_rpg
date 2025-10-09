@@ -115,4 +115,7 @@ export class CommandService {
     public swapCompanion(characterId: number, companionId: number): void {
         this.domainEventBus.emit('swapCompanionRequested', { characterId, companionId });
     }
+    public restAtCamp(characterId: number): void {
+        this.domainEventBus.emit('restRequested', { characterId });
+    }
 }
