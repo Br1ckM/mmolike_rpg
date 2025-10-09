@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/ui';
 import { usePlayerStore } from '@/stores/player';
 import { useGameStore } from '@/stores/game';
 import { useHubStore } from '@/stores/hub';
+import { usePartyStore } from '@/stores/party'
 import { App } from 'mmolike_rpg-application';
 
 interface Ancestry {
@@ -50,6 +51,7 @@ const createCharacter = () => {
     usePlayerStore().initialize();
     useGameStore().initialize();
     useHubStore().initialize();
+    usePartyStore().initialize();
 };
 </script>
 

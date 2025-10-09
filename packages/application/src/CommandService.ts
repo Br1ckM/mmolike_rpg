@@ -111,4 +111,8 @@ export class CommandService {
     public dev_addPreyToStomach(playerId: number, preyData: any): void {
         this.domainEventBus.emit('dev_addPreyToStomach', { playerId, preyData });
     }
+
+    public swapCompanion(characterId: number, companionId: number): void {
+        this.domainEventBus.emit('swapCompanionRequested', { characterId, companionId });
+    }
 }

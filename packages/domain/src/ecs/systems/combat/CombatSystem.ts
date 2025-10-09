@@ -43,15 +43,14 @@ export class CombatSystem {
         if (!combatEntity) return;
 
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
-
-        // Sort combatants by initiative, descending
         combat.turnQueue = payload.combatants.sort((aId, bId) => {
             const a = this.world.getEntity(parseInt(aId, 10));
             const b = this.world.getEntity(parseInt(bId, 10));
-            const aInit = CombatantComponent.oneFrom(a!)!.data.initiative;
-            const bInit = CombatantComponent.oneFrom(b!)!.data.initiative;
-            return bInit - aInit;
+            return CombatantComponent.oneFrom(b!)!.data.initiative - CombatantComponent.oneFrom(a!)!.data.initiative;
         });
+
+        combat.currentTurnIndex = -1; // Start before the first person
+        combat.roundNumber = 0; // The first turn will advance this to 1
 
         this.startNextTurn(combatEntity);
     }
@@ -87,67 +86,41 @@ export class CombatSystem {
         const combatEntity = this.world.getEntity(parseInt(payload.combatEntityId, 10));
         if (!combatEntity) return;
 
+        // --- REFACTORED LOGIC ---
+
+        // Step 1: Resolve the specific action that was taken.
         switch (payload.actionType) {
             case 'MOVE_ROW':
                 this.resolveMoveRow(payload.actorId);
                 break;
             case 'ITEM':
-                // The effect was already applied by the ConsumableSystem. We just need to advance the turn.
+                // The effect was already applied by ConsumableSystem. We just acknowledge it.
                 console.log(`[CombatSystem] Acknowledging ITEM action for actor ${payload.actorId}.`);
                 break;
             case 'SKILL':
+                // This entire block now only handles skill resolution, not turn advancement.
                 console.log(`[CombatSystem] Resolving SKILL: ${payload.skillId}`);
-
                 const actor = this.world.getEntity(parseInt(payload.actorId, 10))!;
                 const numericSkillId = this.contentIdToEntityIdMap.get(payload.skillId!);
                 const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : undefined;
+
                 if (!actor || !skillEntity) {
-                    console.error("Actor or skill not found for action.");
-                    break;
+                    console.error("Actor or skill not found for action. Ending turn.");
+                    break; // Just break, let the turn advance naturally.
                 }
 
                 const skillData = SkillComponent.oneFrom(skillEntity)?.data;
-
-                // Add a check to ensure skillData was found
                 if (!skillData) {
-                    console.error(`[CombatSystem] FATAL: Could not retrieve SkillComponent data for skill entity ${skillEntity.id} (string ID: ${payload.skillId}). The entity may be malformed or not a valid skill.`);
-                    // Try to log helpful diagnostics about what we found in content mapping
-                    const mappedNumeric = this.contentIdToEntityIdMap.get(payload.skillId!);
-                    console.error(`[CombatSystem] Diagnostics: contentIdToEntityIdMap.get('${payload.skillId}') => ${mappedNumeric}`);
-                    const rawFromContent = this.content.skills.get(payload.skillId!);
-                    console.error(`[CombatSystem] Diagnostics: this.content.skills.get('${payload.skillId}') => ${rawFromContent ? `object(entity id ${rawFromContent.id})` : 'undefined'}`);
-                    // Extra diagnostics: inspect the returned object's shape and available components
-                    try {
-                        console.error('[CombatSystem] Skill entity raw dump:', rawFromContent);
-                        console.error('[CombatSystem] Skill entity keys:', Object.keys(rawFromContent || {}));
-                        const infoComp = SkillInfoComponent.oneFrom(rawFromContent as any);
-                        const progComp = ProgressionComponent.oneFrom(rawFromContent as any);
-                        console.error(`[CombatSystem] SkillInfoComponent present: ${!!infoComp}, ProgressionComponent present: ${!!progComp}`);
-                    } catch (err) {
-                        console.error('[CombatSystem] Error while dumping skill entity diagnostics:', err);
-                    }
-
-                    // Fallback: resolve to a basic attack effect so the turn can proceed without crash
-                    console.warn(`[CombatSystem] Falling back to Basic Attack effect for actor ${payload.actorId} against target ${payload.targetId}`);
+                    console.error(`[CombatSystem] FATAL: Could not retrieve SkillComponent data for skill entity ${skillEntity.id}. Falling back to basic attack.`);
                     this.resolveDamageEffect(combatEntity, actor, this.world.getEntity(parseInt(payload.targetId!, 10))!, {
-                        type: 'Damage',
-                        power: 5,
-                        scalingStat: 'attack',
-                        target: 'Enemy',
-                        targeting: { pattern: 'SINGLE' }
-                    });
-
-                    // End the actor's turn and start next
-                    this.eventBus.emit('turnEnded', { combatEntityId: payload.combatEntityId, endedTurnForId: payload.actorId });
-                    this.startNextTurn(combatEntity);
-                    return; // Return instead of break to exit the function here
+                        type: 'Damage', power: 5, scalingStat: 'attack', target: 'Enemy', targeting: { pattern: 'SINGLE' }
+                    } as any);
+                    break;
                 }
 
                 if (!this.canAffordCost(actor, skillData.costs)) {
-                    console.log(`Character ${actor.id} cannot afford the cost of skill ${payload.skillId}.`);
-                    this.eventBus.emit('turnEnded', { combatEntityId: payload.combatEntityId, endedTurnForId: payload.actorId });
-                    this.startNextTurn(combatEntity);
-                    return;
+                    console.log(`Character ${actor.id} cannot afford skill ${payload.skillId}. Ending turn.`);
+                    break; // Break, don't execute the skill.
                 }
 
                 this.payCost(actor, skillData.costs);
@@ -155,13 +128,14 @@ export class CombatSystem {
                 break;
         }
 
-        console.log("[CombatSystem] Reached end of onActionTaken. Checking for combat end and starting next turn.");
-
+        // Step 2: After any action, check if the combat is over.
         if (this.checkForCombatEnd(combatEntity)) {
-            console.log("[CombatSystem] Combat has ended.");
-            return;
+            console.log("[CombatSystem] Combat has ended after action resolution.");
+            return; // If combat ended, do not proceed to the next turn.
         }
 
+        // Step 3: If combat is not over, emit turn ended and start the next turn.
+        // This is now the ONLY place where the turn advances after an action.
         this.eventBus.emit('turnEnded', { combatEntityId: payload.combatEntityId, endedTurnForId: payload.actorId });
         this.startNextTurn(combatEntity);
     }
@@ -368,30 +342,30 @@ export class CombatSystem {
     }
 
     private startNextTurn(combatEntity: Entity): void {
-        console.log("[CombatSystem] Starting next turn...");
-
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
 
-        // Find the next living combatant
-        let nextTurnIndex = combat.currentTurnIndex;
-        let nextCombatant: Entity | undefined;
+        // --- FIX: A more robust and clear loop ---
+        for (let i = 0; i < combat.turnQueue.length; i++) {
+            const potentialIndex = (combat.currentTurnIndex + 1 + i) % combat.turnQueue.length;
 
-        do {
-            nextTurnIndex = (nextTurnIndex + 1) % combat.turnQueue.length;
-            if (nextTurnIndex === 0) {
-                combat.roundNumber++;
-                this.eventBus.emit('roundStarted', { combatEntityId: combatEntity.id.toString(), roundNumber: combat.roundNumber });
+            const potentialCombatantId = combat.turnQueue[potentialIndex];
+            const potentialCombatant = this.world.getEntity(parseInt(potentialCombatantId, 10));
+
+            if (potentialCombatant && HealthComponent.oneFrom(potentialCombatant)!.data.current > 0) {
+                // If we've wrapped around to the start of the queue, it's a new round.
+                if (potentialIndex <= combat.currentTurnIndex) {
+                    combat.roundNumber++;
+                    this.eventBus.emit('roundStarted', { combatEntityId: combatEntity.id.toString(), roundNumber: combat.roundNumber });
+                }
+
+                combat.currentTurnIndex = potentialIndex;
+                this.eventBus.emit('turnStarted', {
+                    combatEntityId: combatEntity.id.toString(),
+                    activeCombatantId: potentialCombatantId
+                });
+                return; // Exit successfully
             }
-            const nextCombatantId = combat.turnQueue[nextTurnIndex];
-            nextCombatant = this.world.getEntity(parseInt(nextCombatantId, 10));
-        } while (nextCombatant && HealthComponent.oneFrom(nextCombatant)!.data.current <= 0);
-
-        combat.currentTurnIndex = nextTurnIndex;
-
-        this.eventBus.emit('turnStarted', {
-            combatEntityId: combatEntity.id.toString(),
-            activeCombatantId: nextCombatant!.id.toString()
-        });
+        }
     }
 
     private doesTeamHaveFrontRow(combatEntity: Entity, teamId: string, ownEntity: Entity): boolean {

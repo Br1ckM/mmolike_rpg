@@ -6,6 +6,7 @@ import { usePlayerStore } from './stores/player';
 import { useGameStore } from './stores/game';
 import { useHubStore } from './stores/hub';
 import { useSettingsStore } from './stores/settings';
+import { usePartyStore } from './stores/party'; // <-- 1. Import the party store
 
 onMounted(async () => {
   const uiStore = useUIStore();
@@ -13,7 +14,6 @@ onMounted(async () => {
 
   if (!saveDataExists) {
     // If no save data, just show the creation modal.
-    // The modal itself is now responsible for initializing the stores after creation.
     uiStore.displayCharacterCreation();
   } else {
     // If save data exists, run the normal full initialization flow here.
@@ -23,6 +23,7 @@ onMounted(async () => {
     usePlayerStore().initialize();
     useGameStore().initialize();
     useHubStore().initialize();
+    usePartyStore().initialize();
   }
 });
 </script>

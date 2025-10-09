@@ -1,6 +1,6 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { Character, type CharacterData } from '../entities/character';
+import { Character, type CharacterEntityData } from '../entities/character';
 import {
     type MobTierData,
     type MobArchetypeData,
@@ -104,7 +104,7 @@ export class MobGenSystem {
         const finalTraits = [...(family.traits || []), ...(tier.traits || [])];
 
         // 8) Assemble CharacterData
-        const mobCharacterData: CharacterData = {
+        const mobCharacterData: CharacterEntityData = {
             info: {
                 name: `${tier.name} ${mobTemplate.name}`,
                 race: family.id,

@@ -3,13 +3,59 @@ import type { DialogueResponse } from "./components/dialogue";
 
 // Define the structure for all possible event payloads
 interface EventMap {
+    // Player / Character events
     'playerStateModified': { characterId: number; };
-    'enemyDefeated': { enemyId: string; characterId: number; level: number; };
     'experienceGained': { characterId: number; amount: number; };
     'playerLeveledUp': { characterId: number; newLevel: number; };
-    'lootContainerOpened': { containerId: string; characterId: number; };
-    'generateItemRequest': { baseItemId: string; characterId: number; itemLevel: number };
-    'addItemToInventory': { characterId: number; itemEntityId: number; baseItemId: string };
+    'characterCreationRequested': {
+        name: string;
+        pronouns: string;
+        ancestryId: string;
+    };
+
+    // Combat / Encounter events
+    'startCombatEncounter': {
+        team1: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The player's party
+        team2: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The enemy group
+    };
+    'enemyDefeated': { enemyId: string; characterId: number; level: number; }; // <-- restored here
+    'combatStarted': { combatEntityId: string; combatants: string[]; };
+    'roundStarted': { combatEntityId: string; roundNumber: number; };
+    'turnStarted': { combatEntityId: string; activeCombatantId: string; };
+    'actionTaken': {
+        combatEntityId: string;
+        actorId: string;
+        actionType: 'SKILL' | 'MOVE_ROW' | 'ITEM';
+        skillId?: string;
+        targetId?: string;
+    };
+    'damageDealt': {
+        attackerId: string;
+        targetId: string;
+        damage: number;
+        isCritical: boolean;
+    };
+    'healthHealed': {
+        healerId: string;
+        targetId: string;
+        amount: number;
+    };
+    'effectApplied': {
+        sourceId: string;
+        targetId: string;
+        effectId: string;
+    };
+    'turnEnded': { combatEntityId: string; endedTurnForId: string; };
+    'fleeAttempt': { combatEntityId: string; actorId: string; };
+    'combatEnded': { combatEntityId: string; winningTeamId: string; };
+    'startEncounterRequest': {
+        team1: { entityId: string; initialRow: 'Front' | 'Back'; }[];
+        encounterId: string; // The ID of the encounter to be spawned
+    };
+
+    // Inventory / Items
+    'generateItemRequest': { baseItemId: string; characterId: number; itemLevel: number; };
+    'addItemToInventory': { characterId: number; itemEntityId: number; baseItemId: string; };
     'inventoryFull': { characterId: number; itemEntityId: number; };
     'equipItemRequest': { characterId: number; itemEntityId: number; };
     'unequipItemRequest': { characterId: number; slot: EquipmentSlot; };
@@ -19,14 +65,22 @@ interface EventMap {
     'removeItemFromInventory': {
         characterId: number;
         itemEntityId: number;
-        reason: 'consume' | 'drop' | 'equip'; // Context for the removal
+        reason: 'consume' | 'drop' | 'equip';
     };
     'itemRemovedForEquip': { characterId: number; itemEntityId: number; };
+    'itemPickedUp': { characterId: number; itemBaseId: string; };
+
+    // Loot / Containers / Gathering
+    'lootContainerOpened': { containerId: string; characterId: number; };
+    'gatherResourceRequested': { characterId: number; lootTableId: string; };
+
+    // Quests
     'questAccepted': { characterId: number; questId: string; };
     'questProgressUpdated': { characterId: number; questId: string; };
     'questCompleted': { characterId: number; questId: string; };
     'questTurnedIn': { characterId: number; questId: string; };
-    'itemPickedUp': { characterId: number; itemBaseId: string; };
+
+    // Dialogue / NPC interactions
     'dialogueInitiated': { characterId: number; npcId: number; };
     'dialogueResponseSelected': { responseIndex: number; };
     'dialogueNodeChanged': {
@@ -37,95 +91,44 @@ interface EventMap {
         history: { speaker: 'NPC' | 'Player'; text: string }[];
     };
     'dialogueEnded': {};
+
+    // Party / Companion
     'companionRecruited': { characterId: number; npcId: number; };
     'partyUpdated': { characterId: number; };
+    'swapCompanionRequested': { characterId: number; companionId: number; };
+
+    // Vendor / Training
     'vendorScreenOpened': { characterId: number; npcId: number; };
     'trainingScreenOpened': { characterId: number; npcId: number; };
     'buyItemRequested': { characterId: number; npcId: number; itemEntityId: number; };
     'sellItemRequested': { characterId: number; npcId: number; itemEntityId: number; };
-    'vendorInventoryUpdated': { vendorItems: any[], playerSellableItems: any[] };
+    'vendorInventoryUpdated': { vendorItems: any[]; playerSellableItems: any[]; };
     'learnSkillRequested': { characterId: number; npcId: number; skillId: string; };
     'unlockJobRequested': { characterId: number; npcId: number; jobId: string; };
     'skillLearned': { characterId: number; skillId: string; success: boolean; };
+
+    // World / Time / Travel
     'timeOfDayChanged': { newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night'; };
-    'npcLocationChanged': { npcId: number; newLocationId: string; };
     'advanceTimeRequested': { from: 'Morning' | 'Afternoon' | 'Evening' | 'Night'; };
     'travelToNodeRequested': { characterId: number; nodeId: string; };
     'playerLocationChanged': { characterId: number; newLocationId: string; };
-    'interactWithNodeRequested': { characterId: number, nodeId: number };
-    'gatherResourceRequested': { characterId: number, lootTableId: string };
-    'startCombatEncounter': {
-        team1: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The player's party
-        team2: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The enemy group
-    };
+    'npcLocationChanged': { npcId: number; newLocationId: string; };
+    'interactWithNodeRequested': { characterId: number; nodeId: number; };
+
+    // Content filter / Preferences
     'contentFilterChanged': { showNsfwContent: boolean; showVoreContent: boolean; };
-    'setPlayerVoreRoleRequest': { characterId: number; newRole: VoreRole; };
-
-    /** Fired by CombatInitiationSystem when the battle has been set up. */
-    'combatStarted': { combatEntityId: string; combatants: string[]; };
-
-    /** Fired by the CombatSystem to announce the start of a new round. */
-    'roundStarted': { combatEntityId: string; roundNumber: number; };
-
-    /** Fired by the CombatSystem to announce whose turn it is. */
-    'turnStarted': { combatEntityId: string; activeCombatantId: string; };
-
-    /** Fired by the CombatSystem when one side has been defeated. */
-    'combatEnded': { combatEntityId: string; winningTeamId: string; };
-
-    'actionTaken': {
-        combatEntityId: string;
-        actorId: string;
-        actionType: 'SKILL' | 'MOVE_ROW' | 'ITEM';
-        skillId?: string;
-        targetId?: string;
-    };
-
-    /** Fired by the CombatSystem to announce the result of an action. */
-    'damageDealt': {
-        attackerId: string;
-        targetId: string;
-        damage: number;
-        isCritical: boolean;
-    };
-
-    /** Fired by the CombatSystem when a target is healed. */
-    'healthHealed': {
-        healerId: string;
-        targetId: string;
-        amount: number;
-    };
-
-    /** Fired by the CombatSystem when a status effect is applied. */
-    'effectApplied': {
-        sourceId: string;
-        targetId: string;
-        effectId: string;
-    };
-
-    /** Fired by the CombatSystem when a turn has been fully resolved. */
-    'turnEnded': { combatEntityId: string; endedTurnForId: string; };
-    'fleeAttempt': { combatEntityId: string; actorId: string; };
-    'startEncounterRequest': {
-        team1: { entityId: string; initialRow: 'Front' | 'Back'; }[];
-        encounterId: string; // The ID of the encounter to be spawned
-    };
-    'notification': {
-        type: 'info' | 'success' | 'error' | 'warn';
-        message: string;
-    };
-    // Vore-related events
-    'setPlayerVoreRole': { characterId: number; newRole: VoreRole };
     'updateContentFilter': { showNsfwContent: boolean; showVoreContent: boolean; };
-    'preyDevoured': { predatorId: number; preyId: number };
-    'preyDigested': { predatorId: number; digestedPreyData: any };
-    'regurgitateRequest': { predatorId: number; }
-    'characterCreationRequested': {
-        name: string;
-        pronouns: string;
-        ancestryId: string;
-    };
-    'dev_addPreyToStomach': { // <-- NEW EVENT
+    'setPlayerVoreRoleRequest': { characterId: number; newRole: VoreRole; };
+    'setPlayerVoreRole': { characterId: number; newRole: VoreRole; };
+
+    // Notifications / Misc
+    'notification': { type: 'info' | 'success' | 'error' | 'warn'; message: string; };
+
+    // Vore-related events
+    'preyDevoured': { predatorId: number; preyId: number; };
+    'preyDigested': { predatorId: number; digestedPreyData: any; };
+    'regurgitateRequest': { predatorId: number; }; // <-- fixed missing semicolon previously
+    'dev_addPreyToStomach': { // developer / debug event
         playerId: number;
         preyData: {
             name: string;
@@ -133,8 +136,7 @@ interface EventMap {
             digestionTime: number;
             nutritionValue: number;
             strugglePower: number;
-        }
-
+        };
     };
 }
 

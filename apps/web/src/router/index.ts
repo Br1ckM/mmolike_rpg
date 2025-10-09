@@ -11,6 +11,7 @@ import Inventory from '../views/Inventory.vue'
 import Simulator from '../views/Simulator.vue'
 import Settings from '../views/Settings.vue'
 import Admin from '../views/Admin.vue' // <-- NEW IMPORT
+import Camp from '../views/Camp.vue';
 
 const routes = [
   {
@@ -23,7 +24,7 @@ const routes = [
       { path: 'hub', name: 'hub', component: Hub },
       { path: 'character', name: 'character', component: Character },
       { path: 'inventory', name: 'inventory', component: Inventory },
-      { path: 'camp', name: 'camp', component: Placeholder, props: { pageName: 'Camp' } },
+      { path: 'camp', name: 'camp', component: Camp },
       { path: 'codex', name: 'codex', component: Placeholder, props: { pageName: 'Codex' } },
       { path: 'about', name: 'about', component: Placeholder, props: { pageName: 'About / FAQ' } },
       { path: 'settings', name: 'settings', component: Settings },

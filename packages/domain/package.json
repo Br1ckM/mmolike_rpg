@@ -1,0 +1,17 @@
+{
+    "name": "mmolike_rpg-domain",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest --run"
+    },
+    "devDependencies": {
+        "@types/node": "^20.12.12",
+        "typescript": "^5.4.5",
+        "vitest": "^1.6.0"
+    },
+    "dependencies": {
+        "ecs-lib": "^0.8.0-pre.2"
+    }
+}

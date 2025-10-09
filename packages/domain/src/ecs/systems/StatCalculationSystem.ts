@@ -16,7 +16,6 @@ import { type MobArchetypeData, ActiveTraitsComponent } from '../components/mob'
 import { type TraitData } from '../components/traits';
 import { type GameConfig, type AncestryData } from '../../ContentService';
 
-/** The keys we store in DerivedStats (no resource pools here) */
 type DerivedKeys =
     | 'attack' | 'magicAttack' | 'defense' | 'magicResist'
     | 'critChance' | 'critDamage' | 'dodge' | 'speed' | 'accuracy';
@@ -55,14 +54,12 @@ export class StatCalculationSystem {
 
     public update(entity: Entity, archetypes?: MobArchetypeData[]): void {
         const core = CoreStatsComponent.oneFrom(entity)?.data;
-        const info = InfoComponent.oneFrom(entity)?.data; // <-- Get the info component
+        const info = InfoComponent.oneFrom(entity)?.data;
 
         if (!core) return;
 
-        // Create a mutable copy of core stats to apply ancestry bonus
         const modifiedCore = { ...core };
 
-        // ---- Apply Ancestry Modifiers ----
         if (info?.ancestryId) {
             const ancestryData = this.content.ancestries?.get(info.ancestryId);
             if (ancestryData?.statModifiers) {
@@ -72,8 +69,6 @@ export class StatCalculationSystem {
             }
         }
 
-        // ---- Base calculations from config ----
-        // vvv Use the 'modifiedCore' stats from now on vvv
         const derived: DerivedMap = {
             attack: modifiedCore.strength * this.config.stat_scalings.attack_from_strength,
             magicAttack: modifiedCore.intelligence * this.config.stat_scalings.magic_attack_from_intelligence,
@@ -86,43 +81,20 @@ export class StatCalculationSystem {
             accuracy: this.config.base_stats.accuracy,
         };
 
-        // Resource capacities (NOT stored in DerivedStats)
         let healthCap = modifiedCore.strength * this.config.stat_scalings.health_from_strength;
         let manaCap = modifiedCore.intelligence * this.config.stat_scalings.mana_from_intelligence;
 
-
-        // Helpers to route stat modifications
         const applyFlat = (key: AnyStatKey, value: number) => {
             if (key === 'health') healthCap += value;
             else if (key === 'mana') manaCap += value;
-            else derived[key as DerivedKeys] += value;
-        };
-        const applyPercent = (key: AnyStatKey, value: number) => {
-            if (key === 'health') healthCap *= value;         // archetype.percent assumed multiplicative (e.g., 1.10)
-            else if (key === 'mana') manaCap *= value;
-            else derived[key as DerivedKeys] *= value;
+            else if (derived.hasOwnProperty(key)) derived[key as DerivedKeys] += value;
         };
         const applyPercentAdditive = (key: AnyStatKey, value: number) => {
-            // effects/traits that give +X% typically arrive as 0.10; multiply by (1+value)
             if (key === 'health') healthCap *= (1 + value);
             else if (key === 'mana') manaCap *= (1 + value);
-            else derived[key as DerivedKeys] *= (1 + value);
+            else if (derived.hasOwnProperty(key)) derived[key as DerivedKeys] *= (1 + value);
         };
 
-        // ---- Archetype modifiers ----
-        if (archetypes) {
-            for (const arch of archetypes) {
-                if (!arch.modifiers) continue;
-                for (const [stat, value] of Object.entries(arch.modifiers)) {
-                    const [statName, modType] = stat.split('_'); // e.g., "attack_percent"
-                    const key = statName as AnyStatKey;
-                    if (modType === 'percent') applyPercent(key, value as number);
-                    else if (modType === 'flat') applyFlat(key, value as number);
-                }
-            }
-        }
-
-        // ---- Equipment base stats ----
         const equipment = EquipmentComponent.oneFrom(entity)?.data;
         if (equipment) {
             for (const slot in equipment) {
@@ -135,35 +107,14 @@ export class StatCalculationSystem {
                 const equipable = EquipableComponent.oneFrom(itemEntity)?.data;
                 if (equipable?.baseStats) {
                     for (const stat in equipable.baseStats) {
-                        const key = stat as AnyStatKey;
-                        const val = equipable.baseStats[stat];
-                        applyFlat(key, val);
-                    }
-                }
-                // TODO: affixes & special rules
-            }
-        }
-
-        // ---- Traits (ALWAYS trigger) ----
-        const activeTraits = ActiveTraitsComponent.oneFrom(entity)?.data.traitIds;
-        if (activeTraits && this.content.traits) {
-            for (const traitId of activeTraits) {
-                const traitData = this.content.traits.get(traitId);
-                if (!traitData || traitData.trigger !== 'ALWAYS') continue;
-                for (const effect of traitData.effects) {
-                    if (effect.type === 'MODIFY_STAT' && effect.stat && effect.value != null) {
-                        const key = effect.stat as AnyStatKey;
-                        if (effect.valueType === 'PERCENT') applyPercentAdditive(key, effect.value);
-                        else applyFlat(key, effect.value); // FLAT
+                        applyFlat(stat as AnyStatKey, equipable.baseStats[stat]);
                     }
                 }
             }
         }
 
-        // ---- Active effects (aggregate) ----
         const flatMods: Partial<Record<AnyStatKey, number>> = {};
         const pctMods: Partial<Record<AnyStatKey, number>> = {};
-
         const activeEffects = ActiveEffectComponent.oneFrom(entity)?.data;
         if (activeEffects) {
             for (const eff of activeEffects) {
@@ -176,46 +127,54 @@ export class StatCalculationSystem {
                 if (mod.valueType === 'FLAT') {
                     flatMods[key] = (flatMods[key] ?? 0) + mod.value;
                 } else if (mod.valueType === 'PERCENT') {
-                    pctMods[key] = (pctMods[key] ?? 0) + mod.value; // e.g., +0.10 means +10%
+                    pctMods[key] = (pctMods[key] ?? 0) + mod.value;
                 }
             }
-
-            // Apply flat then percent
             for (const k in flatMods) applyFlat(k as AnyStatKey, flatMods[k as AnyStatKey]!);
             for (const k in pctMods) applyPercentAdditive(k as AnyStatKey, pctMods[k as AnyStatKey]!);
         }
 
-        // ---- Rounding ----
         (Object.keys(derived) as DerivedKeys[]).forEach(key => {
             derived[key] = Math.round(derived[key]);
         });
         healthCap = Math.max(0, Math.round(healthCap));
         manaCap = Math.max(0, Math.round(manaCap));
 
-        // ---- Update resource components ----
         const health = HealthComponent.oneFrom(entity)?.data;
         const mana = ManaComponent.oneFrom(entity)?.data;
 
         if (health) {
-            const first = !Number.isFinite(health.max) || health.max <= 1;
+            // --- FIX: Correctly handle initial set vs. recalculation ---
+            const isInitialCalculation = health.max <= 1;
             health.max = healthCap;
-            if (first) health.current = healthCap;
-            else health.current = Math.min(health.current, health.max);
+            if (isInitialCalculation) {
+                // If this is the first time we're setting stats, fill the health pool completely.
+                health.current = healthCap;
+            } else {
+                // Otherwise, clamp the current health to the new maximum.
+                health.current = Math.min(health.current, health.max);
+            }
         }
 
         if (mana) {
-            const first = !Number.isFinite(mana.max) || mana.max <= 1;
+            // (Applying the same logic for mana for consistency)
+            const isInitialCalculation = mana.max <= 1;
             mana.max = manaCap;
-            if (first) mana.current = manaCap;
-            else mana.current = Math.min(mana.current, mana.max);
+            if (isInitialCalculation) {
+                mana.current = manaCap;
+            } else {
+                mana.current = Math.min(mana.current, mana.max);
+            }
         }
 
-        // *** FIX: Remove the old component before adding the new one ***
-        const derivedStatsComp = DerivedStatsComponent.oneFrom(entity);
-        if (derivedStatsComp) {
-            entity.remove(derivedStatsComp);
+        // --- FIX: Ensure DerivedStatsComponent is always present ---
+        // Instead of removing/re-adding, we'll just update the data of the existing component.
+        let derivedStatsComp = DerivedStatsComponent.oneFrom(entity);
+        if (!derivedStatsComp) {
+            derivedStatsComp = new DerivedStatsComponent(derived);
+            entity.add(derivedStatsComp);
+        } else {
+            Object.assign(derivedStatsComp.data, derived);
         }
-        entity.add(new DerivedStatsComponent(derived));
     }
 }
-

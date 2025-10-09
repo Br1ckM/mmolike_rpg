@@ -3,7 +3,7 @@
 import ECS, { Entity } from 'ecs-lib';
 import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
 import { ContentService, type GameContent } from 'mmolike_rpg-domain/ContentService';
-import { Character, type CharacterData } from 'mmolike_rpg-domain/ecs/entities/character';
+import { Character, type CharacterEntityData } from 'mmolike_rpg-domain/ecs/entities/character';
 import { Item, type ItemData } from 'mmolike_rpg-domain/ecs/entities/item'
 import { World, Node } from 'mmolike_rpg-domain/ecs/entities/world';
 import { WorldClockComponent, type TimeOfDay, NodeComponent } from 'mmolike_rpg-domain/ecs/components/world';
@@ -90,7 +90,7 @@ import { QuestStatusComponent, QuestComponent, QuestObjectiveComponent } from 'm
 import { LocationComponent } from 'mmolike_rpg-domain/ecs/components/world';
 import { DialogueComponent, VendorComponent, TrainerComponent } from 'mmolike_rpg-domain/ecs/components/npc'
 import { SkillInfoComponent, SkillComponent, ProgressionComponent } from 'mmolike_rpg-domain/ecs/components/skill';
-
+import { CompanionComponent } from 'mmolike_rpg-domain/ecs/components/npc'
 
 // Helper to get all components from an entity using public accessors
 const getEntityDTO = (entity: Entity | null) => {
@@ -122,6 +122,7 @@ const getEntityDTO = (entity: Entity | null) => {
     checkAndAddComponent(AppearanceComponent, 'AppearanceComponent');
     checkAndAddComponent(VoreRoleComponent, 'VoreRoleComponent');
     checkAndAddComponent(VoreComponent, 'VoreComponent');
+    checkAndAddComponent(CompanionComponent, 'CompanionComponent');
 
     // Item Components
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
@@ -182,7 +183,7 @@ export class GameService {
                 throw new Error('Player template could not be found.');
             }
 
-            const playerData: CharacterData = JSON.parse(JSON.stringify(playerTemplate.components));
+            const playerData: CharacterEntityData = JSON.parse(JSON.stringify(playerTemplate.components));
 
             playerData.info.name = options.name;
             (playerData.info as any).pronouns = options.pronouns;
@@ -392,6 +393,16 @@ export class GameService {
         const playerDTO = getEntityDTO(this.player) as any;
         if (!playerDTO) return null;
 
+        const allEntities = (this.world as any).entities as Entity[];
+        const companions = allEntities
+            .filter(e => {
+                const comp = CompanionComponent.oneFrom(e)?.data;
+                return comp && comp.recruited;
+            })
+            .map(e => getEntityDTO(e));
+
+        playerDTO.companions = companions;
+
         const inventoryComponent = playerDTO.InventoryComponent;
         if (inventoryComponent) {
             const walletEntity = this.world.getEntity(parseInt(inventoryComponent.walletId, 10));
@@ -503,6 +514,7 @@ export class GameService {
             AppearanceComponent: playerDTO.AppearanceComponent,
             VoreRoleComponent: playerDTO.VoreRoleComponent,
             consumableBelt: playerDTO.ConsumableBeltComponent,
+            companions: playerDTO.companions,
         };
 
         return finalState;

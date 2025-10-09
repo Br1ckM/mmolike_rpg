@@ -35,7 +35,7 @@ import { type ProgressionData, ProgressionComponent } from '../components/skill'
 /**
  * CharacterData (v2)
  */
-export interface CharacterData {
+export interface CharacterEntityData {
     info: InfoData;
     controllable: ControllableData;
     coreStats: CoreStatsData;
@@ -78,7 +78,7 @@ function normalizeResource(
  * Represents a character in the game world.
  */
 export class Character extends Entity {
-    constructor(data: CharacterData) {
+    constructor(data: CharacterEntityData) {
         super();
 
         // Base components

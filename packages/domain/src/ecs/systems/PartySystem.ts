@@ -14,13 +14,14 @@ const MAX_ACTIVE_PARTY_MEMBERS = 4; // Player + 3 companions
 export class PartySystem {
     private world: ECS;
     private eventBus: EventBus;
-    private contentIdToEntityIdMap: Map<string, number>; // <-- Add map property
+    private contentIdToEntityIdMap: Map<string, number>;
 
-    constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) { // <-- Add map to constructor
+    constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
         this.world = world;
         this.eventBus = eventBus;
-        this.contentIdToEntityIdMap = contentIdToEntityIdMap; // <-- Store the map
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap;
         this.eventBus.on('companionRecruited', this.onCompanionRecruited.bind(this));
+        this.eventBus.on('swapCompanionRequested', this.onSwapCompanion.bind(this));
     }
 
     /**
@@ -68,6 +69,33 @@ export class PartySystem {
         this.eventBus.emit('partyUpdated', { characterId: payload.characterId });
         this.eventBus.emit('playerStateModified', { characterId: payload.characterId });
         this.eventBus.emit('playerLocationChanged', { characterId: payload.characterId, newLocationId: '' });
+    }
+
+    private onSwapCompanion(payload: { characterId: number; companionId: number; }): void {
+        const companionEntity = this.world.getEntity(payload.companionId);
+        if (!companionEntity) return;
+
+        const companion = CompanionComponent.oneFrom(companionEntity)?.data;
+        if (!companion || !companion.recruited) return;
+
+        const activeParty = this.getActiveParty(payload.characterId);
+
+        // If the companion is already in the party, remove them.
+        if (companion.inActiveParty) {
+            companion.inActiveParty = false;
+        }
+        // If they are not in the party, try to add them.
+        else {
+            if (activeParty.length < MAX_ACTIVE_PARTY_MEMBERS) {
+                companion.inActiveParty = true;
+            } else {
+                this.eventBus.emit('notification', { type: 'warn', message: 'Your party is full.' });
+                return;
+            }
+        }
+
+        console.log(`[PartySystem] Swapped companion ${payload.companionId}. Active status: ${companion.inActiveParty}`);
+        this.eventBus.emit('partyUpdated', { characterId: payload.characterId });
     }
 
     private getActiveParty(characterId: number): Entity[] {
