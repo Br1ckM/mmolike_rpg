@@ -26,3 +26,52 @@
       maxPrefixes: 1
       maxSuffixes: 1
       modSlots: 2
+
+- id: "baseitem_leather_armor"
+  components:
+    info:
+      name: "Leather Armor"
+      description: "Simple armor made from boiled leather."
+      itemType: "equipment"
+      iconName: "book"
+    equipable:
+      slot: "armor"
+      baseStats:
+        defense: 15
+    moddability:
+      maxPrefixes: 1
+      maxSuffixes: 1
+      modSlots: 2
+
+- id: "baseitem_leather_boots"
+  components:
+    info:
+      name: "Leather Boots"
+      description: "Basic leather boots for traveling."
+      itemType: "equipment"
+      iconName: "send"
+    equipable:
+      slot: "boots"
+      baseStats:
+        defense: 5
+        dodge: 2
+    moddability:
+      maxPrefixes: 1
+      maxSuffixes: 1
+      modSlots: 2
+
+- id: "baseitem_wooden_shield"
+  components:
+    info:
+      name: "Wooden Shield"
+      description: "A simple shield made of planks and bound with iron."
+      itemType: "equipment"
+      iconName: "shield-fill"
+    equipable:
+      slot: "offHand"
+      baseStats:
+        defense: 8
+    moddability:
+      maxPrefixes: 1
+      maxSuffixes: 1
+      modSlots: 2

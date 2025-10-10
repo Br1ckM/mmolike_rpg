@@ -188,6 +188,7 @@ export const useGameStore = defineStore('game', () => {
     function clearCombatState() {
         combat.value = null;
         combatResult.value = null;
+        denState.value = null;
         combatLog.value = [];
     }
 

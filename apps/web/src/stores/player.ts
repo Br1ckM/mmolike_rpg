@@ -2,7 +2,10 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { App } from 'mmolike_rpg-application';
 
-// --- UI-specific Types ---
+/**
+ * UI-specific Types
+ * These interfaces define the shape of data used by Vue components
+ */
 export type UIVoreRole = 'Neither' | 'Prey' | 'Predator' | 'Both';
 
 export interface UIItem {
@@ -44,7 +47,10 @@ export interface UIStomachContent {
   voreType?: string;
 }
 
-// --- Backend Data Structures ---
+/**
+ * Backend Data Structures
+ * These interfaces match the data received from the application layer
+ */
 interface PlayerState {
   id: number;
   name: string;
@@ -81,13 +87,21 @@ interface ActiveQuest {
   objectives: QuestObjective[];
 }
 
+/**
+ * Calculate experience required for a given level
+ */
 const xpForLevel = (level: number) => Math.floor(100 * Math.pow(level, 1.5));
 
+/**
+ * Player Store
+ * Manages all player-related state and provides computed getters and actions
+ */
 export const usePlayerStore = defineStore('player', () => {
-  // --- REFACTORED STATE: Break down the single 'player' ref ---
+  // State Management
   const isInitialized = ref(false);
   const unsubscribe = ref<(() => void) | null>(null);
 
+  // Core Player Data
   const playerId = ref<number | null>(null);
   const playerName = ref('');
   const health = ref({ current: 0, max: 1 });
@@ -105,11 +119,14 @@ export const usePlayerStore = defineStore('player', () => {
   const voreContents = ref<any[]>([]);
   const ancestry = ref<any>(null);
 
-  // inspector state compatibility
+  // Inspector State
   const itemToInspect = ref<UIItem | null>(null);
   const isInspectorOpen = computed(() => itemToInspect.value !== null);
 
-  // --- Getters ---
+  /**
+   * Computed Getters
+   * These provide reactive calculated values based on the core state
+   */
   const healthPercentage = computed(() => (health.value.max > 0 ? (health.value.current / health.value.max) * 100 : 0));
   const healthValues = computed(() => ({ current: health.value.current, max: health.value.max, display: `${health.value.current} / ${health.value.max}` }));
   const manaPercentage = computed(() => (mana.value.max > 0 ? (mana.value.current / mana.value.max) * 100 : 0));
@@ -124,7 +141,6 @@ export const usePlayerStore = defineStore('player', () => {
   });
 
   const bags = computed((): UIBag[] => {
-    // debug log removed / simplified
     if (!inventory.value?.bags) return [];
     return inventory.value.bags.map((bagData: any) => {
       return {
@@ -213,16 +229,21 @@ export const usePlayerStore = defineStore('player', () => {
   const playerVoreRole = computed((): UIVoreRole => voreRole.value ?? 'Neither');
   const stomachContents = computed((): UIStomachContent[] => voreContents.value ?? []);
 
-  // --- Actions ---
+  /**
+   * Actions
+   * These functions handle state mutations and backend communication
+   */
+
+  /**
+   * Initialize the store by subscribing to player state updates
+   */
   async function initialize() {
     await App.isReady;
     if (unsubscribe.value) unsubscribe.value();
 
     unsubscribe.value = App.queries.subscribe<PlayerState>('playerState', (newState) => {
-      console.log('PlayerStore received update:', newState); // Add this debug log
-
       if (!newState) {
-        // Handle player being null (e.g., reset state)
+        // Reset state when player is null
         playerId.value = null;
         playerName.value = '';
         health.value = { current: 0, max: 1 };
@@ -242,7 +263,7 @@ export const usePlayerStore = defineStore('player', () => {
         return;
       }
 
-      // --- REFACTORED UPDATE LOGIC: Update each ref individually ---
+      // Update state with new values from backend
       playerId.value = newState.id;
       playerName.value = newState.name;
       health.value.current = newState.health.current;
@@ -261,22 +282,18 @@ export const usePlayerStore = defineStore('player', () => {
       voreRole.value = newState.VoreRoleComponent?.role ?? 'Neither';
       voreContents.value = newState.vore?.contents ?? [];
       ancestry.value = newState.ancestry;
-      // --- END REVISED LOGIC ---
 
-      // --- START FIX: Sync persisted role on first load ---
+      // Sync persisted vore role on first load
       if (!isInitialized.value) {
-        isInitialized.value = true; // Set flag to prevent this from running on every update
+        isInitialized.value = true;
 
         const savedRole = localStorage.getItem('playerVoreRole') as UIVoreRole | null;
         const currentRole = newState.VoreRoleComponent?.role || 'Neither';
 
         if (savedRole && savedRole !== currentRole) {
-          // If the saved role differs from the default, command the backend to update it.
-          console.log(`[PlayerStore] Found persisted vore role "${savedRole}", applying it.`);
           App.commands.setPlayerVoreRole(newState.id, savedRole);
         }
       }
-      // --- END FIX ---
     });
   }
 
@@ -304,7 +321,7 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   return {
-    // reactive refs
+    // Reactive State
     playerId,
     playerName,
     health,
@@ -322,11 +339,11 @@ export const usePlayerStore = defineStore('player', () => {
     voreContents,
     ancestry,
 
-    // inspector
+    // Inspector State
     itemToInspect,
     isInspectorOpen,
 
-    // computed getters
+    // Computed Getters
     healthPercentage,
     healthValues,
     manaPercentage,
@@ -346,7 +363,7 @@ export const usePlayerStore = defineStore('player', () => {
     playerVoreRole,
     stomachContents,
 
-    // actions
+    // Actions
     initialize,
     equipItem,
     useConsumable,

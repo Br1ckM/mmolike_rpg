@@ -8,18 +8,20 @@ import { ref, computed } from 'vue';
 
 const playerStore = usePlayerStore();
 const {
-    player,
+    playerName,
     healthPercentage,
     healthValues,
     manaPercentage,
     manaValues,
-    experience
+    experience,
+    coreStats,
+    derivedStats
 } = storeToRefs(playerStore);
 
 const coreTiles = computed<Record<'STR' | 'DEX' | 'INT', number>>(() => ({
-    STR: player.value?.coreStats?.strength ?? 0,
-    DEX: player.value?.coreStats?.dexterity ?? 0,
-    INT: player.value?.coreStats?.intelligence ?? 0,
+    STR: coreStats.value?.strength ?? 0,
+    DEX: coreStats.value?.dexterity ?? 0,
+    INT: coreStats.value?.intelligence ?? 0,
 }));
 
 type DerivedKey = | 'attack' | 'magicAttack' | 'defense' | 'magicResist' | 'critChance' | 'critDamage' | 'dodge' | 'speed' | 'accuracy';
@@ -37,7 +39,7 @@ const DERIVED_META: Record<DerivedKey, { label: string; icon: string; tooltip: s
 }
 
 const derivedList = computed(() => {
-    const ds = player.value?.derivedStats ?? {} as Record<DerivedKey, number>;
+    const ds = derivedStats.value ?? {} as Record<DerivedKey, number>;
     return (Object.keys(DERIVED_META) as DerivedKey[]).map((key) => {
         const meta = DERIVED_META[key];
         const raw = Number.isFinite(ds[key]) ? ds[key] : 0;
@@ -67,7 +69,7 @@ const getStatTileStyles = (statName: string) => {
 
             <div class="flex flex-col items-center flex-shrink-0">
                 <Avatar image="https://placehold.co/150x150/27272a/eab308?text=A" size="xlarge" shape="circle" />
-                <p class="font-bold text-2xl mt-3 text-primary-400">{{ player?.name ?? 'Aethelred' }}</p>
+                <p class="font-bold text-2xl mt-3 text-primary-400">{{ playerName ?? 'Aethelred' }}</p>
                 <p class="text-surface-400 text-sm mb-2">The Bold</p>
                 <p class="text-surface-400 text-sm">Level {{ experience.level }} Knight</p>
             </div>

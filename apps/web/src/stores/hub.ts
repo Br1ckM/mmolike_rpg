@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 import { App } from 'mmolike_rpg-application';
 
 // Define types for the data we expect from the backend
-interface HubNpc {
+export interface HubNpc {
     id: number;
     InfoComponent: {
         name: string;

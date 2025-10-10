@@ -27,7 +27,7 @@ damage_formula:
 
 mob_generation:
   # The number of core stat points a mob gets for each level.
-  stat_points_per_level: 3
+  stat_points_per_level: 5
 
 rarity_chances:
   # The chance for an equipment drop to be of a certain rarity.

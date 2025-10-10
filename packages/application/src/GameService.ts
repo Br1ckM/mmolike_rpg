@@ -408,7 +408,7 @@ export class GameService {
             new DialogueSystem(this.world, this.eventBus, this.content),
             new VendorSystem(this.world, this.eventBus),
             new TrainerSystem(this.world, this.eventBus),
-            new LootResolutionSystem(this.world, this.eventBus, this.content),
+            new LootResolutionSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new EncounterSystem(this.world, this.eventBus, this.content, mobGenSystem),
             new TraitSystem(this.world, this.eventBus, this.content),
             new WorldClockSystem(this.world, this.eventBus, this.worldEntity!),

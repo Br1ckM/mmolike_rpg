@@ -244,7 +244,9 @@ const doNothing = () => { };
         <div v-if="combat"
             class="h-full flex flex-col items-center justify-center p-4 bg-gray-800 bg-opacity-50 flex-grow relative">
 
-            <CombatEndScreen v-if="combatResult" :result="combatResult" @close="gameStore.clearCombatState()" />
+            <CombatEndScreen v-if="combatResult && denState?.status !== 'IN_PROGRESS'" :result="combatResult"
+                @close="gameStore.clearCombatState()" />
+
 
             <div v-if="playerActionMode !== 'idle'"
                 class="absolute inset-0 bg-black/50 z-20 flex items-center justify-center pointer-events-none">

@@ -25,3 +25,23 @@
       type: "generated_item"
       chance: 1.0 # Guarantee the item drops for the quest
       quantity: [1, 1]
+
+- id: "loottable_goblin"
+  entries:
+    - id: "baseitem_goblin_ear"
+      type: "generated_item"
+      chance: 0.75 # 75% chance to get an ear
+      quantity: [1, 1]
+    - id: "baseitem_broken_sword_hilt"
+      type: "generated_item"
+      chance: 0.20 # 20% chance for some junk
+      quantity: [1, 1]
+    # --- START: New Dynamic Equipment Drops ---
+    - id: "baseitem_wooden_shield"
+      type: "generated_item"
+      chance: 0.50 # 5% chance for a shield
+      quantity: [1, 1]
+    - id: "baseitem_leather_boots"
+      type: "generated_item"
+      chance: 0.50 # 3% chance for boots
+      quantity: [1, 1]

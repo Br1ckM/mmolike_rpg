@@ -64,6 +64,7 @@ export class StatusEffectSystem extends GameSystem { // Extend GameSystem
                     const health = HealthComponent.oneFrom(activeCombatant)!.data;
                     const damage = effectDef.tickEffect.power;
                     health.current -= damage;
+                    health.current = Math.max(0, health.current); // Clamp HP
                     this.eventBus.emit('damageDealt', {
                         attackerId: effectInstance.sourceId,
                         targetId: activeCombatant.id.toString(),

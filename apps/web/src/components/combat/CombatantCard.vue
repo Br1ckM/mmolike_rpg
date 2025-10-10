@@ -16,6 +16,10 @@ const healthPercentage = computed(() => {
     return max > 0 ? (current / max) * 100 : 0;
 });
 
+// --- START: New computed property to check for death ---
+const isDead = computed(() => props.combatant?.HealthComponent?.current <= 0);
+// --- END: New computed property ---
+
 const floatingTexts = computed(() => {
     return props.combatLog.filter(event => event.targetId === String(props.combatant.id));
 });
@@ -33,9 +37,10 @@ const getTextColor = (type: string) => {
 <template>
     <div class="relative group w-20 h-24 bg-surface-800 rounded-lg p-2 flex flex-col items-center justify-between border-2 border-surface-700 shadow-lg transition-all duration-200"
         :class="{
-            'is-active-turn': isActive,
-            'cursor-pointer hover:border-red-500 hover:scale-110': isTargetable,
-            '!border-red-500 border-4 scale-110': isTargeted
+            'is-active-turn': isActive && !isDead,
+            'cursor-pointer hover:border-red-500 hover:scale-110': isTargetable && !isDead,
+            '!border-red-500 border-4 scale-110': isTargeted && !isDead,
+            'opacity-50': isDead
         }">
         <div class="absolute inset-0 pointer-events-none z-20">
             <TransitionGroup name="float-up">
@@ -47,7 +52,9 @@ const getTextColor = (type: string) => {
             </TransitionGroup>
         </div>
 
-
+        <div v-if="isDead" class="absolute inset-0 bg-black/60 rounded-md flex items-center justify-center z-10">
+            <i class="pi pi-times text-red-500 text-5xl" style="text-shadow: 0 0 5px black;"></i>
+        </div>
         <Avatar :image="combatant.InfoComponent.avatarUrl" size="large" shape="square" />
         <div class="w-full bg-black/50 rounded-full h-2 border border-surface-900 overflow-hidden">
             <div class="h-full bg-green-500 transition-all duration-300" :style="{ width: `${healthPercentage}%` }">

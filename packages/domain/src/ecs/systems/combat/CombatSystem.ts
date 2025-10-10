@@ -164,6 +164,7 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
         for (const cost of costs) {
             if (cost.stat === 'health' && actorHealth) {
                 actorHealth.current -= cost.amount;
+                actorHealth.current = Math.max(0, actorHealth.current); // Clamp HP
             } else if (cost.stat === 'mana' && actorMana) {
                 actorMana.current -= cost.amount;
             }
@@ -292,6 +293,7 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
 
         damage = Math.max(1, Math.floor(damage));
         targetHealth.current -= damage;
+        targetHealth.current = Math.max(0, targetHealth.current); // Clamp HP
 
         this.eventBus.emit('damageDealt', {
             attackerId: actor.id.toString(),
@@ -370,19 +372,36 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
     private endCombat(combatEntity: Entity, winningTeamId: string): void {
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
 
-        this.eventBus.emit('combatEnded', { combatEntityId: combatEntity.id.toString(), winningTeamId: winningTeamId });
+        // --- Prepare enemyDefeated payloads BEFORE removing components/entities ---
+        const defeatedPayloads: { enemyEventId: string; characterId: number; level: number }[] = [];
+        const playerId = combat.combatants.find(id =>
+            CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team1'
+        );
 
-        if (winningTeamId === 'team1') {
-            const playerId = combat.combatants.find(id => CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team1');
-            combat.combatants.forEach(id => {
-                const combatantEntity = this.world.getEntity(parseInt(id, 10))!;
-                if (CombatantComponent.oneFrom(combatantEntity)?.data.teamId === 'team2') {
-                    const level = ProgressionComponent.oneFrom(combatEntity)?.data.level ?? 1;
-                    this.eventBus.emit('enemyDefeated', { enemyId: id, characterId: parseInt(playerId!, 10), level });
+        for (const id of combat.combatants) {
+            const ent = this.world.getEntity(parseInt(id, 10));
+            if (!ent) continue;
+            const c = CombatantComponent.oneFrom(ent)?.data;
+            if (c?.teamId === 'team2') {
+                const level = ProgressionComponent.oneFrom(ent)?.data.level ?? 1;
+
+                // Try to map numeric entity id back to content id using the contentIdToEntityIdMap
+                let contentId: string | undefined;
+                const numericId = parseInt(id, 10);
+                for (const [cid, entId] of this.contentIdToEntityIdMap.entries()) {
+                    if (entId === numericId) { contentId = cid; break; }
                 }
-            });
+                const enemyEventId = contentId ?? id; // prefer content id (loot table key), fallback to entity id
+
+                defeatedPayloads.push({
+                    enemyEventId,
+                    characterId: parseInt(playerId ?? '0', 10),
+                    level
+                });
+            }
         }
 
+        // --- Cleanup combat components / entity ---
         combat.combatants.forEach(id => {
             const entity = this.world.getEntity(parseInt(id, 10))!;
             const combatantComp = CombatantComponent.oneFrom(entity);
@@ -391,6 +410,18 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
             }
         });
         this.world.removeEntity(combatEntity);
+
+        // Emit combatEnded
+        this.eventBus.emit('combatEnded', { combatEntityId: combatEntity.id.toString(), winningTeamId });
+
+        // Emit enemyDefeated for each defeated enemy using the prepared payloads
+        for (const p of defeatedPayloads) {
+            this.eventBus.emit('enemyDefeated', {
+                enemyId: p.enemyEventId,
+                characterId: p.characterId,
+                level: p.level
+            });
+        }
     }
 
     private checkForCombatEnd(combatEntity: Entity): boolean {

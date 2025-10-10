@@ -1,24 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-// --- FIX: Import the correct UIItem interface ---
 import type { UIItem } from '@/stores/player';
 
-// Define props to receive the item data
 const props = defineProps<{
     item: UIItem | null;
     size?: 'default' | 'large';
 }>();
 
-// Helper function for quality colors
+// --- START: Corrected and Expanded Rarity Logic ---
 const qualityColorClasses = computed(() => {
     if (!props.item) return '';
-
     switch (props.item.quality) {
-        case 'Uncommon': return 'border-sky-500 text-sky-400';
-        case 'Rare': return 'border-purple-500 text-purple-400';
+        case 'Junk': return 'border-zinc-500 text-zinc-400';
+        case 'Common': return 'border-surface-400 text-surface-200';
+        case 'Uncommon': return 'border-green-500 text-green-400';
+        case 'Rare': return 'border-sky-500 text-sky-400';
+        case 'Epic': return 'border-purple-500 text-purple-400';
+        case 'Legendary': return 'border-orange-500 text-orange-400';
         default: return 'border-surface-500 text-surface-300';
     }
 });
+// --- END: Corrected and Expanded Rarity Logic ---
 </script>
 
 <template>
@@ -38,8 +40,8 @@ const qualityColorClasses = computed(() => {
         </span>
 
         <div v-if="props.item" class="absolute left-1/2 bottom-full mb-2 hidden group-hover:block w-max max-w-xs z-20 transform -translate-x-1/2
-                   bg-surface-900 text-surface-200 text-xs rounded-md px-3 py-2 shadow-xl border"
-            :class="[props.item.quality === 'Rare' ? 'border-purple-500' : 'border-surface-600']">
+                         bg-surface-900 text-surface-200 text-xs rounded-md px-3 py-2 shadow-xl border"
+            :class="[qualityColorClasses]">
             <p class="font-bold text-sm" :class="qualityColorClasses">{{ props.item.name }}</p>
             <p class="text-surface-400 mt-1 italic capitalize">{{ props.item.type }}</p>
 
