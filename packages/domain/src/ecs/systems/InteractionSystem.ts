@@ -1,20 +1,20 @@
 import { EventBus } from '../EventBus';
 import ECS, { Entity } from 'ecs-lib';
 import { TravelTargetComponent, InteractionTargetComponent } from '../components/world';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Handles all player-initiated interactions with world nodes.
  * It acts as a router, delegating the action to the appropriate system.
  */
-export class InteractionSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class InteractionSystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        this.eventBus.on('interactWithNodeRequested', this.onInteractWithNodeRequested.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('interactWithNodeRequested', this.onInteractWithNodeRequested.bind(this));
     }
 
     private onInteractWithNodeRequested(payload: { characterId: number; nodeId: number }): void {
@@ -42,6 +42,7 @@ export class InteractionSystem {
                     });
                     break;
                 case 'Hunt':
+                case 'Encounter': // Handle both Hunt and Encounter types
                     this.eventBus.emit('startEncounterRequest', {
                         team1: [{ entityId: String(payload.characterId), initialRow: 'Front' }],
                         encounterId: interactionTarget.targetId,

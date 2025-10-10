@@ -4,23 +4,24 @@ import { EventBus } from '../../EventBus';
 import { CombatantComponent, CombatComponent, AIProfileComponent, type AIBehaviorProfile } from '../../components/combat';
 import { HealthComponent, SkillBookComponent } from '../../components/character';
 import { SkillComponent, type SkillEffectData } from '../../components/skill';
+import { GameSystem } from '../GameSystem'; // Import the base class
 
 /**
  * Manages decision-making for all AI-controlled entities in combat.
  */
-export class AISystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class AISystem extends GameSystem { // Extend GameSystem
     private content: any; // To access skill definitions
     private contentIdToEntityIdMap: Map<string, number> | undefined;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any, contentIdToEntityIdMap?: Map<string, number>) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
+
         this.content = loadedContent;
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
-        this.eventBus.on('turnStarted', this.onTurnStarted.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('turnStarted', this.onTurnStarted.bind(this));
     }
 
     private onTurnStarted(payload: { combatEntityId: string; activeCombatantId: string; }): void {
@@ -70,6 +71,7 @@ export class AISystem {
         const potentialTargets = combat.combatants
             .map(id => this.world.getEntity(parseInt(id, 10))!)
             .filter(entity => {
+                if (!entity) return false;
                 const combatant = CombatantComponent.oneFrom(entity)!.data;
                 const health = HealthComponent.oneFrom(entity)!.data;
                 return combatant.teamId !== actorCombatant.teamId && health.current > 0;
@@ -82,7 +84,6 @@ export class AISystem {
         let maxPower = 0;
 
         for (const skillId of knownSkills) {
-            // Prefer resolving to an actual skill entity via the contentId->entityId map
             let skillData: any | undefined;
             const numericSkillId = this.contentIdToEntityIdMap?.get(skillId);
             const skillEntity = numericSkillId ? this.world.getEntity(numericSkillId) : this.content.skills.get(skillId);
@@ -103,8 +104,6 @@ export class AISystem {
             skillId: bestSkillId
         };
     }
-
-    // packages/domain/src/ecs/systems/combat/AISystem.ts
 
     private getHealerAction(actor: Entity, combatEntityId: string): { targetId: string, skillId: string } | null {
         const combatEntity = this.world.getEntity(parseInt(combatEntityId, 10));

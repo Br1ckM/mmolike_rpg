@@ -1,23 +1,22 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { PlayerLocationComponent, TravelTargetComponent, LocationComponent } from '../components/world';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Manages the player's movement between persistent locations (Zones and Hubs)
  * by responding to travel requests from the Application Layer.
  */
-export class TravelSystem {
-    private world: ECS;
-    private eventBus: EventBus;
-    private contentIdToEntityIdMap: Map<string, number>; // <-- Add map property
+export class TravelSystem extends GameSystem { // Extend GameSystem
+    private contentIdToEntityIdMap: Map<string, number>;
 
-    // <-- Update constructor to accept the map
     constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
-        this.world = world;
-        this.eventBus = eventBus;
-        this.contentIdToEntityIdMap = contentIdToEntityIdMap; // <-- Store the map
+        // This system is event-driven.
+        super(world, eventBus, []);
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
-        this.eventBus.on('travelToNodeRequested', this.onTravelToNodeRequested.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('travelToNodeRequested', this.onTravelToNodeRequested.bind(this));
     }
 
     private onTravelToNodeRequested(payload: { characterId: number; nodeId: string; }): void {
@@ -38,7 +37,6 @@ export class TravelSystem {
         }
 
         const newLocationContentId = travelTarget.targetLocationId;
-        // FIX: Use the map to get the numeric ID from the string content ID
         const newLocationEntityId = this.contentIdToEntityIdMap.get(newLocationContentId);
         const newLocationEntity = newLocationEntityId ? this.world.getEntity(newLocationEntityId) : undefined;
 
@@ -57,7 +55,6 @@ export class TravelSystem {
             // Handle other travel types like Zone if needed
         }
 
-        // Announce the change to trigger a UI refresh
         this.eventBus.emit('playerStateModified', {
             characterId: character.id,
         });

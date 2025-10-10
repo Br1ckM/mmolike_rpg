@@ -3,24 +3,31 @@ import { EventBus } from '../EventBus';
 import { QuestRewardComponent, QuestComponent } from '../components/quest';
 import { InventoryComponent } from '../components/character';
 import { CurrencyComponent } from '../components/item';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Handles the distribution of quest rewards when a quest is turned in.
  */
-export class QuestRewardSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class QuestRewardSystem extends GameSystem { // Extend GameSystem
+    // --- FIX: This system needs the content map to find quest entities ---
+    private contentIdToEntityIdMap: Map<string, number>;
 
-    constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+    constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
+        // This system is event-driven.
+        super(world, eventBus, []);
+        this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
-        this.eventBus.on('questTurnedIn', this.onQuestTurnedIn.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('questTurnedIn', this.onQuestTurnedIn.bind(this));
     }
 
     private onQuestTurnedIn(payload: { characterId: number; questId: string; }): void {
         const character = this.world.getEntity(payload.characterId);
-        const questEntity = this.world.getEntity(parseInt(payload.questId, 10));
+
+        // --- FIX: Use the map to find the quest entity by its string ID ---
+        const questEntityId = this.contentIdToEntityIdMap.get(payload.questId);
+        const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
+        // --- END FIX ---
 
         if (!character || !questEntity) return;
 
@@ -50,20 +57,18 @@ export class QuestRewardSystem {
                     }
                 }
             }
+        }
 
-            // Grant Items
-            if (rewards.itemIds) {
-                const itemLevel = questInfo?.suggestedLevel ?? 1; // Get the quest level
-                for (const itemId of rewards.itemIds) {
-                    // Emit an event for the ItemGenerationSystem to create the item
-                    // and give it to the character, now including the itemLevel.
-                    this.eventBus.emit('generateItemRequest', {
-                        baseItemId: itemId,
-                        characterId: character.id,
-                        itemLevel: itemLevel, // Pass the quest's level
-                    });
-                    console.log(`Awarding item '${itemId}' to character ${character.id}.`);
-                }
+        // Grant Items
+        if (rewards.itemIds) {
+            const itemLevel = questInfo?.suggestedLevel ?? 1;
+            for (const itemId of rewards.itemIds) {
+                this.eventBus.emit('generateItemRequest', {
+                    baseItemId: itemId,
+                    characterId: character.id,
+                    itemLevel: itemLevel,
+                });
+                console.log(`Awarding item '${itemId}' to character ${character.id}.`);
             }
         }
     }

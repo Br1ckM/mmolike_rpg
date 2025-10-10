@@ -1,5 +1,5 @@
-import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
+import { Entity, Component } from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import {
     VoreComponent,
@@ -14,6 +14,7 @@ import {
 } from '../components/character';
 import { CombatantComponent, CombatComponent } from '../components/combat';
 import { Character } from '../entities/character';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 // Constants for struggle calculation
 const STRUGGLE_CHANCE = 0.35; // 35% chance to struggle per turn per prey
@@ -26,21 +27,20 @@ const getContainer = (voreData: any, containerType: VoreContainerType) => {
 /**
  * Manages the logic for vore-related actions and states.
  */
-export class VoreSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class VoreSystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        this.eventBus.on('setPlayerVoreRole', this.onSetPlayerVoreRole.bind(this));
-        this.eventBus.on('actionTaken', this.onActionTaken.bind(this));
-        this.eventBus.on('turnStarted', this.onTurnStarted.bind(this));
-        this.eventBus.on('playerLocationChanged', this.onPlayerLocationChanged.bind(this));
-        this.eventBus.on('preyDigested', this.onPreyDigested.bind(this));
-        this.eventBus.on('regurgitateRequest', this.onRegurgitateRequest.bind(this));
-        this.eventBus.on('dev_addPreyToStomach', this.onDevAddPreyToStomach.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('setPlayerVoreRole', this.onSetPlayerVoreRole.bind(this));
+        this.subscribe('actionTaken', this.onActionTaken.bind(this));
+        this.subscribe('turnStarted', this.onTurnStarted.bind(this));
+        this.subscribe('playerLocationChanged', this.onPlayerLocationChanged.bind(this));
+        this.subscribe('preyDigested', this.onPreyDigested.bind(this));
+        this.subscribe('regurgitateRequest', this.onRegurgitateRequest.bind(this));
+        this.subscribe('dev_addPreyToStomach', this.onDevAddPreyToStomach.bind(this));
     }
 
     private onDevAddPreyToStomach(payload: { playerId: number, preyData: any }): void {

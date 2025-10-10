@@ -1,39 +1,36 @@
 import { Entity } from 'ecs-lib';
-import ECS from 'ecs-lib'
+import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import {
     EquipmentComponent,
     type EquipmentSlot
 } from '../components/character';
 import { EquipableComponent } from '../components/item';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Manages equipping and unequipping items by reacting to events.
  * It is fully decoupled from the InventorySystem.
  */
-export class EquipmentSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class EquipmentSystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        // Listen for requests from the UI/Player
-        eventBus.on('equipItemRequest', this.handleEquipRequest.bind(this));
-        eventBus.on('unequipItemRequest', this.handleUnequipRequest.bind(this));
-
-        // Listen for the confirmation event from the InventorySystem
-        eventBus.on('itemRemovedForEquip', this.handleItemRemovedForEquip.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('equipItemRequest', this.handleEquipRequest.bind(this));
+        this.subscribe('unequipItemRequest', this.handleUnequipRequest.bind(this));
+        this.subscribe('itemRemovedForEquip', this.handleItemRemovedForEquip.bind(this));
     }
 
     /**
      * Step 1: An equip is requested. Ask the InventorySystem to remove the item.
      */
     private handleEquipRequest(payload: { characterId: number; itemEntityId: number; }): void {
-        // Fire an event to have the item removed from inventory, providing 'equip' as the reason.
         this.eventBus.emit('removeItemFromInventory', {
             ...payload,
+            quantity: 1,
             reason: 'equip'
         });
     }
@@ -52,13 +49,11 @@ export class EquipmentSystem {
 
         if (!equipment || !equipable) return;
 
-        // If a different item is in the slot, unequip it first.
         const currentItemInSlotId = equipment[equipable.slot];
         if (currentItemInSlotId) {
             this.unequipItem(character, equipable.slot);
         }
 
-        // Equip the new item.
         equipment[equipable.slot] = itemToEquip.id.toString();
         console.log(`Equipped item ${itemToEquip.id} to ${equipable.slot} for character ${character.id}.`);
 
@@ -83,7 +78,8 @@ export class EquipmentSystem {
 
         this.eventBus.emit('addItemToInventory', {
             characterId: character.id,
-            itemEntityId: parseInt(equippedItemIdStr, 10)
+            itemEntityId: parseInt(equippedItemIdStr, 10),
+            baseItemId: '' // Note: InventorySystem needs a baseItemId
         });
 
         this.eventBus.emit('characterEquipmentChanged', { characterId: character.id });

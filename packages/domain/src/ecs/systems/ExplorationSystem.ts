@@ -1,21 +1,21 @@
 import { EventBus } from '../EventBus';
 import ECS, { Entity } from 'ecs-lib';
 import { ContainerComponent, NodeComponent } from '../components/world';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Handles the player's "Explore" action within a zone, revealing undiscovered nodes.
  */
-export class ExplorationSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class ExplorationSystem extends GameSystem { // Extend GameSystem
     private contentIdToEntityIdMap: Map<string, number>;
 
     constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
-        this.eventBus.on('exploreRequested', this.onExploreRequested.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('exploreRequested', this.onExploreRequested.bind(this));
     }
 
     private onExploreRequested(payload: { characterId: number; zoneId: string; }): void {
@@ -26,12 +26,11 @@ export class ExplorationSystem {
         }
 
         // --- Advance the game's time ---
-        this.eventBus.emit('advanceTimeRequested', {}); // <-- Simplified call
+        this.eventBus.emit('advanceTimeRequested', {});
 
         const container = ContainerComponent.oneFrom(zoneEntity)?.data;
         if (!container) return;
 
-        // ... (rest of the logic remains the same)
         const undiscoveredNodes = container.containedEntityIds
             .map(contentId => {
                 const entityId = this.contentIdToEntityIdMap.get(contentId);

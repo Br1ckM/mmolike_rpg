@@ -1,17 +1,15 @@
 import ECS from 'ecs-lib';
 import { Entity, Component } from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { VendorComponent } from '../components/npc';
 import { InventoryComponent } from '../components/character';
 import { ProgressionComponent } from '../components/skill';
 import { CurrencyComponent, type CurrencyData, SlotsComponent, VendorValueComponent, ItemInfoComponent } from '../components/item';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Manages all buy and sell transactions between a player and an NPC vendor.
  */
-export class VendorSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class VendorSystem extends GameSystem { // Extend GameSystem
 
     // State for the currently active vendor session
     private activeVendorSession: {
@@ -20,13 +18,13 @@ export class VendorSystem {
     } | null = null;
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        // Listen for events from the Application Layer/DialogueSystem
-        this.eventBus.on('vendorScreenOpened', this.onVendorScreenOpened.bind(this));
-        this.eventBus.on('buyItemRequested', this.handleBuyItem.bind(this));
-        this.eventBus.on('sellItemRequested', this.handleSellItem.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('vendorScreenOpened', this.onVendorScreenOpened.bind(this));
+        this.subscribe('buyItemRequested', this.handleBuyItem.bind(this));
+        this.subscribe('sellItemRequested', this.handleSellItem.bind(this));
     }
 
     private onVendorScreenOpened(payload: { characterId: number; npcId: number; }): void {
@@ -75,25 +73,20 @@ export class VendorSystem {
         if (!character || !itemToBuy) return;
 
         const itemValueComp = VendorValueComponent.oneFrom(itemToBuy)?.data;
-        const price = itemValueComp?.gold || 0; // For now, price is just its base value
+        const price = itemValueComp?.gold || 0;
 
         const playerWallet = this.getPlayerWallet(character);
         if (!playerWallet || playerWallet.data.gold < price) {
             console.log("Not enough gold to buy this item.");
-            // You could emit a "notEnoughGold" event to the UI here.
             return;
         }
 
         const playerLevel = ProgressionComponent.oneFrom(character)?.data.level || 1;
 
-        // Deduct gold
         playerWallet.data.gold -= price;
 
-        // Emit event to have the InventorySystem move the item to the player's bags.
-        // NOTE: This is a simplified model. A real vendor would have its own inventory.
-        // For now, we'll just generate a new item for the player.
         this.eventBus.emit('generateItemRequest', {
-            baseItemId: itemToBuy.id.toString(), // Assuming the entityId is the baseId
+            baseItemId: itemToBuy.id.toString(),
             characterId: character.id,
             itemLevel: playerLevel,
         });
@@ -112,14 +105,13 @@ export class VendorSystem {
             return;
         }
 
-        const salePrice = Math.floor(itemValueComp.gold * 0.5); // Sell for 50% of base value
+        const salePrice = Math.floor(itemValueComp.gold * 0.5);
 
         const playerWallet = this.getPlayerWallet(character);
         if (playerWallet) {
             playerWallet.data.gold += salePrice;
         }
 
-        // The item is removed from inventory and destroyed
         this.eventBus.emit('removeItemFromInventory', {
             characterId: character.id,
             itemEntityId: itemToSell.id,

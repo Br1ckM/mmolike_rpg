@@ -7,33 +7,31 @@ import {
     type AffixData,
     type ItemRarity,
     EquipableComponent,
-    AffixesComponent,
     ItemInfoComponent
 } from '../components/item';
-import { type GameContent, type GameConfig } from '../../ContentService'; // <-- UPDATED IMPORT
+import { type GameContent, type GameConfig } from '../../ContentService';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 // A simple utility function for rolling random numbers in a range.
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-// The local GameContent interface has been removed to avoid type conflicts.
 
 /**
  * Listens for `generateItemRequest` events and handles the logic
  * of creating a new item entity with random properties like rarity and affixes.
  */
-export class ItemGenerationSystem {
-    private world: ECS;
+export class ItemGenerationSystem extends GameSystem { // Extend GameSystem
     private content: GameContent;
-    private eventBus: EventBus;
     private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: GameContent) {
-        this.world = world;
+        // This system is event-driven.
+        super(world, eventBus, []);
+
         this.content = loadedContent;
-        this.eventBus = eventBus;
         this.config = loadedContent.config;
 
-        eventBus.on('generateItemRequest', this.onGenerateItemRequest.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('generateItemRequest', this.onGenerateItemRequest.bind(this));
     }
 
     private rollForRarity(): ItemRarity {
@@ -72,16 +70,13 @@ export class ItemGenerationSystem {
             return;
         }
 
-        // 1. Roll for Rarity
         const rarity = this.rollForRarity();
         const affixRules = this.config.rarity_affixes[rarity.toLowerCase()];
         const affixesToApply: (AffixData & { effects: { stat: string, value: number }[] })[] = [];
 
-        // 2. Select Affixes based on Rarity Rules
         if (affixRules) {
             const prefixes = [...this.content.affixes.values()].filter(a => a.type === 'prefix');
             const suffixes = [...this.content.affixes.values()].filter(a => a.type === 'suffix');
-
             const numPrefixes = Array.isArray(affixRules.prefixes) ? randomNumber(affixRules.prefixes[0], affixRules.prefixes[1]) : affixRules.prefixes;
             const numSuffixes = Array.isArray(affixRules.suffixes) ? randomNumber(affixRules.suffixes[0], affixRules.suffixes[1]) : affixRules.suffixes;
 
@@ -97,7 +92,6 @@ export class ItemGenerationSystem {
 
         const newItemData: ItemData = { ...baseComponents, info: { ...baseComponents.info, rarity }, affixes: affixesToApply };
 
-        // 3. Calculate Power Budget
         const { base, per_level } = this.content.config.player_progression.gear_stat_budget;
         const targetBudget = base + (per_level * (itemLevel - 1));
 
@@ -111,7 +105,6 @@ export class ItemGenerationSystem {
             }
         }
 
-        // 4. Scale Stats to Budget
         const scalingFactor = targetBudget / Math.max(1, currentStatValue);
         if (newItemData.equipable) {
             for (const stat in newItemData.equipable.baseStats) {

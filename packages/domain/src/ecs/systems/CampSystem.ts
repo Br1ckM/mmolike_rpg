@@ -2,19 +2,19 @@ import { EventBus } from '../EventBus';
 import ECS, { Entity } from 'ecs-lib';
 import { HealthComponent, ManaComponent, ControllableComponent } from '../components/character';
 import { CompanionComponent } from '../components/npc';
+import { GameSystem } from './GameSystem'; // <-- Import the new base class
 
 /**
  * Handles non-combat, camp-related activities like resting.
  */
-export class CampSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class CampSystem extends GameSystem { // <-- Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // Pass an empty array since this system doesn't iterate entities in an update loop
+        super(world, eventBus, []);
 
-        this.eventBus.on('restRequested', this.handleRest.bind(this));
+        // Use the built-in subscribe method
+        this.subscribe('restRequested', this.handleRest.bind(this));
     }
 
     /**
@@ -53,7 +53,6 @@ export class CampSystem {
 
         console.log('[CampSystem] Active party has rested. Health and mana restored.');
 
-        // --- FIX: Emit events to notify the UI of the changes ---
         this.eventBus.emit('notification', {
             type: 'success',
             message: 'Your party feels well-rested.'

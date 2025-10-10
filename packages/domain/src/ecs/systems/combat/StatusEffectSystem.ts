@@ -3,22 +3,22 @@ import { EventBus } from '../../EventBus';
 import { ActiveEffectComponent } from '../../components/combat';
 import { HealthComponent } from '../../components/character';
 import { EffectDefinitionComponent } from '../../components/effects';
+import { GameSystem } from '../GameSystem'; // Import the new base class
 
 /**
  * Manages the lifecycle of status effects on entities in combat.
  */
-export class StatusEffectSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class StatusEffectSystem extends GameSystem { // Extend GameSystem
     private content: any; // To access effect definitions
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
         this.content = loadedContent;
 
-        this.eventBus.on('effectApplied', this.onEffectApplied.bind(this));
-        this.eventBus.on('turnStarted', this.onTurnStarted.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('effectApplied', this.onEffectApplied.bind(this));
+        this.subscribe('turnStarted', this.onTurnStarted.bind(this));
     }
 
     private onEffectApplied(payload: { sourceId: string; targetId: string; effectId: string; }): void {
@@ -29,14 +29,12 @@ export class StatusEffectSystem {
 
         const effectDef = EffectDefinitionComponent.oneFrom(effectDefinitionEntity)!.data;
 
-        // Get or create the array of active effects on the target
         let activeEffects = ActiveEffectComponent.oneFrom(target);
         if (!activeEffects) {
             activeEffects = new ActiveEffectComponent([]);
             target.add(activeEffects);
         }
 
-        // Add the new effect to the array
         activeEffects.data.push({
             effectId: payload.effectId,
             name: effectDef.name,
@@ -56,13 +54,11 @@ export class StatusEffectSystem {
 
         const effects = activeEffectsComponent.data;
 
-        // Process effects in reverse order so we can safely remove them
         for (let i = effects.length - 1; i >= 0; i--) {
             const effectInstance = effects[i];
             const effectDefEntity = this.content.effects.get(effectInstance.effectId);
             const effectDef = EffectDefinitionComponent.oneFrom(effectDefEntity!)!.data;
 
-            // --- Handle Tick Effects (DOTs/HOTs) ---
             if (effectDef.tickEffect) {
                 if (effectDef.tickEffect.type === 'DAMAGE') {
                     const health = HealthComponent.oneFrom(activeCombatant)!.data;
@@ -76,15 +72,13 @@ export class StatusEffectSystem {
                     });
                     console.log(`'${effectDef.name}' dealt ${damage} damage to ${activeCombatant.id}.`);
                 }
-                // Add logic for 'HEAL' here if needed
             }
 
-            // --- Decrement Duration ---
             effectInstance.durationInTurns--;
 
             if (effectInstance.durationInTurns <= 0) {
                 console.log(`Effect '${effectDef.name}' has expired on ${activeCombatant.id}.`);
-                effects.splice(i, 1); // Remove the effect from the array
+                effects.splice(i, 1);
             }
         }
     }

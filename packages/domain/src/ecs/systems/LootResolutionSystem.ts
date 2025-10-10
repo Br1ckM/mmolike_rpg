@@ -1,7 +1,7 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { Character } from '../entities/character';
 import { ProgressionComponent } from '../components/skill';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -9,18 +9,17 @@ const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (m
  * Listens for various game events and resolves their loot tables.
  * If a loot drop is successful, it emits a `generateItemRequest` event.
  */
-export class LootResolutionSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class LootResolutionSystem extends GameSystem { // Extend GameSystem
     private content: { lootTables: Map<string, any>; baseItems: Map<string, any> };
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
         this.content = loadedContent;
 
-        eventBus.on('enemyDefeated', this.onEnemyDefeated.bind(this));
-        eventBus.on('gatherResourceRequested', this.onGatherResource.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('enemyDefeated', this.onEnemyDefeated.bind(this));
+        this.subscribe('gatherResourceRequested', this.onGatherResource.bind(this));
     }
 
     private onEnemyDefeated(payload: { enemyId: string; characterId: number; level: number }): void {

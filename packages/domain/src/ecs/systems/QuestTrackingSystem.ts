@@ -6,26 +6,25 @@ import {
     QuestStatusComponent,
     QuestObjectiveComponent
 } from '../components/quest';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Listens for generic game events (like defeating an enemy) and translates them
  * into quest progress by notifying the QuestLogSystem.
  */
-export class QuestTrackingSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class QuestTrackingSystem extends GameSystem { // Extend GameSystem
     private questLogSystem: QuestLogSystem;
     private contentIdToEntityIdMap: Map<string, number>;
 
     constructor(world: ECS, eventBus: EventBus, questLogSystem: QuestLogSystem, contentIdToEntityIdMap: Map<string, number>) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
         this.questLogSystem = questLogSystem;
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
 
-        // Listen for events that can advance quests
-        this.eventBus.on('enemyDefeated', this.onEnemyDefeated.bind(this));
-        this.eventBus.on('itemPickedUp', this.onItemPickedUp.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('enemyDefeated', this.onEnemyDefeated.bind(this));
+        this.subscribe('itemPickedUp', this.onItemPickedUp.bind(this));
     }
 
     /**
@@ -35,7 +34,6 @@ export class QuestTrackingSystem {
         const character = this.world.getEntity(payload.characterId);
         if (!character) return;
 
-        // Find all 'in_progress' quests for this character
         const activeQuests = QuestStatusComponent.allFrom(character)
             .filter(status => status.data.status === 'in_progress');
 
@@ -47,10 +45,8 @@ export class QuestTrackingSystem {
             const objectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;
             if (!objectives) continue;
 
-            // Check each objective to see if it matches the defeated enemy
             objectives.forEach((objective, index) => {
                 if (objective.type === 'kill' && objective.targetId === payload.enemyId) {
-                    // Tell the QuestLogSystem to update the progress
                     this.questLogSystem.updateObjectiveProgress(
                         character,
                         questStatus.data.questId,
@@ -79,12 +75,11 @@ export class QuestTrackingSystem {
 
             objectives.forEach((objective, index) => {
                 if (objective.type === 'fetch' && objective.targetId === payload.itemBaseId) {
-                    // Tell the QuestLogSystem to update the progress
                     this.questLogSystem.updateObjectiveProgress(
                         character,
                         questStatus.data.questId,
                         index,
-                        1 // This assumes you are tracking quantity; for now, 1 is sufficient
+                        1
                     );
                 }
             });

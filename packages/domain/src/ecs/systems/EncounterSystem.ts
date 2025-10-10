@@ -1,37 +1,32 @@
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { MobGenSystem } from './MobGenSystem';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 // A simple utility function for rolling random numbers in a range.
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-// --- DATA STRUCTURES (for content files, e.g., encounters.yaml) ---
-
-/** Defines a single mob's placement within a pre-designed encounter. */
+// --- DATA STRUCTURES (remain the same) ---
 interface EncounterComposition {
-    protoId: string; // The mob's master ID (e.g., "WLF-901")
+    protoId: string;
     initialRow: 'Front' | 'Back';
-    level?: number; // Optional level override for this specific mob
+    level?: number;
 }
-
 interface EncounterGenerationRule {
-    pool: string; // ID of a spawn pool
-    count: [number, number]; // Min and max number of mobs to spawn
-    level: [number, number] | number; // Level range or fixed level
+    pool: string;
+    count: [number, number];
+    level: [number, number] | number;
 }
-
-/** Defines a complete, pre-designed group of mobs. */
 interface EncounterData {
     id: string;
     name: string;
-    level?: number; // Default level for the whole encounter
+    level?: number;
     composition?: EncounterComposition[];
     generation?: EncounterGenerationRule[];
 }
-
 interface SpawnPoolData {
     id: string;
-    mobs: string[]; // Array of mob protoIds
+    mobs: string[];
 }
 
 
@@ -40,22 +35,22 @@ interface SpawnPoolData {
  * the required mob entities, and then hands them off to the
  * CombatInitiationSystem to begin the battle.
  */
-export class EncounterSystem {
-    private world: ECS;
-    private eventBus: EventBus;
-    private mobGenSystem: MobGenSystem; // Direct reference to the factory system
+export class EncounterSystem extends GameSystem { // Extend GameSystem
+    private mobGenSystem: MobGenSystem;
     private content: {
         encounters: Map<string, EncounterData>;
         spawnPools: Map<string, SpawnPoolData>;
     };
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any, mobGenSystem: MobGenSystem) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
+
         this.content = loadedContent;
         this.mobGenSystem = mobGenSystem;
 
-        this.eventBus.on('startEncounterRequest', this.onStartEncounterRequest.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('startEncounterRequest', this.onStartEncounterRequest.bind(this));
     }
 
     private onStartEncounterRequest(payload: {
@@ -73,7 +68,7 @@ export class EncounterSystem {
         // --- Case 1: Static Composition ---
         if (encounterData.composition) {
             for (const mobToSpawn of encounterData.composition) {
-                const level = mobToSpawn.level ?? encounterData.level ?? 1; // Use override, then default, then fallback
+                const level = mobToSpawn.level ?? encounterData.level ?? 1;
                 const mobEntity = this.mobGenSystem.generateMob(mobToSpawn.protoId, level);
                 if (mobEntity) {
                     this.world.addEntity(mobEntity);
@@ -102,13 +97,12 @@ export class EncounterSystem {
                         this.world.addEntity(mobEntity);
                         generatedMobs.push({
                             entityId: mobEntity.id.toString(),
-                            initialRow: Math.random() < 0.5 ? 'Front' : 'Back', // Randomly assign row
+                            initialRow: Math.random() < 0.5 ? 'Front' : 'Back',
                         });
                     }
                 }
             }
         }
-
 
         // --- Handoff to Combat ---
         if (generatedMobs.length > 0) {
@@ -122,4 +116,3 @@ export class EncounterSystem {
         }
     }
 }
-

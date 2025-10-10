@@ -8,6 +8,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const isNsfwBuild = ref(import.meta.env.VITE_NSFW_BUILD === 'true');
     const showNsfwContent = ref(false);
     const showVoreContent = ref(false);
+    const autoSaveEnabled = ref(true);
 
     // --- Getters ---
     const isVoreToggleVisible = computed(() => isNsfwBuild.value && showNsfwContent.value);
@@ -18,7 +19,13 @@ export const useSettingsStore = defineStore('settings', () => {
         localStorage.setItem('settings', JSON.stringify({
             showNsfwContent: showNsfwContent.value,
             showVoreContent: showVoreContent.value,
+            autoSaveEnabled: autoSaveEnabled.value,
         }));
+    }
+
+    function toggleAutoSave() {
+        autoSaveEnabled.value = !autoSaveEnabled.value;
+        saveSettings();
     }
 
     function updateBackend() {
@@ -57,6 +64,7 @@ export const useSettingsStore = defineStore('settings', () => {
             const parsed = JSON.parse(storedSettings);
             showNsfwContent.value = parsed.showNsfwContent ?? false;
             showVoreContent.value = parsed.showVoreContent ?? false;
+            autoSaveEnabled.value = parsed.autoSaveEnabled ?? true;
         }
         updateBackend();
     }
@@ -70,6 +78,8 @@ export const useSettingsStore = defineStore('settings', () => {
         toggleNsfwContent,
         toggleVoreContent,
         setPlayerVoreRole,
+        toggleAutoSave,
+        autoSaveEnabled,
     };
 });
 

@@ -4,6 +4,7 @@ import { EventBus } from '../EventBus';
 import { CompanionComponent, ScheduleComponent } from '../components/npc';
 import { ContainerComponent } from '../components/world';
 import { InfoComponent } from '../components/character';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 // A simple configuration for party rules.
 const MAX_ACTIVE_PARTY_MEMBERS = 4; // Player + 3 companions
@@ -11,17 +12,17 @@ const MAX_ACTIVE_PARTY_MEMBERS = 4; // Player + 3 companions
 /**
  * Manages the player's party, including recruitment and roster changes.
  */
-export class PartySystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class PartySystem extends GameSystem { // Extend GameSystem
     private contentIdToEntityIdMap: Map<string, number>;
 
     constructor(world: ECS, eventBus: EventBus, contentIdToEntityIdMap: Map<string, number>) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
-        this.eventBus.on('companionRecruited', this.onCompanionRecruited.bind(this));
-        this.eventBus.on('swapCompanionRequested', this.onSwapCompanion.bind(this));
+
+        // Use the inherited 'subscribe' method
+        this.subscribe('companionRecruited', this.onCompanionRecruited.bind(this));
+        this.subscribe('swapCompanionRequested', this.onSwapCompanion.bind(this));
     }
 
     /**
@@ -42,10 +43,8 @@ export class PartySystem {
         const currentLocationContentId = schedule?.currentLocationId;
 
         if (companionContentId && currentLocationContentId) {
-            // --- FIX: Use the map to look up the location's numeric ID ---
             const locationEntityId = this.contentIdToEntityIdMap.get(currentLocationContentId);
             const locationEntity = locationEntityId ? this.world.getEntity(locationEntityId) : undefined;
-            // --- END FIX ---
 
             if (locationEntity) {
                 const container = ContainerComponent.oneFrom(locationEntity)?.data;
@@ -80,12 +79,9 @@ export class PartySystem {
 
         const activeParty = this.getActiveParty(payload.characterId);
 
-        // If the companion is already in the party, remove them.
         if (companion.inActiveParty) {
             companion.inActiveParty = false;
-        }
-        // If they are not in the party, try to add them.
-        else {
+        } else {
             if (activeParty.length < MAX_ACTIVE_PARTY_MEMBERS) {
                 companion.inActiveParty = true;
             } else {
@@ -99,7 +95,6 @@ export class PartySystem {
     }
 
     private getActiveParty(characterId: number): Entity[] {
-        // ... (this method remains the same)
         const player = this.world.getEntity(characterId);
         if (!player) return [];
 

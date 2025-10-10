@@ -214,7 +214,7 @@ export class GameService {
 
             const statCalcSystem = this.systems.find(s => s instanceof StatCalculationSystem) as StatCalculationSystem;
             if (statCalcSystem) {
-                statCalcSystem.update(this.player);
+                statCalcSystem.calculateAndApplyStats(this.player);
             }
 
             console.log(`Player '${this.player.name}' created!`);
@@ -235,34 +235,6 @@ export class GameService {
             this.worldEntity.add(new WorldClockComponent({ currentTime: 'Morning' }));
             this.world.addEntity(this.worldEntity);
         }
-
-        // Locations
-        (this.content.locations as any).forEach((data: any) => {
-            const location = new Location(data as LocationEntityData);
-            this.world.addEntity(location);
-            this.contentIdToEntityIdMap.set(data.id, location.id);
-        });
-
-        // NPCs
-        (this.content as any).npcs.forEach((data: any) => {
-            const npc = new NPC(data as NPCEntityData);
-            this.world.addEntity(npc);
-            this.contentIdToEntityIdMap.set(data.id, npc.id);
-        });
-
-        // Nodes
-        this.content.nodes.forEach((data: any) => {
-            const node = new Node(data as any);
-            this.world.addEntity(node);
-            this.contentIdToEntityIdMap.set(data.id, node.id);
-        });
-
-        // Items (wallets and bags) need to be loaded as entities too
-        (this.content as any).inventories.forEach((data: any) => {
-            const item = new Item(data as ItemData);
-            this.world.addEntity(item);
-            this.contentIdToEntityIdMap.set(data.id, item.id);
-        });
 
         this.initializeSystems();
 
@@ -366,9 +338,12 @@ export class GameService {
     }
 
     private initializeSystems(): void {
-        // Clear previous systems (if any)
-        this.systems.forEach(s => this.world.removeSystem(s));
-        this.systems = [];
+        this.systems.forEach(s => {
+            if (s.destroy) {
+                s.destroy();
+            }
+            this.world.removeSystem(s)
+        });
 
         const worldState = {
             currentTime: 'Morning' as TimeOfDay,
@@ -379,7 +354,7 @@ export class GameService {
         const statCalculationSystem = new StatCalculationSystem(this.world, this.eventBus, this.content);
         const questLogSystem = new QuestLogSystem(this.world, this.eventBus, this.contentIdToEntityIdMap);
         const mobGenSystem = new MobGenSystem(this.world, this.eventBus, this.content);
-        const scheduleSystem = new ScheduleSystem(this.eventBus, worldState);
+        const scheduleSystem = new ScheduleSystem(this.world, this.eventBus, worldState);
         const interactionSystem = new InteractionSystem(this.world, this.eventBus);
         const progressionSystem = new ProgressionSystem(this.world, this.eventBus, this.content);
         const voreSystem = new VoreSystem(this.world, this.eventBus);
@@ -398,8 +373,8 @@ export class GameService {
             new EquipmentSystem(this.world, this.eventBus),
             new ConsumableSystem(this.world, this.eventBus),
             new QuestTrackingSystem(this.world, this.eventBus, questLogSystem, this.contentIdToEntityIdMap),
-            new QuestRewardSystem(this.world, this.eventBus),
-            new QuestStateSystem(this.world, this.eventBus, this.content),
+            new QuestRewardSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
+            new QuestStateSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new DialogueSystem(this.world, this.eventBus, this.content),
             new VendorSystem(this.world, this.eventBus),
             new TrainerSystem(this.world, this.eventBus),

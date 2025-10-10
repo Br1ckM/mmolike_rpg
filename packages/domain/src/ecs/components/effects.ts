@@ -1,7 +1,7 @@
 import { Component } from 'ecs-lib';
 import type { DerivedStatsData } from './character';
 
-export type EffectType = 'BUFF' | 'DEBUFF' | 'DOT' | 'HOT';
+export type EffectType = 'BUFF' | 'DEBUFF' | 'DOT' | 'HOT' | 'DAMAGE';
 export type EffectValueType = 'FLAT' | 'PERCENT';
 export type EffectTickType = 'START_OF_TURN' | 'END_OF_TURN';
 

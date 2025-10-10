@@ -5,6 +5,7 @@ import { DialogueComponent } from '../components/npc';
 import type { DialogueTree, DialogueNode, DialogueAction, DialogueResponse, DialogueCondition } from '../components/dialogue';
 import { QuestStatusComponent } from '../components/quest';
 import { InfoComponent } from '../components/character';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 type HistoryEntry = { speaker: 'NPC' | 'Player'; text: string };
 
@@ -12,9 +13,7 @@ type HistoryEntry = { speaker: 'NPC' | 'Player'; text: string };
  * Manages the flow of conversations between players and NPCs. It interprets
  * DialogueTree data structures to present choices and trigger game events.
  */
-export class DialogueSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class DialogueSystem extends GameSystem { // Extend GameSystem
     private content: { dialogueTrees: Map<string, DialogueTree> };
 
     // State for the currently active conversation
@@ -27,13 +26,13 @@ export class DialogueSystem {
     } | null = null;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
-        this.world = world;
-        this.eventBus = eventBus;
-        this.content = loadedContent; // Assumes dialogueTrees are loaded here
+        // This system is event-driven, so it doesn't need to iterate components.
+        super(world, eventBus, []);
+        this.content = loadedContent;
 
-        // Events from the Application Layer
-        this.eventBus.on('dialogueInitiated', this.onDialogueInitiated.bind(this));
-        this.eventBus.on('dialogueResponseSelected', this.onResponseSelected.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('dialogueInitiated', this.onDialogueInitiated.bind(this));
+        this.subscribe('dialogueResponseSelected', this.onResponseSelected.bind(this));
     }
 
     private onDialogueInitiated(payload: { characterId: number; npcId: number; }): void {
@@ -52,7 +51,7 @@ export class DialogueSystem {
         }
 
         const startNode = tree.nodes[tree.startNodeId];
-        const initialHistory: HistoryEntry[] = [{ speaker: 'NPC', text: startNode.text }]; // <-- Initialize history
+        const initialHistory: HistoryEntry[] = [{ speaker: 'NPC', text: startNode.text }];
 
         this.activeConversation = {
             ...payload,
@@ -83,19 +82,17 @@ export class DialogueSystem {
         const npc = this.world.getEntity(npcId);
         if (!character || !npc) return;
 
-        const availableResponses = this.getAvailableResponses(currentNode, character); // Corrected call
+        const availableResponses = this.getAvailableResponses(currentNode, character);
         const selectedResponse = availableResponses[payload.responseIndex];
 
         if (!selectedResponse) return;
 
         history.push({ speaker: 'Player', text: selectedResponse.text });
 
-        // Step 1: Execute any actions associated with the choice
         if (selectedResponse.actions) {
-            selectedResponse.actions.forEach(action => this.executeAction(action, characterId, npcId)); // Corrected call
+            selectedResponse.actions.forEach(action => this.executeAction(action, characterId, npcId));
         }
 
-        // Step 2: Move to the next node
         const nextNodeId = selectedResponse.nextNodeId;
         if (nextNodeId === 'END') {
             this.endConversation();
@@ -115,7 +112,7 @@ export class DialogueSystem {
             npcName,
             npcAvatarUrl,
             text: nextNode.text,
-            responses: this.getAvailableResponses(nextNode, character), // Corrected call
+            responses: this.getAvailableResponses(nextNode, character),
             history: history,
         });
     }
@@ -145,22 +142,19 @@ export class DialogueSystem {
     private getAvailableResponses(node: DialogueNode, character: Entity): DialogueResponse[] {
         return node.responses.filter(response => {
             if (!response.conditions) {
-                return true; // No conditions, always available
+                return true;
             }
 
-            // Check all conditions for this response
             return response.conditions.every(condition => {
                 switch (condition.type) {
                     case 'QUEST_STATUS':
                         const questStatus = QuestStatusComponent.allFrom(character)
                             .find(q => q.data.questId === condition.questId);
 
-                        // If the quest isn't in their log at all, check if the condition is for 'available'
                         if (!questStatus) {
                             return condition.status === 'available';
                         }
 
-                        // If the quest is in their log, check if the status matches
                         return questStatus?.data.status === condition.status;
                     default:
                         return false;

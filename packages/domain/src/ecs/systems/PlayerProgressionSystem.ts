@@ -1,9 +1,9 @@
 import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
-import { CoreStatsComponent } from '../components/character';
 import { ProgressionComponent } from '../components/skill';
 import { type GameContent, type GameConfig } from '../../ContentService';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 // A simple formula for XP required for the next level.
 const xpForLevel = (level: number) => Math.floor(100 * Math.pow(level, 1.5));
@@ -11,17 +11,16 @@ const xpForLevel = (level: number) => Math.floor(100 * Math.pow(level, 1.5));
 /**
  * Manages character leveling and progression.
  */
-export class ProgressionSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class ProgressionSystem extends GameSystem { // Extend GameSystem
     private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: GameContent) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
         this.config = loadedContent.config;
 
-        this.eventBus.on('experienceGained', this.onExperienceGained.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('experienceGained', this.onExperienceGained.bind(this));
     }
 
     private onExperienceGained(payload: { characterId: number; amount: number; }): void {
@@ -48,7 +47,6 @@ export class ProgressionSystem {
     }
 
     private onLevelUp(character: Entity, newLevel: number): void {
-        // For now, we'll just log it. A future system could handle stat allocation.
         const coreStatsPerLevel = this.config.player_progression.core_stats_per_level;
         console.log(`Character ${character.id} leveled up to ${newLevel}! They have ${coreStatsPerLevel} stat points to spend.`);
 
@@ -58,4 +56,3 @@ export class ProgressionSystem {
         });
     }
 }
-

@@ -51,7 +51,7 @@ describe('StatCalculationSystem', () => {
         const character = createTestCharacter({ coreStats: { strength: 10, dexterity: 8, intelligence: 5 } });
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         const derived = DerivedStatsComponent.oneFrom(character)!.data;
         expect(derived.attack).toBe(20); // 10 STR * 2
@@ -67,7 +67,7 @@ describe('StatCalculationSystem', () => {
         });
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         const health = HealthComponent.oneFrom(character)!.data;
         expect(health.max).toBe(120); // Base 10 STR + 2 from Dwarf = 12 STR. 12 * 10 = 120 HP.
@@ -82,7 +82,7 @@ describe('StatCalculationSystem', () => {
         });
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         const derived = DerivedStatsComponent.oneFrom(character)!.data;
         expect(derived.attack).toBe(35);
@@ -98,7 +98,7 @@ describe('StatCalculationSystem', () => {
         });
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         const derived = DerivedStatsComponent.oneFrom(character)!.data;
         expect(derived.attack).toBe(35);
@@ -112,7 +112,7 @@ describe('StatCalculationSystem', () => {
         character.add(new ActiveEffectComponent([{ effectId: 'effect_attack_up', durationInTurns: 3 } as any]));
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         const derived = DerivedStatsComponent.oneFrom(character)!.data;
         expect(derived.attack).toBe(22); // Base 20 (from 10 STR) * 1.10 = 22
@@ -129,7 +129,7 @@ describe('StatCalculationSystem', () => {
         ] as any));
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         const derived = DerivedStatsComponent.oneFrom(character)!.data;
         expect(derived.attack).toBe(28); // Base 20 (from 10 STR) + 5 flat = 25. Then 25 * 1.10 = 27.5, rounded to 28.
@@ -142,7 +142,7 @@ describe('StatCalculationSystem', () => {
 
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
-        expect(() => system.update(character)).not.toThrow();
+        expect(() => system.calculateAndApplyStats(character)).not.toThrow();
     });
 
     it('should recalculate current health based on percentage when max health changes', () => {
@@ -151,7 +151,7 @@ describe('StatCalculationSystem', () => {
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
         // Initial calculation
-        system.update(character);
+        system.calculateAndApplyStats(character);
         const health = HealthComponent.oneFrom(character)!.data;
         expect(health.max).toBe(100);
         expect(health.current).toBe(100);
@@ -160,7 +160,7 @@ describe('StatCalculationSystem', () => {
         health.current = 50;
 
         CoreStatsComponent.oneFrom(character)!.data.strength = 5;
-        system.update(character);
+        system.calculateAndApplyStats(character);
 
         expect(health.max).toBe(50);
         expect(health.current).toBe(25); // 50% of 50 is 25

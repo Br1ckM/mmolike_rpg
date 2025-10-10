@@ -1,24 +1,22 @@
 import ECS from 'ecs-lib';
-import { Entity } from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { TrainerComponent } from '../components/npc';
 import { SkillBookComponent, JobsComponent } from '../components/character';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Manages the process of a character learning new skills or unlocking new jobs from trainer NPCs.
  */
-export class TrainerSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class TrainerSystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        // Listen for events from the Application Layer
-        this.eventBus.on('trainingScreenOpened', this.onTrainingScreenOpened.bind(this));
-        this.eventBus.on('learnSkillRequested', this.handleLearnSkill.bind(this));
-        this.eventBus.on('unlockJobRequested', this.handleUnlockJob.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('trainingScreenOpened', this.onTrainingScreenOpened.bind(this));
+        this.subscribe('learnSkillRequested', this.handleLearnSkill.bind(this));
+        this.subscribe('unlockJobRequested', this.handleUnlockJob.bind(this));
     }
 
     private onTrainingScreenOpened(payload: { characterId: number; npcId: number }): void {
@@ -45,20 +43,16 @@ export class TrainerSystem {
         const trainer = TrainerComponent.oneFrom(npc)?.data;
         const skillBook = SkillBookComponent.oneFrom(character)?.data;
 
-        // --- Validation ---
-        // 1. Does the NPC actually teach this skill?
         if (!trainer?.trainableSkillIds?.includes(payload.skillId)) {
             console.error(`NPC ${npc.id} does not teach skill ${payload.skillId}.`);
             return;
         }
-        // 2. Does the character already know this skill?
         if (skillBook?.knownSkills.includes(payload.skillId)) {
             console.log(`Character ${character.id} already knows skill ${payload.skillId}.`);
             return;
         }
-        // 3. (Future) Does the character have enough currency to learn?
+        // (Future) Does the character have enough currency to learn?
 
-        // --- Execution ---
         if (skillBook) {
             skillBook.knownSkills.push(payload.skillId);
             console.log(`Character ${character.id} learned skill ${payload.skillId}.`);
@@ -78,7 +72,6 @@ export class TrainerSystem {
         const trainer = TrainerComponent.oneFrom(npc)?.data;
         const jobs = JobsComponent.oneFrom(character)?.data;
 
-        // --- Validation ---
         if (!trainer?.trainableJobIds?.includes(payload.jobId)) {
             console.error(`NPC ${npc.id} does not teach job ${payload.jobId}.`);
             return;
@@ -88,10 +81,7 @@ export class TrainerSystem {
             return;
         }
 
-        // --- Execution ---
         if (jobs) {
-            // In a real game, you would fetch the base job data from your content files
-            // before adding it to the character's list.
             const newJob = {
                 id: payload.jobId,
                 name: 'New Job', // Placeholder

@@ -12,9 +12,9 @@ import {
 import { EquipableComponent } from '../components/item';
 import { ActiveEffectComponent } from '../components/combat';
 import { EffectDefinitionComponent } from '../components/effects';
-import { type MobArchetypeData, ActiveTraitsComponent } from '../components/mob';
-import { type TraitData } from '../components/traits';
+import { type MobArchetypeData } from '../components/mob';
 import { type GameConfig, type AncestryData } from '../../ContentService';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 type DerivedKeys =
     | 'attack' | 'magicAttack' | 'defense' | 'magicResist'
@@ -24,35 +24,35 @@ type DerivedMap = Record<DerivedKeys, number>;
 type CapacityKeys = 'health' | 'mana';
 type AnyStatKey = DerivedKeys | CapacityKeys;
 
-export class StatCalculationSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class StatCalculationSystem extends GameSystem { // Extend GameSystem
     private content: {
         effects: Map<string, any>;
-        traits: Map<string, TraitData>;
+        traits: Map<string, any>; // Assuming TraitData is defined elsewhere
         config: GameConfig;
         ancestries?: Map<string, AncestryData>;
     };
     private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven but also has a public update method.
+        super(world, eventBus, []);
+
         this.content = loadedContent;
         this.config = loadedContent.config;
 
-        eventBus.on('characterEquipmentChanged', this.onCharacterChange.bind(this));
-        eventBus.on('effectApplied', this.onCharacterChange.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('characterEquipmentChanged', this.onCharacterChange.bind(this));
+        this.subscribe('effectApplied', this.onCharacterChange.bind(this));
     }
 
     private onCharacterChange(payload: { characterId?: number; targetId?: string }): void {
         const id = payload.characterId ?? (payload.targetId ? parseInt(payload.targetId, 10) : undefined);
         if (id === undefined) return;
         const character = this.world.getEntity(id);
-        if (character) this.update(character);
+        if (character) this.calculateAndApplyStats(character);
     }
 
-    public update(entity: Entity, archetypes?: MobArchetypeData[]): void {
+    public calculateAndApplyStats(entity: Entity, archetypes?: MobArchetypeData[]): void {
         const core = CoreStatsComponent.oneFrom(entity)?.data;
         const info = InfoComponent.oneFrom(entity)?.data;
 
@@ -68,6 +68,9 @@ export class StatCalculationSystem {
                 modifiedCore.intelligence += ancestryData.statModifiers.intelligence || 0;
             }
         }
+
+        // --- The rest of the update logic remains exactly the same ---
+        // ... (calculation code from derived stats down to Object.assign)
 
         const derived: DerivedMap = {
             attack: modifiedCore.strength * this.config.stat_scalings.attack_from_strength,
@@ -144,7 +147,6 @@ export class StatCalculationSystem {
         const mana = ManaComponent.oneFrom(entity)?.data;
 
         if (health) {
-            // --- FIX: Correctly handle initial set vs. recalculation ---
             const isInitialCalculation = health.max <= 1;
             const healthPercent = isInitialCalculation ? 1 : health.current / health.max;
             health.max = healthCap;
@@ -152,7 +154,6 @@ export class StatCalculationSystem {
         }
 
         if (mana) {
-            // (Applying the same logic for mana for consistency)
             const isInitialCalculation = mana.max <= 1;
             const manaPercent = isInitialCalculation ? 1 : mana.current / mana.max;
             mana.max = manaCap;

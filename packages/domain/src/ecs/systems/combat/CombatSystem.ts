@@ -1,40 +1,35 @@
-import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
+import { Entity } from 'ecs-lib';
 import { EventBus } from '../../EventBus';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
 import { DerivedStatsComponent, HealthComponent, ManaComponent } from '../../components/character';
-import { ProgressionComponent, SkillInfoComponent } from '../../components/skill';
-import { SkillComponent, type SkillEffectData, type TargetType, type TargetPattern, type SkillCost } from '../../components/skill';
+import { ProgressionComponent } from '../../components/skill';
+import { SkillComponent, type SkillCost, type TargetPattern, type SkillEffectData } from '../../components/skill';
 import { type GameConfig } from '../../../ContentService';
+import { GameSystem } from '../GameSystem'; // Import the new base class
 
 
 /**
  * The core engine for managing the turn-based flow of combat.
  * It handles turn order, action resolution, and win/loss conditions.
  */
-export class CombatSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class CombatSystem extends GameSystem { // Extend GameSystem
     private content: any;
     private contentIdToEntityIdMap: Map<string, number>;
     private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: any, contentIdToEntityIdMap: Map<string, number>) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
+
         this.content = loadedContent;
         this.contentIdToEntityIdMap = contentIdToEntityIdMap;
         this.config = loadedContent.config;
 
-        try {
-            console.log('[CombatSystem] SkillComponent ref:', SkillComponent);
-        } catch (err) {
-            console.warn('[CombatSystem] Could not log SkillComponent ref:', err);
-        }
-
-        this.eventBus.on('combatStarted', this.onCombatStarted.bind(this));
-        this.eventBus.on('actionTaken', this.onActionTaken.bind(this));
-        this.eventBus.on('fleeAttempt', this.onFleeAttempt.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('combatStarted', this.onCombatStarted.bind(this));
+        this.subscribe('actionTaken', this.onActionTaken.bind(this));
+        this.subscribe('fleeAttempt', this.onFleeAttempt.bind(this));
     }
 
     private onCombatStarted(payload: { combatEntityId: string; combatants: string[]; }): void {
@@ -215,7 +210,7 @@ export class CombatSystem {
         if (!skillData) {
             console.error(`Skill ${skillId} not found or missing SkillComponent data! Falling back to basic attack.`);
             this.resolveDamageEffect(combatEntity, actor, initialTarget, {
-                type: 'Damage',
+                type: 'DAMAGE',
                 power: 5,
                 scalingStat: 'attack',
                 target: 'Enemy',

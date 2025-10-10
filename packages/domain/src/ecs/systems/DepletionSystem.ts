@@ -1,6 +1,7 @@
 import { EventBus } from '../EventBus';
 import ECS, { Entity } from 'ecs-lib';
 import { NodeComponent } from '../components/world';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 // Helper function
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -9,16 +10,14 @@ const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (m
  * Manages the lifecycle of depletable nodes, decrementing their uses
  * and resetting them once they are depleted.
  */
-export class DepletionSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class DepletionSystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven, so it doesn't need to iterate components.
+        super(world, eventBus, []);
 
-        // Listen for the generic interaction event
-        this.eventBus.on('interactWithNodeRequested', this.onNodeInteraction.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('interactWithNodeRequested', this.onNodeInteraction.bind(this));
     }
 
     private onNodeInteraction(payload: { characterId: number; nodeId: number }): void {
@@ -50,7 +49,7 @@ export class DepletionSystem {
                 message: `The ${node.name} has ${node.usesRemaining} uses remaining.`
             });
 
-            // --- FIX: Force a hub state refresh to update the UI ---
+            // Force a hub state refresh to update the UI
             this.eventBus.emit('playerLocationChanged', { characterId: payload.characterId, newLocationId: '' });
         }
     }

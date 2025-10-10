@@ -13,7 +13,7 @@ import { AIProfileComponent } from '../components/combat';
 import { StatCalculationSystem } from './StatCalculationSystem';
 import { InfoComponent } from '../components/character';
 import { ProgressionComponent } from '../components/skill';
-import type { GameConfig } from '../../ContentService';
+import type { GameContent, GameConfig } from '../../ContentService';
 
 interface MobTemplate {
     id: string;
@@ -26,23 +26,19 @@ interface MobTemplate {
     statOverrides?: { [stat: string]: number };
 }
 
+/**
+ * A factory system responsible for creating fully-statted mob entities based on templates.
+ * It does not listen for events but is called directly by other systems like the EncounterSystem.
+ */
 export class MobGenSystem {
-    private world: ECS;
-    private eventBus: EventBus;
-    private content: {
-        mobs: Map<string, MobTemplate>;
-        families: Map<string, MobFamilyData>;
-        tiers: Map<string, MobTierData>;
-        archetypes: Map<string, MobArchetypeData>;
-        config: GameConfig;
-    };
     private config: GameConfig;
 
-    constructor(world: ECS, eventBus: EventBus, loadedContent: any) {
-        this.world = world;
-        this.eventBus = eventBus;
-        this.content = loadedContent;
-        this.config = loadedContent.config;
+    constructor(
+        private world: ECS,
+        private eventBus: EventBus,
+        private content: GameContent
+    ) {
+        this.config = this.content.config;
     }
 
     public generateMob(protoId: string, level: number): Character | null {
@@ -56,10 +52,10 @@ export class MobGenSystem {
         const family = this.content.families.get(mobTemplate.familyId);
         const tier = this.content.tiers.get(mobTemplate.tierId);
         const archetypes = mobTemplate.archIds
-            .map(id => this.content.archetypes.get(id))
-            .filter((arch): arch is MobArchetypeData => !!arch);
+            .map((id: any) => this.content.archetypes.get(id))
+            .filter((arch: any): arch is MobArchetypeData => !!arch);
 
-        if (!family || !tier || archetypes.some(a => !a)) {
+        if (!family || !tier || archetypes.length !== mobTemplate.archIds.length) {
             console.error(`MobGenSystem: Missing family, tier, or archetype data for ${protoId}.`);
             return null;
         }
@@ -77,7 +73,7 @@ export class MobGenSystem {
         finalAllocation = finalAllocation.map(v => v / archetypes.length) as typeof finalAllocation;
 
         // 4) Distribute budget
-        let distributedStats = {
+        const distributedStats = {
             strength: statPointBudget * finalAllocation[0],
             dexterity: statPointBudget * finalAllocation[1],
             intelligence: statPointBudget * finalAllocation[2],
@@ -105,62 +101,31 @@ export class MobGenSystem {
 
         // 8) Assemble CharacterData
         const mobCharacterData: CharacterEntityData = {
-            info: {
-                name: `${tier.name} ${mobTemplate.name}`,
-                race: family.id,
-                avatarUrl: '',
-            },
+            info: { name: `${tier.name} ${mobTemplate.name}`, race: family.id, avatarUrl: '' },
             progression: { level, xp: 0 },
             controllable: { isPlayer: false },
             coreStats: finalStats,
-
-            // Derived stats no longer include health/mana
-            derivedStats: {
-                attack: 0,
-                magicAttack: 0,
-                defense: 0,
-                magicResist: 0,
-                critChance: 0,
-                critDamage: 0,
-                dodge: 0,
-                speed: 0,
-                accuracy: 0,
-            },
-
-            // Seed resource components. StatCalculationSystem will set proper max/current.
+            derivedStats: { attack: 0, magicAttack: 0, defense: 0, magicResist: 0, critChance: 0, critDamage: 0, dodge: 0, speed: 0, accuracy: 0 },
             health: { current: 1, max: 1 },
             mana: { current: 1, max: 1 },
-
             jobs: { activeJobId: 'mob', jobList: [] },
-            equipment: {
-                helm: null, cape: null, amulet: null, armor: null, belt: null, gloves: null,
-                mainHand: null, offHand: null, ring1: null, ring2: null, boots: null,
-                charm1: null, charm2: null, charm3: null
-            },
+            equipment: { helm: null, cape: null, amulet: null, armor: null, belt: null, gloves: null, mainHand: null, offHand: null, ring1: null, ring2: null, boots: null, charm1: null, charm2: null, charm3: null },
             skillBook: { knownSkills: mobTemplate.skills },
         };
 
         const mobEntity = new Character(mobCharacterData);
 
         // 9) Attach mob-specific components
-        mobEntity.add(new MobComponent({
-            protoId,
-            familyId: family.id,
-            tier: tier.id,
-            archetypes: archetypes.map(a => a.id),
-        }));
-
+        mobEntity.add(new MobComponent({ protoId, familyId: family.id, tier: tier.id, archetypes: archetypes.map((a: any) => a.id) }));
         mobEntity.add(new LootTableComponent({ tableIds: finalLootTable }));
         if (finalTraits.length > 0) {
             mobEntity.add(new ActiveTraitsComponent({ traitIds: finalTraits }));
         }
-
-        // AI from first archetype
         mobEntity.add(new AIProfileComponent({ profile: archetypes[0].aiProfile }));
 
-        // 10) Finalize: compute derived & capacities (pass archetypes so their modifiers apply)
+        // 10) Finalize stats
         const statCalculator = new StatCalculationSystem(this.world, this.eventBus, this.content);
-        statCalculator.update(mobEntity, archetypes);
+        statCalculator.calculateAndApplyStats(mobEntity, archetypes);
 
         const info = InfoComponent.oneFrom(mobEntity);
         if (info) {
@@ -169,4 +134,3 @@ export class MobGenSystem {
         return mobEntity;
     }
 }
-

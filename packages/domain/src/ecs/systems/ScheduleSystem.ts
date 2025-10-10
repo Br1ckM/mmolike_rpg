@@ -1,11 +1,11 @@
-import { Entity, System } from 'ecs-lib';
+import { Entity } from 'ecs-lib';
+import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { ScheduleComponent } from '../components/npc';
 import { QuestStatusComponent } from '../components/quest';
-import { ControllableComponent } from '../components/character';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
-// A placeholder for a world state object. In a real application, the world
-// or a global state manager would hold the current time and player reference.
+// A placeholder for a world state object.
 interface WorldState {
     currentTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night';
     playerEntity: Entity | null;
@@ -16,16 +16,14 @@ interface WorldState {
  * This system runs on a continuous loop (tick) to check if an NPC's
  * location needs to be updated based on the current time or quest states.
  */
-export class ScheduleSystem extends System {
-    private eventBus: EventBus;
+export class ScheduleSystem extends GameSystem { // Extend GameSystem
     private worldState: WorldState;
 
-    constructor(eventBus: EventBus, worldState: WorldState) {
+    constructor(world: ECS, eventBus: EventBus, worldState: WorldState) {
         // This system will automatically operate on all entities
         // that have a ScheduleComponent.
-        super([ScheduleComponent.type]);
+        super(world, eventBus, [ScheduleComponent.type]);
 
-        this.eventBus = eventBus;
         this.worldState = worldState;
     }
 

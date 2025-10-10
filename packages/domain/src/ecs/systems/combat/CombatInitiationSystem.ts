@@ -3,19 +3,19 @@ import { EventBus } from '../../EventBus';
 import { Combat } from '../../entities/combat';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
 import { DerivedStatsComponent } from '../../components/character';
+import { GameSystem } from '../GameSystem'; // Import the new base class
 
 /**
  * Handles the setup and initialization of a new combat encounter.
  */
-export class CombatInitiationSystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class CombatInitiationSystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        this.eventBus.on('startCombatEncounter', this.onStartCombatEncounter.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('startCombatEncounter', this.onStartCombatEncounter.bind(this));
     }
 
     private onStartCombatEncounter(payload: {

@@ -2,28 +2,27 @@ import { Entity } from 'ecs-lib';
 import ECS from 'ecs-lib';
 import { EventBus } from '../EventBus';
 import { InventoryComponent } from '../components/character';
-import { Item } from '../entities/item';
 import {
     SlotsComponent,
     StackableComponent,
     ItemInfoComponent
 } from '../components/item';
+import { GameSystem } from './GameSystem'; // Import the new base class
 
 /**
  * Manages all inventory-related logic, such as adding, removing, and stacking items.
  * This is a service system that reacts to events rather than running in the main update loop.
  */
-export class InventorySystem {
-    private world: ECS;
-    private eventBus: EventBus;
+export class InventorySystem extends GameSystem { // Extend GameSystem
 
     constructor(world: ECS, eventBus: EventBus) {
-        this.world = world;
-        this.eventBus = eventBus;
+        // This system is event-driven.
+        super(world, eventBus, []);
 
-        this.eventBus.on('addItemToInventory', this.handleAddItem.bind(this));
-        this.eventBus.on('removeItemFromInventory', this.handleRemoveItem.bind(this));
-        this.eventBus.on('inventoryItemMovedRequest', this.handleItemMove.bind(this));
+        // Use the inherited 'subscribe' method
+        this.subscribe('addItemToInventory', this.handleAddItem.bind(this));
+        this.subscribe('removeItemFromInventory', this.handleRemoveItem.bind(this));
+        this.subscribe('inventoryItemMovedRequest', this.handleItemMove.bind(this));
     }
 
     /**
@@ -38,12 +37,10 @@ export class InventorySystem {
         const success = this.addItem(character, item);
 
         if (success) {
-            // FIX: Use the baseItemId from the payload for the event
             this.eventBus.emit('itemPickedUp', {
                 characterId: character.id,
                 itemBaseId: payload.baseItemId
             });
-            // After successfully adding, notify the system that the player's state has changed.
             this.eventBus.emit('playerStateModified', { characterId: character.id });
         } else {
             this.eventBus.emit('inventoryFull', {
@@ -85,13 +82,11 @@ export class InventorySystem {
                     const existingItemStack = StackableComponent.oneFrom(existingItem);
                     const existingItemInfo = ItemInfoComponent.oneFrom(existingItem);
 
-                    // Check if items are the same and if the existing stack is not full
                     if (
                         existingItemStack &&
                         existingItemInfo?.data.name === itemInfo?.data.name &&
                         existingItemStack.data.current < existingItemStack.data.maxStack
                     ) {
-                        // Increment the stack and destroy the new item entity
                         existingItemStack.data.current += 1;
                         this.world.removeEntity(item);
                         itemAdded = true;
@@ -133,14 +128,10 @@ export class InventorySystem {
 
         const stack = StackableComponent.oneFrom(itemToRemove);
 
-        // --- FIX: Logic for handling stackable vs. non-stackable items ---
         if (stack && stack.data.current > payload.quantity) {
-            // Case 1: Remove a partial amount from a stack
             stack.data.current -= payload.quantity;
             console.log(`Removed ${payload.quantity} from stack. New count: ${stack.data.current}`);
-            // We don't remove the item from the slot, just decrement
         } else {
-            // Case 2: Remove the entire item (or the rest of a stack)
             const wasRemoved = this.findAndRemoveItemFromBags(character, itemToRemove.id);
             if (wasRemoved) {
                 if (payload.reason === 'equip') {
@@ -177,6 +168,7 @@ export class InventorySystem {
         }
         return false;
     }
+
     private handleItemMove(payload: {
         characterId: number;
         source: { bagId: number; slotIndex: number };
@@ -199,7 +191,6 @@ export class InventorySystem {
             return;
         }
 
-        // Perform the swap
         const sourceItem = sourceSlots.items[source.slotIndex];
         const targetItem = targetSlots.items[target.slotIndex];
 
@@ -208,7 +199,6 @@ export class InventorySystem {
 
         console.log(`[InventorySystem] Swapped item from Bag ${source.bagId}[${source.slotIndex}] to Bag ${target.bagId}[${target.slotIndex}].`);
 
-        // Notify the UI that the inventory has changed
         this.eventBus.emit('playerStateModified', { characterId });
     }
 }

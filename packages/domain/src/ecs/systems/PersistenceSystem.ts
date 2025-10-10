@@ -1,20 +1,25 @@
 import ECS, { Entity, Component } from 'ecs-lib';
-
-// FIX: Define a concrete, empty class to bypass the 'abstract class' restriction
-class BaseEntityForDeserialization extends Entity { }
-
-// FIX: Import all component classes from the new barrel file
 import * as Components from '../components';
 
-// FIX: Dynamically build the map from the imported object
-const componentNameToClassMap = new Map<string, new (data: any) => Component<any>>();
+// A concrete class for deserialization, as required.
+class BaseEntityForDeserialization extends Entity { }
+
+// Create a map of string names to the actual Component classes for deserialization.
+const componentNameToClassMap = new Map<string, any>();
 for (const componentName in Components) {
     const componentClass = (Components as any)[componentName];
-    // A check to specifically exclude the abstract 'Component' class
-    if (componentName !== 'Component' && typeof componentClass === 'function' && componentClass.prototype instanceof Component) {
+    if (componentName !== 'Component' && typeof componentClass.register === 'function') {
         componentNameToClassMap.set(componentName, componentClass);
     }
 }
+
+// --- CORE FIX ---
+// Create an array of all known component classes to iterate over for serialization.
+// This preserves the static methods like `oneFrom`.
+const AllComponentClasses = Object.entries(Components)
+    .filter(([name, C]) => name !== 'Component' && typeof (C as any).register === 'function')
+    .map(([name, C]) => ({ name, class: C as any }));
+// --- END CORE FIX ---
 
 
 interface SerializedEntity {
@@ -42,24 +47,30 @@ export class PersistenceSystem {
         const entities = (world as any).entities as Entity[];
 
         for (const entity of entities) {
-            // --- FIX: Safely cast the components property to an array before using map ---
-            const components = (entity as any).components as Component<any>[];
-            if (!Array.isArray(components)) {
-                console.error(`[PersistenceSystem] Entity ${entity.id} has components property that is not an array. Skipping serialization for this entity.`);
-                continue; // Skip this entity if components property is invalid
-            }
-            // --- END FIX ---
+            const serializedComponents: { name: string; data: any; }[] = [];
 
-            serializedEntities.push({
-                id: entity.id,
-                components: components.map(c => ({
-                    name: c.constructor.name,
-                    data: c.data
-                }))
-            });
+            // Iterate over our array of known component classes.
+            for (const { name, class: ComponentClass } of AllComponentClasses) {
+                // Use the library's intended static method on the specific class.
+                const component = ComponentClass.oneFrom(entity);
+                if (component) {
+                    serializedComponents.push({
+                        name: name,
+                        data: component.data
+                    });
+                }
+            }
+
+            if (serializedComponents.length > 0) {
+                serializedEntities.push({
+                    id: entity.id,
+                    components: serializedComponents
+                });
+            }
         }
         return { entities: serializedEntities };
     }
+
 
     /**
      * Clears the current world and restores its state from save data.
@@ -71,7 +82,6 @@ export class PersistenceSystem {
 
         // Re-create entities and components from save data
         for (const savedEntity of saveData.entities) {
-            // FIX: Use the concrete subclass instead of the abstract Entity
             const newEntity = new BaseEntityForDeserialization();
             (newEntity as any).id = savedEntity.id; // Preserve original ID
 
@@ -84,7 +94,6 @@ export class PersistenceSystem {
                 }
             }
             world.addEntity(newEntity);
-            // Ensure the next entity ID is higher than any loaded ID
             (world as any)._nextEntityId = Math.max((world as any)._nextEntityId, savedEntity.id + 1);
         }
     }
