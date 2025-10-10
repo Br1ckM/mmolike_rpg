@@ -7,6 +7,8 @@ import {
     TravelTargetComponent, type TravelTargetComponentData
 } from '../components/world';
 
+const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
 /**
  * The data structure for creating a Location entity from a YAML file.
  */
@@ -55,10 +57,15 @@ export class Location extends Entity {
 export class Node extends Entity {
     constructor(data: NodeEntityData) {
         super();
-        // All nodes have basic descriptive information.
+
+        // --- NEW: Initialize uses for depletable nodes ---
+        if (data.node.isDepletable && data.node.uses) {
+            data.node.usesRemaining = randomNumber(data.node.uses[0], data.node.uses[1]);
+        }
+        // --- END NEW ---
+
         this.add(new NodeComponent(data.node));
 
-        // Add functional components based on the node's purpose.
         if (data.travelTarget) {
             this.add(new TravelTargetComponent(data.travelTarget));
         }

@@ -32,7 +32,9 @@ interface HubNode {
         name: string;
         description: string;
         discovered: boolean;
-        position?: { // <-- ADD THIS
+        isDepletable?: boolean;
+        usesRemaining?: number;
+        position?: {
             top: string;
             left: string;
         };

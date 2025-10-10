@@ -61,6 +61,11 @@ const visitNode = (node: any) => {
           class="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 hidden group-hover:block w-max z-20 bg-surface-800 text-surface-50 text-xs rounded-md px-2 py-1 shadow-md">
           <div class="font-bold">{{ node.NodeComponent.name }}</div>
           <div class="text-surface-300 italic text-[10px]">{{ node.NodeComponent.description }}</div>
+
+          <div v-if="node.NodeComponent.isDepletable"
+            class="text-amber-400 font-semibold mt-1 border-t border-surface-700 pt-1">
+            Uses Remaining: {{ node.NodeComponent.usesRemaining }}
+          </div>
         </div>
       </div>
     </div>

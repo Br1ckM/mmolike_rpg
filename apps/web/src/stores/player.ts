@@ -113,6 +113,9 @@ export const usePlayerStore = defineStore('player', () => {
     return { current: cur, max, display: `${cur} / ${max}` };
   });
   const bags = computed((): UIBag[] => {
+
+    console.log('[PlayerStore->bags] Computing bags. Raw player.value.inventory:', player.value?.inventory);
+
     if (!player.value?.inventory?.bags) return [];
     return player.value.inventory.bags.map(bagData => {
       return {

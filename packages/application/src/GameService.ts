@@ -50,6 +50,7 @@ import { PartySystem } from 'mmolike_rpg-domain/ecs/systems/PartySystem'
 import { CampSystem } from 'mmolike_rpg-domain/ecs/systems/CampSystem'
 import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
 import { ExplorationSystem } from 'mmolike_rpg-domain/ecs/systems/ExplorationSystem'
+import { DepletionSystem } from 'mmolike_rpg-domain/ecs/systems/DepletionSystem';
 
 
 // Import Component types for creating the DTO
@@ -125,6 +126,7 @@ const getEntityDTO = (entity: Entity | null) => {
     checkAndAddComponent(VoreRoleComponent, 'VoreRoleComponent');
     checkAndAddComponent(VoreComponent, 'VoreComponent');
     checkAndAddComponent(CompanionComponent, 'CompanionComponent');
+    checkAndAddComponent(InventoryComponent, 'InventoryComponent');
 
     // Item Components
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
@@ -279,6 +281,7 @@ export class GameService {
             new StatusEffectSystem(this.world, this.eventBus, this.content),
             new CampSystem(this.world, this.eventBus),
             new ExplorationSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
+            new DepletionSystem(this.world, this.eventBus),
         );
 
         this.world.addSystem(scheduleSystem);

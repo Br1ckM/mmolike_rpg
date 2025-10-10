@@ -15,6 +15,9 @@ export interface NodeComponentData {
     name: string;
     description: string;
     discovered: boolean;
+    isDepletable?: boolean;
+    uses?: [number, number];
+    usesRemaining?: number;
     position?: {
         top: string;
         left: string;
