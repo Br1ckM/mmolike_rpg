@@ -19,7 +19,7 @@ const {
 
 // --- PLAYER STORE (Vore Role) ---
 const playerStore = usePlayerStore();
-const { player, playerVoreRole } = storeToRefs(playerStore);
+const { playerId, playerVoreRole } = storeToRefs(playerStore);
 
 // --- LIFECYCLE & INITIALIZATION ---
 onMounted(() => {
@@ -35,9 +35,9 @@ const voreRoleOptions = ref(['Neither', 'Prey', 'Predator', 'Both']);
 const selectedVoreRole = computed({
     get: () => playerVoreRole.value,
     set: (newRole) => {
-        if (!player.value) return;
+        if (!playerId.value) return;
         // The settings store calls the game command to update the role and trigger a refresh
-        settingsStore.setPlayerVoreRole(player.value.id, newRole as any);
+        settingsStore.setPlayerVoreRole(playerId.value, newRole as any);
     }
 });
 

@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import PrimeVue from './primevue';
 import ToastService from 'primevue/toastservice';
+import { App as GameApp } from 'mmolike_rpg-application';
 
 // Import Tailwind CSS
 import './assets/main.css';
@@ -17,3 +18,7 @@ app.use(PrimeVue);
 app.use(ToastService); // <-- ensure the Toast service plugin is registered
 
 app.mount('#app')
+
+if (import.meta.env.DEV) {
+    (window as any).App = GameApp;
+}

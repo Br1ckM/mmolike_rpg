@@ -12,19 +12,19 @@ const props = defineProps<{ companionId: number }>();
 const partyStore = usePartyStore();
 const playerStore = usePlayerStore();
 const { companions } = storeToRefs(partyStore);
-const { player } = storeToRefs(playerStore);
+const { playerId } = storeToRefs(playerStore);
 
 const companion = computed(() => companions.value.find(c => c.id === props.companionId));
 
 // --- ACTION HANDLERS ---
 const talkToCompanion = () => {
-    if (!player.value || !companion.value) return;
-    App.commands.initiateDialogue(player.value.id, companion.value.id);
+    if (!playerId.value || !companion.value) return;
+    App.commands.initiateDialogue(playerId.value, companion.value.id);
 };
 
 const swapPartyMember = () => {
-    if (!player.value || !companion.value) return;
-    App.commands.swapCompanion(player.value.id, companion.value.id);
+    if (!playerId.value || !companion.value) return;
+    App.commands.swapCompanion(playerId.value, companion.value.id);
 };
 </script>
 <template>

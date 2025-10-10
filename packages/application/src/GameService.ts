@@ -221,6 +221,35 @@ export class GameService {
             console.log(`Player '${this.player.name}' created!`);
             this.eventBus.emit('playerStateModified', { characterId: this.player.id });
         });
+        this.eventBus.on('dev_dealDamageToPlayer', (payload) => {
+            console.log(`[GameService] Heard 'dev_dealDamageToPlayer' with amount: ${payload.amount}`);
+
+            const player = this.world.getEntity(payload.characterId);
+            if (player) {
+                const health = HealthComponent.oneFrom(player)?.data;
+                if (health) {
+                    console.log(`[GameService] Player health BEFORE: ${health.current} / ${health.max}`);
+
+                    health.current -= payload.amount;
+
+                    console.log(`[GameService] Player health AFTER: ${health.current} / ${health.max}`);
+
+                    this.eventBus.emit('damageDealt', {
+                        attackerId: 'DEV_CONSOLE',
+                        targetId: player.id.toString(),
+                        damage: payload.amount,
+                        isCritical: false
+                    });
+                    this.eventBus.emit('playerStateModified', { characterId: player.id });
+
+                    console.log("[GameService] Emitted 'damageDealt' and 'playerStateModified'.");
+                } else {
+                    console.error("[GameService] DEV_COMMAND: Player has no HealthComponent.");
+                }
+            } else {
+                console.error(`[GameService] DEV_COMMAND: Could not find player with ID: ${payload.characterId}`);
+            }
+        });
     }
 
     /**

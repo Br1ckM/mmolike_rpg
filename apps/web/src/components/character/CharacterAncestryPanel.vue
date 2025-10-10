@@ -4,10 +4,7 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
 const playerStore = usePlayerStore();
-const { player } = storeToRefs(playerStore);
-
-// A computed property to safely access the hydrated ancestry data
-const ancestry = computed(() => player.value?.ancestry);
+const { ancestry } = storeToRefs(playerStore);
 
 const statModifiers = computed(() => {
     if (!ancestry.value?.statModifiers) return [];

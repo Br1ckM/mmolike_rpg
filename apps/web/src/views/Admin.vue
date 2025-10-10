@@ -6,15 +6,15 @@ import { App } from 'mmolike_rpg-application';
 import Button from '@/volt/Button.vue';
 
 const playerStore = usePlayerStore();
-const { player } = storeToRefs(playerStore);
+const { playerId } = storeToRefs(playerStore);
 
 const preyName = ref('Test Goblin');
 const digestionTime = ref(10);
 const strugglePower = ref(5);
 
 const addPrey = () => {
-    if (player.value) {
-        App.commands.dev_addPreyToStomach(player.value.id, {
+    if (playerId.value) {
+        App.commands.dev_addPreyToStomach(playerId.value, {
             name: preyName.value,
             digestionTime: digestionTime.value,
             strugglePower: strugglePower.value,

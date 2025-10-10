@@ -5,14 +5,14 @@ import { storeToRefs } from 'pinia';
 import { App } from 'mmolike_rpg-application';
 
 const playerStore = usePlayerStore();
-const { player } = storeToRefs(playerStore);
+const { playerId } = storeToRefs(playerStore);
 
 const emit = defineEmits(['select-action']);
 
 const useRegurgitate = () => {
-    if (!player.value) return;
+    if (!playerId.value) return;
     // Call the application command to initiate regurgitation
-    App.commands.regurgitate(player.value.id);
+    App.commands.regurgitate(playerId.value);
     // Tell the parent modal to close the submenu
     emit('select-action', 'regurgitate');
 }

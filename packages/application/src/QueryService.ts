@@ -78,7 +78,10 @@ export class QueryService {
             this.domainEventBus.on(eventName, () => {
                 console.log(`[QueryService] Heard '${eventName}'. Refreshing playerState.`)
 
+                // We use JSON.stringify to get a perfect snapshot of the object at this exact moment.
                 const playerState = this.gameService.getPlayerState();
+                console.log('[QueryService] Publishing new playerState:', JSON.parse(JSON.stringify(playerState?.health)));
+
                 this.publish('playerState', playerState);
             });
         });

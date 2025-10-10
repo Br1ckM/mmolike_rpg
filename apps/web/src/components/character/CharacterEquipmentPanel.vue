@@ -65,14 +65,14 @@ const getSlotPosition = (slot: EquipmentSlotKey) => {
 };
 
 const playerStore = usePlayerStore();
-const { player } = storeToRefs(playerStore);
+const { equipment } = storeToRefs(playerStore);
 
 type EquippedViewEntry = { id: string; name: string; icon: string; stats?: string } | null;
 type EquippedView = Record<EquipmentSlotKey, EquippedViewEntry>;
 
 /** Build a simple view-model from the actual player equipment */
 const equipped = computed<EquippedView>(() => {
-  const eq = (player.value?.equipment ?? {}) as Partial<Record<EquipmentSlotKey, string | null>>;
+  const eq = (equipment.value ?? {}) as Partial<Record<EquipmentSlotKey, string | null>>;
   return SLOTS.reduce((acc, key) => {
     const id = eq[key] ?? null;
     // NOTE: This currently uses placeholder names. When the backend provides full item

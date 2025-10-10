@@ -10,7 +10,7 @@ import { App } from 'mmolike_rpg-application';
 const hubStore = useHubStore();
 const playerStore = usePlayerStore();
 const { hubName, nodes, location, zoneId } = storeToRefs(hubStore);
-const { player } = storeToRefs(playerStore);
+const { playerId } = storeToRefs(playerStore);
 
 // --- NEW: Filtered list of nodes to display ---
 const discoveredNodes = computed(() => {
@@ -23,14 +23,14 @@ const discoveredNodes = computed(() => {
 
 
 const explore = () => {
-  if (!player.value || !zoneId.value) return;
-  App.commands.exploreInZone(player.value.id, zoneId.value);
+  if (!playerId.value || !zoneId.value) return;
+  App.commands.exploreInZone(playerId.value, zoneId.value);
 };
 
 /** Handles a click on an existing map node */
 const visitNode = (node: any) => {
-  if (!player.value) return;
-  App.commands.interactWithNode(player.value.id, node.id);
+  if (!playerId.value) return;
+  App.commands.interactWithNode(playerId.value, node.id);
 };
 
 </script>

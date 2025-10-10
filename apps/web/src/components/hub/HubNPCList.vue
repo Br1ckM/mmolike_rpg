@@ -14,12 +14,12 @@ const playerStore = usePlayerStore();
 
 // Get the reactive list of NPCs from the store
 const { npcs } = storeToRefs(hubStore);
-const { player } = storeToRefs(playerStore);
+const { playerId } = storeToRefs(playerStore);
 
 const selectEntity = (npc: HubNpc) => {
-    if (!player.value) return;
+    if (!playerId.value) return;
     // Tell the backend to start a dialogue session
-    App.commands.initiateDialogue(player.value.id, npc.id);
+    App.commands.initiateDialogue(playerId.value, npc.id);
 };
 
 // Helper to get NPC description (will need to be added to DTO later)
@@ -34,14 +34,10 @@ const getDescription = (npcName: string) => {
 <template>
     <div class="h-full flex flex-col">
         <div class="space-y-4 overflow-y-auto flex-grow">
-            <div 
-                v-for="{ id, InfoComponent } in npcs" 
-                :key="id"
-                @click="selectEntity({ id, InfoComponent })"
-                class="bg-surface-700 rounded-lg p-3 flex items-center gap-4 hover:bg-surface-600 transition-colors duration-200 cursor-pointer"
-            >
+            <div v-for="{ id, InfoComponent } in npcs" :key="id" @click="selectEntity({ id, InfoComponent })"
+                class="bg-surface-700 rounded-lg p-3 flex items-center gap-4 hover:bg-surface-600 transition-colors duration-200 cursor-pointer">
                 <Avatar :image="InfoComponent.avatarUrl" size="large" shape="square" />
-                
+
                 <div class="flex-grow">
                     <p class="text-lg font-semibold text-surface-0">{{ InfoComponent.name }}</p>
                     <p class="text-sm text-surface-400">{{ getDescription(InfoComponent.name) }}</p>

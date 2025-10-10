@@ -16,7 +16,7 @@ import { App } from 'mmolike_rpg-application';
 const gameStore = useGameStore();
 const playerStore = usePlayerStore();
 const { combat, combatLog, combatResult, denState } = storeToRefs(gameStore); // <-- Get denState
-const { player } = storeToRefs(playerStore);
+const { playerId } = storeToRefs(playerStore);
 
 // --- State Management ---
 const playerActionMode = ref<'idle' | 'selecting-skill' | 'selecting-item' | 'targeting' | 'vore-menu'>('idle'); // <-- ADD 'vore-menu'
@@ -166,8 +166,8 @@ const onVoreActionSelected = (action: { id: string, name: string, target: string
 }
 
 const onItemInBeltSelected = ({ item, index }: { item: any; index: number }) => {
-    if (!player.value || !combat.value) return;
-    App.commands.useItemInBelt(player.value.id, index, combat.value.combatEntityId);
+    if (!playerId.value || !combat.value) return;
+    App.commands.useItemInBelt(playerId.value, index, combat.value.combatEntityId);
     cancelSelection();
 };
 

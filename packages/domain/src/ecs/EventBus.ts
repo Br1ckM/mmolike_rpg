@@ -161,6 +161,7 @@ interface EventMap {
             strugglePower: number;
         };
     };
+    'dev_dealDamageToPlayer': { characterId: number; amount: number; };
 }
 
 type EventKey = keyof EventMap;

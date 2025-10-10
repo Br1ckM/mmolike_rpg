@@ -4,23 +4,24 @@ import { App } from 'mmolike_rpg-application';
 import { usePlayerStore } from '@/stores/player';
 import { usePartyStore } from '@/stores/party';
 import { storeToRefs } from 'pinia';
+import { watch } from 'vue';
 import Button from '@/volt/Button.vue';
 import Avatar from '@/volt/Avatar.vue';
 
 const playerStore = usePlayerStore();
 const partyStore = usePartyStore();
 
-const { player, healthValues, manaValues } = storeToRefs(playerStore);
+const { playerId, playerName, healthValues, manaValues, health } = storeToRefs(playerStore);
 const { companions } = storeToRefs(partyStore);
 
 // Combine player and active companions into one list for rendering
 const partyMembers = computed(() => {
-    if (!player.value) return [];
+    if (!playerId.value) return [];
 
     // Create a player object that matches the companion structure for easy rendering
     const playerMember = {
-        id: player.value.id,
-        name: player.value.name,
+        id: playerId.value,
+        name: playerName.value,
         avatarUrl: 'https://placehold.co/150x150/27272a/eab308?text=A', // Placeholder avatar
         // Use player-specific health/mana from the player store
         health: healthValues.value,
@@ -43,10 +44,17 @@ const partyMembers = computed(() => {
     return [playerMember, ...companionMembers];
 });
 
+watch(health, (newHealth) => {
+    console.log('CombatVoreMenu - Health updated:', newHealth);
+}, { deep: true });
+
+watch(healthValues, (newHealthValues) => {
+    console.log('CombatVoreMenu - HealthValues updated:', newHealthValues);
+}, { deep: true });
 
 const performRest = () => {
-    if (player.value?.id) {
-        App.commands.restAtCamp(player.value.id);
+    if (playerId.value) {
+        App.commands.restAtCamp(playerId.value);
     }
 };
 </script>
@@ -89,7 +97,7 @@ const performRest = () => {
             </div>
         </div>
 
-        <Button label="Rest & Advance Time" icon="pi pi-check-circle" @click="performRest" :disabled="!player"
+        <Button label="Rest & Advance Time" icon="pi pi-check-circle" @click="performRest" :disabled="!playerId"
             class="!text-lg !py-3 !px-6" />
     </div>
 </template>

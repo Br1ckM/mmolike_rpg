@@ -118,7 +118,7 @@ async function runSingleCombat(contentService: ContentService) {
         if (existingProgressionComp) player.remove(existingProgressionComp);
         player.add(new ProgressionComponent(newProgressionData));
 
-        (statCalcSystem as StatCalculationSystem).update(player);
+        (statCalcSystem as StatCalculationSystem).calculateAndApplyStats(player);
 
         const healthData = HealthComponent.oneFrom(player)!.data;
         const existingHealthComp = HealthComponent.oneFrom(player)!;
