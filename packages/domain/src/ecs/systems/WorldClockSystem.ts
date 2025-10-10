@@ -21,31 +21,37 @@ export class WorldClockSystem {
         this.eventBus.on('advanceTimeRequested', this.onAdvanceTimeRequested.bind(this));
     }
 
-    private onAdvanceTimeRequested(payload: { from: TimeOfDay }): void {
+    private onAdvanceTimeRequested(payload: { increments?: number; to?: TimeOfDay }): void {
         const clockComponent = WorldClockComponent.oneFrom(this.worldEntity);
         if (!clockComponent) {
-            console.error("WorldClockSystem: The provided world entity does not have a WorldClockComponent.");
+            console.error("WorldClockSystem: The world entity does not have a WorldClockComponent.");
             return;
         }
 
         const clock = clockComponent.data;
+        let newTime = clock.currentTime;
 
-        // Ensure the request is for the current time to prevent de-sync
-        if (clock.currentTime !== payload.from) {
-            console.warn(`Time advancement requested from '${payload.from}' but current time is '${clock.currentTime}'. Ignoring.`);
-            return;
+        if (payload.to) {
+            // Advance time until it reaches the specified 'to' time
+            while (newTime !== payload.to) {
+                const currentIndex = this.timeSequence.indexOf(newTime);
+                const nextIndex = (currentIndex + 1) % this.timeSequence.length;
+                newTime = this.timeSequence[nextIndex];
+            }
+        } else {
+            // Advance time by a specific number of increments
+            const increments = payload.increments ?? 1;
+            let currentIndex = this.timeSequence.indexOf(clock.currentTime);
+            for (let i = 0; i < increments; i++) {
+                currentIndex = (currentIndex + 1) % this.timeSequence.length;
+            }
+            newTime = this.timeSequence[currentIndex];
         }
 
-        // Calculate the next time of day
-        const currentIndex = this.timeSequence.indexOf(clock.currentTime);
-        const nextIndex = (currentIndex + 1) % this.timeSequence.length;
-        const newTime = this.timeSequence[nextIndex];
-
-        // Update the world state
-        clock.currentTime = newTime;
-        console.log(`Time has advanced to: ${newTime}`);
-
-        // Announce the change to other systems
-        this.eventBus.emit('timeOfDayChanged', { newTime: newTime });
+        if (clock.currentTime !== newTime) {
+            clock.currentTime = newTime;
+            console.log(`Time has advanced to: ${newTime}`);
+            this.eventBus.emit('timeOfDayChanged', { newTime: newTime });
+        }
     }
 }

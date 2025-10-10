@@ -32,7 +32,6 @@ describe('StatCalculationSystem', () => {
         harness = setupSystemTest();
     });
 
-    // --- FIX #1: Use a more flexible 'DeepPartial' type for the input data ---
     const createTestCharacter = (data: DeepPartial<CharacterEntityData>) => {
         const characterData: CharacterEntityData = {
             info: { name: 'TestChar', race: 'Human', avatarUrl: '' },
@@ -146,22 +145,24 @@ describe('StatCalculationSystem', () => {
         expect(() => system.update(character)).not.toThrow();
     });
 
-    it('should clamp current health to the new max when stats are recalculated', () => {
+    it('should recalculate current health based on percentage when max health changes', () => {
         const { world, mockEventBus, mockContent } = harness;
         const character = createTestCharacter({ coreStats: { strength: 10, dexterity: 10, intelligence: 10 } });
         const system = new StatCalculationSystem(world, mockEventBus, mockContent);
 
+        // Initial calculation
         system.update(character);
         const health = HealthComponent.oneFrom(character)!.data;
         expect(health.max).toBe(100);
         expect(health.current).toBe(100);
 
+        // Set health to 50%
         health.current = 50;
 
         CoreStatsComponent.oneFrom(character)!.data.strength = 5;
         system.update(character);
 
         expect(health.max).toBe(50);
-        expect(health.current).toBe(50);
+        expect(health.current).toBe(25); // 50% of 50 is 25
     });
 });

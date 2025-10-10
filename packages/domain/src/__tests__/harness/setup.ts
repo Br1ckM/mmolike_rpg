@@ -58,6 +58,8 @@ export function setupSystemTest() {
     const createNpc = (id: string, data: NPCEntityData) => {
         data.info.id = id;
         const npc = new NPC(data);
+        npc.add(new HealthComponent({ current: 100, max: 100 }));
+        npc.add(new ManaComponent({ current: 50, max: 50 }));
         world.addEntity(npc);
         mockContentIdToEntityIdMap.set(id, npc.id);
         return npc;

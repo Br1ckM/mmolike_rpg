@@ -11,7 +11,8 @@ type Subscriber<T> = (data: T) => void;
  */
 export class QueryService {
     private gameService: GameService;
-    private domainEventBus: EventBus;
+    // --- FIX: Made this public to resolve access errors ---
+    public domainEventBus: EventBus;
 
     // A simple pub/sub mechanism for different state slices
     private subscribers: { [key: string]: Subscriber<any>[] } = {};
@@ -121,9 +122,16 @@ export class QueryService {
             this.publish('hubState', hubState);
         });
 
-        this.domainEventBus.on('vendorInventoryUpdated', (payload) => {
+        // --- FIX: Added explicit types for the payload ---
+        this.domainEventBus.on('timeOfDayChanged', (payload: { newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' }) => {
+            this.publish('timeOfDayChanged', payload);
+        });
+
+        this.domainEventBus.on('vendorInventoryUpdated', (payload: { vendorItems: any[], playerSellableItems: any[] }) => {
             this.publish('vendorInventoryUpdated', payload);
         });
+        // --- END FIX ---
+
         this.domainEventBus.on('partyUpdated', (payload) => {
             console.log(`[QueryService] Heard 'partyUpdated'. Publishing to stores.`);
             this.publish('partyUpdated', payload);

@@ -14,6 +14,7 @@ interface HubNpc {
 }
 
 interface HubState {
+    zoneId: string;
     location: {
         id: number;
         LocationComponent: {
@@ -30,6 +31,7 @@ interface HubNode {
     NodeComponent: {
         name: string;
         description: string;
+        discovered: boolean;
         position?: { // <-- ADD THIS
             top: string;
             left: string;
@@ -39,6 +41,7 @@ interface HubNode {
 
 export const useHubStore = defineStore('hub', () => {
     // --- State ---
+    const zoneId = ref<string>('');
     const location = ref<HubState['location']>(null);
     const npcs = ref<HubState['npcs']>([]);
     const nodes = ref<HubState['nodes']>([]);
@@ -56,10 +59,12 @@ export const useHubStore = defineStore('hub', () => {
             console.log('[DEBUG Frontend Store] Hub store received new state:', newHubState);
 
             if (newHubState) {
+                zoneId.value = newHubState.zoneId;
                 location.value = newHubState.location;
                 npcs.value = newHubState.npcs;
                 nodes.value = newHubState.nodes || [];
             } else {
+                zoneId.value = '';
                 location.value = null;
                 npcs.value = [];
                 nodes.value = [];
@@ -68,6 +73,7 @@ export const useHubStore = defineStore('hub', () => {
     }
 
     return {
+        zoneId,
         location,
         npcs,
         nodes,

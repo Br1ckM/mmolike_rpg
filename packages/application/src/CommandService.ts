@@ -118,4 +118,7 @@ export class CommandService {
     public restAtCamp(characterId: number): void {
         this.domainEventBus.emit('restRequested', { characterId });
     }
+    public exploreInZone(characterId: number, zoneId: string): void {
+        this.domainEventBus.emit('exploreRequested', { characterId, zoneId });
+    }
 }

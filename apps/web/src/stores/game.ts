@@ -50,6 +50,7 @@ interface TrainerSkill {
 
 
 export const useGameStore = defineStore('game', () => {
+    const timeOfDay = ref<'Morning' | 'Afternoon' | 'Evening' | 'Night'>('Morning'); // <-- NEW STATE
     const dialogue = ref<DialogueState | null>(null);
     const combat = ref<CombatState | null>(null);
     const combatResult = ref<CombatResult | null>(null);
@@ -61,6 +62,7 @@ export const useGameStore = defineStore('game', () => {
     const combatResultUnsubscribe = ref<(() => void) | null>(null);
     const activeService = ref<'Shop' | 'Trainer' | null>(null);
     const playerLeveledUpUnsubscribe = ref<(() => void) | null>(null);
+    const timeOfDayUnsubscribe = ref<(() => void) | null>(null);
 
     // --- NEW STATE ---
     const vendorItems = ref<VendorItem[]>([]);
@@ -70,6 +72,12 @@ export const useGameStore = defineStore('game', () => {
 
     async function initialize() {
         await App.isReady;
+
+        timeOfDayUnsubscribe.value = App.queries.subscribe<{ newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' }>('timeOfDayChanged', (payload) => {
+            if (payload) {
+                timeOfDay.value = payload.newTime;
+            }
+        });
 
         dialogueUnsubscribe.value = App.queries.subscribe<any>('dialogueState', (newDialogueData) => {
             if (newDialogueData) {
@@ -175,6 +183,7 @@ export const useGameStore = defineStore('game', () => {
 
 
     return {
+        timeOfDay,
         dialogue,
         combat,
         notifications,

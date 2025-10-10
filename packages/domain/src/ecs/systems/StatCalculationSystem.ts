@@ -146,29 +146,19 @@ export class StatCalculationSystem {
         if (health) {
             // --- FIX: Correctly handle initial set vs. recalculation ---
             const isInitialCalculation = health.max <= 1;
+            const healthPercent = isInitialCalculation ? 1 : health.current / health.max;
             health.max = healthCap;
-            if (isInitialCalculation) {
-                // If this is the first time we're setting stats, fill the health pool completely.
-                health.current = healthCap;
-            } else {
-                // Otherwise, clamp the current health to the new maximum.
-                health.current = Math.min(health.current, health.max);
-            }
+            health.current = Math.round(health.max * healthPercent);
         }
 
         if (mana) {
             // (Applying the same logic for mana for consistency)
             const isInitialCalculation = mana.max <= 1;
+            const manaPercent = isInitialCalculation ? 1 : mana.current / mana.max;
             mana.max = manaCap;
-            if (isInitialCalculation) {
-                mana.current = manaCap;
-            } else {
-                mana.current = Math.min(mana.current, mana.max);
-            }
+            mana.current = Math.round(mana.max * manaPercent);
         }
 
-        // --- FIX: Ensure DerivedStatsComponent is always present ---
-        // Instead of removing/re-adding, we'll just update the data of the existing component.
         let derivedStatsComp = DerivedStatsComponent.oneFrom(entity);
         if (!derivedStatsComp) {
             derivedStatsComp = new DerivedStatsComponent(derived);

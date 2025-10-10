@@ -110,12 +110,17 @@ interface EventMap {
 
     // World / Time / Travel
     'timeOfDayChanged': { newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night'; };
-    'advanceTimeRequested': { from: 'Morning' | 'Afternoon' | 'Evening' | 'Night'; };
+    'advanceTimeRequested': {
+        increments?: number,
+        to?: 'Morning' | 'Afternoon' | 'Evening' | 'Night'
+    }; //
     'travelToNodeRequested': { characterId: number; nodeId: string; };
     'playerLocationChanged': { characterId: number; newLocationId: string; };
     'npcLocationChanged': { npcId: number; newLocationId: string; };
     'interactWithNodeRequested': { characterId: number; nodeId: number; };
     'restRequested': { characterId: number };
+    'exploreRequested': { characterId: number; zoneId: string; };
+    'nodeDiscovered': { characterId: number; nodeId: number; nodeName: string; };
 
     // Content filter / Preferences
     'contentFilterChanged': { showNsfwContent: boolean; showVoreContent: boolean; };

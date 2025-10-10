@@ -49,6 +49,7 @@ import { InteractionSystem } from 'mmolike_rpg-domain/ecs/systems/InteractionSys
 import { PartySystem } from 'mmolike_rpg-domain/ecs/systems/PartySystem'
 import { CampSystem } from 'mmolike_rpg-domain/ecs/systems/CampSystem'
 import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
+import { ExplorationSystem } from 'mmolike_rpg-domain/ecs/systems/ExplorationSystem'
 
 
 // Import Component types for creating the DTO
@@ -277,6 +278,7 @@ export class GameService {
             new AISystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new StatusEffectSystem(this.world, this.eventBus, this.content),
             new CampSystem(this.world, this.eventBus),
+            new ExplorationSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
         );
 
         this.world.addSystem(scheduleSystem);
@@ -553,6 +555,7 @@ export class GameService {
         }).filter((n: any) => n !== null);
 
         return {
+            zoneId: playerLocation.currentZoneId,
             location: hubData,
             npcs: npcs,
             nodes: nodes,

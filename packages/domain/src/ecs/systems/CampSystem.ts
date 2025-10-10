@@ -1,7 +1,7 @@
 import { EventBus } from '../EventBus';
 import ECS, { Entity } from 'ecs-lib';
 import { HealthComponent, ManaComponent, ControllableComponent } from '../components/character';
-import { CompanionComponent } from '../components/npc'; // Correct component import
+import { CompanionComponent } from '../components/npc';
 
 /**
  * Handles non-combat, camp-related activities like resting.
@@ -18,7 +18,7 @@ export class CampSystem {
     }
 
     /**
-     * Restores the health and mana of the entire party.
+     * Restores the health and mana of the entire active party.
      */
     private handleRest(payload: { characterId: number }): void {
         const playerEntity = this.world.getEntity(payload.characterId);
@@ -27,35 +27,38 @@ export class CampSystem {
             return;
         }
 
-        const charactersToRest: Entity[] = [];
+        const partyToRest: Entity[] = [playerEntity];
 
-        // --- FIX: Use the same pattern as PartySystem to find all party members ---
-        // This is acknowledged as a workaround for the private 'entities' property.
+        // Find all active companions to include them in the rest action
         const allEntities = (this.world as any).entities as Entity[];
-
         allEntities.forEach(entity => {
-            const isPlayer = ControllableComponent.oneFrom(entity);
             const companion = CompanionComponent.oneFrom(entity)?.data;
-
-            // Add the player and any recruited companions to the list
-            if (isPlayer || (companion && companion.recruited)) {
-                charactersToRest.push(entity);
+            if (companion && companion.recruited && companion.inActiveParty) {
+                partyToRest.push(entity);
             }
         });
 
-        charactersToRest.forEach(character => {
-            const health = HealthComponent.oneFrom(character);
-            const mana = ManaComponent.oneFrom(character);
+        // Restore health and mana for each party member
+        partyToRest.forEach(character => {
+            const health = HealthComponent.oneFrom(character)?.data;
+            const mana = ManaComponent.oneFrom(character)?.data;
 
             if (health) {
-                health.data.current = health.data.max;
+                health.current = health.max;
             }
             if (mana) {
-                mana.data.current = mana.data.max;
+                mana.current = mana.max;
             }
+        });
+
+        console.log('[CampSystem] Active party has rested. Health and mana restored.');
+
+        // --- FIX: Emit events to notify the UI of the changes ---
+        this.eventBus.emit('notification', {
+            type: 'success',
+            message: 'Your party feels well-rested.'
         });
 
         this.eventBus.emit('playerStateModified', { characterId: playerEntity.id });
-        console.log('[CampSystem] Party has rested. Health and mana restored.');
     }
 }
