@@ -22,9 +22,9 @@ const qualityColorClasses = computed(() => {
 </script>
 
 <template>
-    <div :class="[
-        'w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center relative cursor-pointer shadow-md transition-colors duration-150 group',
-        // Item Present State
+    <div :draggable="!!props.item" :class="[
+        'w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center relative shadow-md transition-colors duration-150 group',
+        props.item ? 'cursor-grab' : 'cursor-default',
         props.item
             ? qualityColorClasses
             : 'border-dashed border-surface-600 bg-surface-700/50 hover:border-surface-400'
@@ -47,7 +47,6 @@ const qualityColorClasses = computed(() => {
                 props.item.maxStack }}</p>
 
             <p v-if="props.item.type === 'gear'" class="text-surface-300 mt-1">Lvl 1 - {{ props.item.quality }}</p>
-
         </div>
 
         <slot name="tooltip-info"></slot>

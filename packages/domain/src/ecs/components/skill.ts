@@ -1,11 +1,11 @@
 import { Component } from 'ecs-lib';
 import type { DerivedStatsData } from './character';
+import type { EffectType } from './effects'
 
 // --- TYPE DEFINITIONS ---
 
 export type ScalingStat = 'attack' | 'magicAttack';
 export type TargetType = 'Enemy' | 'Ally' | 'Self';
-export type EffectType = 'Damage' | 'Heal' | 'ApplyEffect';
 export type TargetPattern = 'SINGLE' | 'ADJACENT' | 'FRONT_ROW' | 'BACK_ROW' | 'ALL_ENEMIES';
 
 /** A flexible skill cost definition. */

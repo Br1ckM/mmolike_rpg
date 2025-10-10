@@ -7,7 +7,7 @@ import type { EquipmentSlot } from './character'; // Assuming EquipmentSlot is e
 export type ItemType = 'equipment' | 'consumable' | 'reagent' | 'quest' | 'collectible' | 'junk' | 'misc';
 export type ItemRarity = 'Common' | 'Uncommon' | 'Rare' | 'Unique' | 'Quest' | 'Junk';
 
-export interface InfoData {
+export interface ItemInfoData {
     name: string;
     description: string;
     itemType: ItemType;
@@ -75,7 +75,7 @@ export interface CurrencyData {
 
 // --- COMPONENT REGISTRATIONS ---
 
-export const ItemInfoComponent = Component.register<InfoData>();
+export const ItemInfoComponent = Component.register<ItemInfoData>();
 export const StackableComponent = Component.register<StackableData>();
 export const EquipableComponent = Component.register<EquipableData>();
 export const AffixesComponent = Component.register<AffixData[]>(); // Note: The component holds an array of affixes

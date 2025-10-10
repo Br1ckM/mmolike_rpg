@@ -247,6 +247,11 @@ export const usePlayerStore = defineStore('player', () => {
     itemToInspect.value = null;
   }
 
+  function moveItem(source: { bagId: number, slotIndex: number }, target: { bagId: number, slotIndex: number }) {
+    if (!player.value) return;
+    App.commands.moveInventoryItem(player.value.id, source, target);
+  }
+
   return {
     player,
     healthPercentage,
@@ -273,6 +278,7 @@ export const usePlayerStore = defineStore('player', () => {
     appearanceAttributes,
     playerVoreRole,
     stomachContents,
+    moveItem,
   };
 });
 

@@ -54,6 +54,11 @@ interface EventMap {
     };
 
     // Inventory / Items
+    'inventoryItemMovedRequest': {
+        characterId: number;
+        source: { bagId: number; slotIndex: number };
+        target: { bagId: number; slotIndex: number };
+    };
     'generateItemRequest': { baseItemId: string; characterId: number; itemLevel: number; };
     'addItemToInventory': { characterId: number; itemEntityId: number; baseItemId: string; };
     'inventoryFull': { characterId: number; itemEntityId: number; };

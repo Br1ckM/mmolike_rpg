@@ -1,12 +1,10 @@
-// packages/application/src/GameService.ts
-
 import ECS, { Entity } from 'ecs-lib';
 import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
 import { ContentService, type GameContent } from 'mmolike_rpg-domain/ContentService';
 import { Character, type CharacterEntityData } from 'mmolike_rpg-domain/ecs/entities/character';
 import { Item, type ItemData } from 'mmolike_rpg-domain/ecs/entities/item'
 import { World, Node } from 'mmolike_rpg-domain/ecs/entities/world';
-import { WorldClockComponent, type TimeOfDay, NodeComponent } from 'mmolike_rpg-domain/ecs/components/world';
+import { WorldClockComponent, type TimeOfDay, NodeComponent, PlayerLocationComponent } from 'mmolike_rpg-domain/ecs/components/world';
 import { Quest, type QuestEntityData } from 'mmolike_rpg-domain/ecs/entities/quest';
 import { Skill, type SkillEntityData } from 'mmolike_rpg-domain/ecs/entities/skill';
 import { Effect } from 'mmolike_rpg-domain/ecs/entities/effects';
@@ -44,12 +42,13 @@ import { AISystem } from 'mmolike_rpg-domain/ecs/systems/combat/AISystem';
 import { StatusEffectSystem } from 'mmolike_rpg-domain/ecs/systems/combat/StatusEffectSystem';
 import { NPC, type NPCEntityData } from 'mmolike_rpg-domain/ecs/entities/npc';
 import { Location, type LocationEntityData } from 'mmolike_rpg-domain/ecs/entities/world';
-import { PlayerLocationComponent, ContainerComponent } from 'mmolike_rpg-domain/ecs/components/world';
+import { ContainerComponent } from 'mmolike_rpg-domain/ecs/components/world';
 import { InteractionSystem } from 'mmolike_rpg-domain/ecs/systems/InteractionSystem';
 import { PartySystem } from 'mmolike_rpg-domain/ecs/systems/PartySystem'
 import { CampSystem } from 'mmolike_rpg-domain/ecs/systems/CampSystem'
 import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/components/combat';
-import { ExplorationSystem } from 'mmolike_rpg-domain/ecs/systems/ExplorationSystem'
+import { ExplorationSystem } from 'mmolike_rpg-domain/ecs/systems/ExplorationSystem';
+import { PersistenceSystem, type SaveData } from 'mmolike_rpg-domain/ecs/systems/PersistenceSystem';
 import { DepletionSystem } from 'mmolike_rpg-domain/ecs/systems/DepletionSystem';
 
 
@@ -73,7 +72,6 @@ import {
     type AppearanceAttribute,
     type VoreRole,
     type EquipmentSlot,
-
 } from 'mmolike_rpg-domain/ecs/components/character';
 import {
     ItemInfoComponent,
@@ -91,9 +89,8 @@ import {
 } from 'mmolike_rpg-domain/ecs/components/item';
 import { QuestStatusComponent, QuestComponent, QuestObjectiveComponent } from 'mmolike_rpg-domain/ecs/components/quest';
 import { LocationComponent } from 'mmolike_rpg-domain/ecs/components/world';
-import { DialogueComponent, VendorComponent, TrainerComponent } from 'mmolike_rpg-domain/ecs/components/npc'
+import { DialogueComponent, VendorComponent, TrainerComponent, CompanionComponent } from 'mmolike_rpg-domain/ecs/components/npc'
 import { SkillInfoComponent, SkillComponent, ProgressionComponent } from 'mmolike_rpg-domain/ecs/components/skill';
-import { CompanionComponent } from 'mmolike_rpg-domain/ecs/components/npc'
 
 // Helper to get all components from an entity using public accessors
 const getEntityDTO = (entity: Entity | null) => {
@@ -152,6 +149,7 @@ export class GameService {
     public world: ECS;
     public eventBus: EventBus;
     public content: GameContent;
+    private persistenceSystem: PersistenceSystem;
     public player: Character | null = null;
     public systems: any[];
     private contentIdToEntityIdMap = new Map<string, number>();
@@ -159,6 +157,7 @@ export class GameService {
         showNsfwContent: false,
         showVoreContent: false,
     };
+    private worldEntity: Entity | null = null;
 
     constructor(contentService: ContentService, eventBus: EventBus) {
         this.world = new ECS();
@@ -166,6 +165,7 @@ export class GameService {
         this.systems = [];
         this.content = contentService as GameContent;
         this.contentIdToEntityIdMap = new Map<string, number>();
+        this.persistenceSystem = new PersistenceSystem();
 
         console.log('[LOAD DIAGNOSTIC] GameService constructor received content data. Keys:', Object.keys(this.content));
 
@@ -229,62 +229,43 @@ export class GameService {
     public startGame(): void {
         console.log('[LOAD DIAGNOSTIC] GameService startGame called.');
 
-        // --- Create World State Entities ---
-        const worldEntity = new World();
-        worldEntity.add(new WorldClockComponent({ currentTime: 'Morning' }));
-        this.world.addEntity(worldEntity);
+        // 1. Create World State Entity (only if not loaded)
+        if (!this.worldEntity) {
+            this.worldEntity = new World();
+            this.worldEntity.add(new WorldClockComponent({ currentTime: 'Morning' }));
+            this.world.addEntity(this.worldEntity);
+        }
 
-        const worldState = {
-            currentTime: 'Morning' as TimeOfDay,
-            playerEntity: null as Entity | null
-        };
-        this.eventBus.on('timeOfDayChanged', (payload) => {
-            worldState.currentTime = payload.newTime;
+        // Locations
+        (this.content.locations as any).forEach((data: any) => {
+            const location = new Location(data as LocationEntityData);
+            this.world.addEntity(location);
+            this.contentIdToEntityIdMap.set(data.id, location.id);
         });
 
-        // --- System Instantiation ---
-        const statCalculationSystem = new StatCalculationSystem(this.world, this.eventBus, this.content);
-        const questLogSystem = new QuestLogSystem(this.world, this.eventBus, this.contentIdToEntityIdMap);
-        const mobGenSystem = new MobGenSystem(this.world, this.eventBus, this.content);
-        const scheduleSystem = new ScheduleSystem(this.eventBus, worldState);
-        const interactionSystem = new InteractionSystem(this.world, this.eventBus);
-        const progressionSystem = new ProgressionSystem(this.world, this.eventBus, this.content);
-        const voreSystem = new VoreSystem(this.world, this.eventBus);
+        // NPCs
+        (this.content as any).npcs.forEach((data: any) => {
+            const npc = new NPC(data as NPCEntityData);
+            this.world.addEntity(npc);
+            this.contentIdToEntityIdMap.set(data.id, npc.id);
+        });
 
-        this.systems.push(
-            statCalculationSystem,
-            questLogSystem,
-            mobGenSystem,
-            scheduleSystem,
-            interactionSystem,
-            progressionSystem,
-            voreSystem,
-            new PartySystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
-            new ItemGenerationSystem(this.world, this.eventBus, this.content),
-            new InventorySystem(this.world, this.eventBus),
-            new EquipmentSystem(this.world, this.eventBus),
-            new ConsumableSystem(this.world, this.eventBus),
-            new QuestTrackingSystem(this.world, this.eventBus, questLogSystem, this.contentIdToEntityIdMap),
-            new QuestRewardSystem(this.world, this.eventBus),
-            new QuestStateSystem(this.world, this.eventBus, this.content),
-            new DialogueSystem(this.world, this.eventBus, this.content),
-            new VendorSystem(this.world, this.eventBus),
-            new TrainerSystem(this.world, this.eventBus),
-            new LootResolutionSystem(this.world, this.eventBus, this.content),
-            new EncounterSystem(this.world, this.eventBus, this.content, mobGenSystem),
-            new TraitSystem(this.world, this.eventBus, this.content),
-            new WorldClockSystem(this.world, this.eventBus, worldEntity),
-            new TravelSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
-            new CombatInitiationSystem(this.world, this.eventBus),
-            new CombatSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
-            new AISystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
-            new StatusEffectSystem(this.world, this.eventBus, this.content),
-            new CampSystem(this.world, this.eventBus),
-            new ExplorationSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
-            new DepletionSystem(this.world, this.eventBus),
-        );
+        // Nodes
+        this.content.nodes.forEach((data: any) => {
+            const node = new Node(data as any);
+            this.world.addEntity(node);
+            this.contentIdToEntityIdMap.set(data.id, node.id);
+        });
 
-        this.world.addSystem(scheduleSystem);
+        // Items (wallets and bags) need to be loaded as entities too
+        (this.content as any).inventories.forEach((data: any) => {
+            const item = new Item(data as ItemData);
+            this.world.addEntity(item);
+            this.contentIdToEntityIdMap.set(data.id, item.id);
+        });
+
+        this.initializeSystems();
+
 
         if (this.content.skills) {
             const skillEntries = [...this.content.skills.entries()];
@@ -382,6 +363,156 @@ export class GameService {
                 }
             }
         }
+    }
+
+    private initializeSystems(): void {
+        // Clear previous systems (if any)
+        this.systems.forEach(s => this.world.removeSystem(s));
+        this.systems = [];
+
+        const worldState = {
+            currentTime: 'Morning' as TimeOfDay,
+            playerEntity: this.player as Entity | null
+        };
+
+        // --- System Instantiation ---
+        const statCalculationSystem = new StatCalculationSystem(this.world, this.eventBus, this.content);
+        const questLogSystem = new QuestLogSystem(this.world, this.eventBus, this.contentIdToEntityIdMap);
+        const mobGenSystem = new MobGenSystem(this.world, this.eventBus, this.content);
+        const scheduleSystem = new ScheduleSystem(this.eventBus, worldState);
+        const interactionSystem = new InteractionSystem(this.world, this.eventBus);
+        const progressionSystem = new ProgressionSystem(this.world, this.eventBus, this.content);
+        const voreSystem = new VoreSystem(this.world, this.eventBus);
+
+        this.systems.push(
+            statCalculationSystem,
+            questLogSystem,
+            mobGenSystem,
+            scheduleSystem,
+            interactionSystem,
+            progressionSystem,
+            voreSystem,
+            new PartySystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
+            new ItemGenerationSystem(this.world, this.eventBus, this.content),
+            new InventorySystem(this.world, this.eventBus),
+            new EquipmentSystem(this.world, this.eventBus),
+            new ConsumableSystem(this.world, this.eventBus),
+            new QuestTrackingSystem(this.world, this.eventBus, questLogSystem, this.contentIdToEntityIdMap),
+            new QuestRewardSystem(this.world, this.eventBus),
+            new QuestStateSystem(this.world, this.eventBus, this.content),
+            new DialogueSystem(this.world, this.eventBus, this.content),
+            new VendorSystem(this.world, this.eventBus),
+            new TrainerSystem(this.world, this.eventBus),
+            new LootResolutionSystem(this.world, this.eventBus, this.content),
+            new EncounterSystem(this.world, this.eventBus, this.content, mobGenSystem),
+            new TraitSystem(this.world, this.eventBus, this.content),
+            new WorldClockSystem(this.world, this.eventBus, this.worldEntity!),
+            new TravelSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
+            new CombatInitiationSystem(this.world, this.eventBus),
+            new CombatSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
+            new AISystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
+            new StatusEffectSystem(this.world, this.eventBus, this.content),
+            new CampSystem(this.world, this.eventBus),
+            new ExplorationSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
+            new DepletionSystem(this.world, this.eventBus)
+        );
+
+        this.world.addSystem(scheduleSystem);
+    }
+
+    // --- PERSISTENCE METHODS ---
+    public saveGame(): void {
+        if (!this.player) return;
+        try {
+            const saveData = this.persistenceSystem.serialize(this.world);
+            localStorage.setItem('mmolike_rpg_save', JSON.stringify(saveData));
+            this.eventBus.emit('notification', { type: 'success', message: 'Game Saved!' });
+            console.log('Game saved to localStorage.');
+        } catch (error) {
+            console.error('Failed to save game:', error);
+            this.eventBus.emit('notification', { type: 'error', message: 'Failed to save game.' });
+        }
+    }
+
+    public loadGame(): void {
+        const savedGameJson = localStorage.getItem('mmolike_rpg_save');
+        if (!savedGameJson) {
+            this.eventBus.emit('notification', { type: 'info', message: 'No save game found in localStorage.' });
+            return;
+        }
+        try {
+            this.importSave(savedGameJson, false); // Load without saving back to localStorage
+            this.eventBus.emit('notification', { type: 'success', message: 'Game Loaded!' });
+        } catch (error) {
+            console.error('Failed to load game:', error);
+            this.eventBus.emit('notification', { type: 'error', message: 'Failed to load save data.' });
+        }
+    }
+
+    public exportSave(): void {
+        const savedGameJson = localStorage.getItem('mmolike_rpg_save');
+        if (!savedGameJson) {
+            this.eventBus.emit('notification', { type: 'info', message: 'No save game to export.' });
+            return;
+        }
+        const blob = new Blob([savedGameJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mmolike-rpg-save-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.eventBus.emit('notification', { type: 'info', message: 'Save file exported.' });
+    }
+
+    public importSave(jsonString: string, shouldSave: boolean = true): void {
+        try {
+            const saveData: SaveData = JSON.parse(jsonString);
+            this.persistenceSystem.deserialize(this.world, saveData);
+
+            const worldAsAny = this.world as any;
+
+            worldAsAny.entities.forEach((entity: Entity) => {
+                const info = InfoComponent.oneFrom(entity)?.data;
+                if (info?.id) {
+                    this.contentIdToEntityIdMap.set(info.id, entity.id);
+                }
+            });
+
+            this.reinitializeAfterLoad();
+
+            if (shouldSave) {
+                this.saveGame(); // Save the imported data to localStorage
+            }
+            this.eventBus.emit('notification', { type: 'success', message: 'Save file imported and loaded!' });
+        } catch (error) {
+            console.error('Failed to import save:', error);
+            this.eventBus.emit('notification', { type: 'error', message: 'Invalid save file.' });
+        }
+    }
+
+    private reinitializeAfterLoad(): void {
+        const worldAsAny = this.world as any;
+
+        // Find player and world entity from the loaded world
+        this.player = worldAsAny.entities.find((e: Entity) => ControllableComponent.oneFrom(e));
+        this.worldEntity = worldAsAny.entities.find((e: Entity) => WorldClockComponent.oneFrom(e));
+
+        // Re-initialize all systems to ensure they operate on the newly loaded entities
+        this.initializeSystems();
+
+        // Force a full refresh of all UI stores
+        if (this.player) {
+            this.eventBus.emit('playerStateModified', { characterId: this.player.id });
+            // Using a blank location ID forces the HubStore to refresh everything based on new state
+            this.eventBus.emit('playerLocationChanged', { characterId: this.player.id, newLocationId: '' });
+            this.eventBus.emit('partyUpdated', { characterId: this.player.id });
+
+            // Update UI filter based on settings saved in storage (not fully implemented yet but good practice)
+            this.eventBus.emit('updateContentFilter', this.settings);
+        }
+
+        console.log('Game state re-initialized after load.');
     }
 
     /**

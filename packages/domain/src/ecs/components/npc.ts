@@ -1,9 +1,9 @@
 import { Component } from 'ecs-lib';
+import { TimeOfDay } from './world'
 
 /**
  * Common reusable literal unions for NPC components.
  */
-export type TimeOfDay = 'Morning' | 'Afternoon' | 'Evening' | 'Night';
 export type QuestStatus = 'in_progress' | 'completed';
 export type ServiceType = 'BANK' | 'TELEPORT';
 

@@ -23,12 +23,13 @@ export class InventorySystem {
 
         this.eventBus.on('addItemToInventory', this.handleAddItem.bind(this));
         this.eventBus.on('removeItemFromInventory', this.handleRemoveItem.bind(this));
+        this.eventBus.on('inventoryItemMovedRequest', this.handleItemMove.bind(this));
     }
 
     /**
      * Event handler for when an item needs to be added to a character's inventory.
      */
-    private handleAddItem(payload: { characterId: number; itemEntityId: number; baseItemId: string; }): void { // <-- FIX: Add baseItemId to payload type
+    private handleAddItem(payload: { characterId: number; itemEntityId: number; baseItemId: string; }): void {
         const character = this.world.getEntity(payload.characterId);
         const item = this.world.getEntity(payload.itemEntityId);
 
@@ -175,5 +176,39 @@ export class InventorySystem {
             }
         }
         return false;
+    }
+    private handleItemMove(payload: {
+        characterId: number;
+        source: { bagId: number; slotIndex: number };
+        target: { bagId: number; slotIndex: number };
+    }): void {
+        const { characterId, source, target } = payload;
+        const sourceBagEntity = this.world.getEntity(source.bagId);
+        const targetBagEntity = this.world.getEntity(target.bagId);
+
+        if (!sourceBagEntity || !targetBagEntity) {
+            console.error('[InventorySystem] Could not find source or target bag for move operation.');
+            return;
+        }
+
+        const sourceSlots = SlotsComponent.oneFrom(sourceBagEntity)?.data;
+        const targetSlots = SlotsComponent.oneFrom(targetBagEntity)?.data;
+
+        if (!sourceSlots || !targetSlots) {
+            console.error('[InventorySystem] Could not find slots component on source or target bag.');
+            return;
+        }
+
+        // Perform the swap
+        const sourceItem = sourceSlots.items[source.slotIndex];
+        const targetItem = targetSlots.items[target.slotIndex];
+
+        sourceSlots.items[source.slotIndex] = targetItem;
+        targetSlots.items[target.slotIndex] = sourceItem;
+
+        console.log(`[InventorySystem] Swapped item from Bag ${source.bagId}[${source.slotIndex}] to Bag ${target.bagId}[${target.slotIndex}].`);
+
+        // Notify the UI that the inventory has changed
+        this.eventBus.emit('playerStateModified', { characterId });
     }
 }

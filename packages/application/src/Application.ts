@@ -93,7 +93,7 @@ class Application {
         const eventBus = new EventBus();
 
         this.game = new GameService(contentService, eventBus);
-        this.commands = new CommandService(this.game.eventBus);
+        this.commands = new CommandService(this.game.eventBus, this.game);
         this.queries = new QueryService(this.game, this.game.eventBus);
         this.loop = new GameLoop(this.game);
 

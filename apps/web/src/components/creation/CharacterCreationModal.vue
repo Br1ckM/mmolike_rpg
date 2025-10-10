@@ -47,7 +47,13 @@ const createCharacter = () => {
         pronouns: pronouns.value,
         ancestryId: ancestryId.value,
     });
+
+    // --- FIX: Save progress to local storage ---
+    localStorage.setItem('player_save_exists', 'true');
+
     uiStore.hideCharacterCreation();
+
+    // Initialize all stores to get the new character data
     usePlayerStore().initialize();
     useGameStore().initialize();
     useHubStore().initialize();

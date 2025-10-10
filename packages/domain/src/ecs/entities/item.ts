@@ -1,6 +1,6 @@
 import { Entity } from 'ecs-lib';
 import {
-    ItemInfoComponent, type InfoData,
+    ItemInfoComponent, type ItemInfoData,
     StackableComponent, type StackableData,
     EquipableComponent, type EquipableData,
     AffixesComponent, type AffixData,
@@ -16,7 +16,7 @@ import {
 
 // Blueprint for raw item data from YAML
 export interface ItemData {
-    info: InfoData;
+    info: ItemInfoData;
     stackable?: StackableData;
     equipable?: EquipableData;
     affixes?: AffixData[];

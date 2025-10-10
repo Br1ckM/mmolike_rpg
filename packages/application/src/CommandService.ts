@@ -1,5 +1,6 @@
 import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
 import { type VoreRole } from 'mmolike_rpg-domain/ecs/components/character';
+import { GameService } from './GameService'; // <-- Import GameService
 
 /**
  * Provides methods for the Presentation Layer to issue player commands.
@@ -7,9 +8,11 @@ import { type VoreRole } from 'mmolike_rpg-domain/ecs/components/character';
  */
 export class CommandService {
     private domainEventBus: EventBus;
+    private gameService: GameService; // <-- Added reference to GameService
 
-    constructor(domainEventBus: EventBus) {
+    constructor(domainEventBus: EventBus, gameService: GameService) { // <-- MODIFIED CONSTRUCTOR
         this.domainEventBus = domainEventBus;
+        this.gameService = gameService;
     }
 
     // --- Interaction Commands ---
@@ -120,5 +123,22 @@ export class CommandService {
     }
     public exploreInZone(characterId: number, zoneId: string): void {
         this.domainEventBus.emit('exploreRequested', { characterId, zoneId });
+    }
+    public moveInventoryItem(characterId: number, source: { bagId: number; slotIndex: number }, target: { bagId: number; slotIndex: number }): void {
+        this.domainEventBus.emit('inventoryItemMovedRequest', { characterId, source, target });
+    }
+
+    public saveGame(): void {
+        this.gameService.saveGame();
+    }
+    public loadGame(): void {
+        this.gameService.loadGame();
+    }
+    public exportSave(): void {
+        this.gameService.exportSave();
+    }
+    public importSave(jsonString: string): void {
+        // Pass the import string and tell it to save the imported data
+        this.gameService.importSave(jsonString, true);
     }
 }
