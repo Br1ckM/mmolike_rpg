@@ -15,7 +15,7 @@ import { App } from 'mmolike_rpg-application';
 
 const gameStore = useGameStore();
 const playerStore = usePlayerStore();
-const { combat, combatLog, combatResult } = storeToRefs(gameStore);
+const { combat, combatLog, combatResult, denState } = storeToRefs(gameStore); // <-- Get denState
 const { player } = storeToRefs(playerStore);
 
 // --- State Management ---
@@ -198,6 +198,16 @@ const cancelSelection = () => {
     selectedBeltIndex.value = null;
 };
 
+const isStageComplete = (stageIndex: number) => {
+    if (!denState.value) return false;
+    return stageIndex < denState.value.currentStage;
+};
+
+const isStageActive = (stageIndex: number) => {
+    if (!denState.value) return false;
+    return stageIndex === denState.value.currentStage;
+};
+
 const doNothing = () => { };
 </script>
 
@@ -209,6 +219,28 @@ const doNothing = () => { };
             content: 'p-0 bg-surface-900 h-full flex flex-col',
             mask: 'bg-black/80 z-40'
         }">
+
+        <div v-if="denState && denState.status === 'IN_PROGRESS'"
+            class="flex-shrink-0 bg-surface-800/90 text-white py-4 text-center border-b-2 border-primary-500">
+            <h2 class="text-xl font-bold text-primary-400 mb-3">{{ denState.denName }}</h2>
+            <div class="flex items-center justify-center">
+                <template v-for="index in denState.totalStages" :key="index">
+                    <div v-if="index > 1" class="w-6 h-1 transition-colors duration-500"
+                        :class="isStageActive(index - 1) || isStageComplete(index - 1) ? 'bg-primary-400' : 'bg-surface-600'">
+                    </div>
+                    <div class="w-8 h-8 flex items-center justify-center rounded border-2 transition-colors duration-500"
+                        :class="{
+                            'bg-primary-500 border-primary-300 shadow-lg shadow-primary-500/30': isStageActive(index - 1),
+                            'bg-green-600 border-green-400': isStageComplete(index - 1),
+                            'bg-surface-700 border-surface-600': !isStageActive(index - 1) && !isStageComplete(index - 1)
+                        }">
+                        <i v-if="isStageComplete(index - 1)" class="pi pi-check text-white"></i>
+                        <i v-else-if="isStageActive(index - 1)" class="pi pi-bolt text-yellow-300 animate-pulse"></i>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <div v-if="combat"
             class="h-full flex flex-col items-center justify-center p-4 bg-gray-800 bg-opacity-50 flex-grow relative">
 

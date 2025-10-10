@@ -50,6 +50,7 @@ import { CombatComponent, CombatantComponent } from 'mmolike_rpg-domain/ecs/comp
 import { ExplorationSystem } from 'mmolike_rpg-domain/ecs/systems/ExplorationSystem';
 import { PersistenceSystem, type SaveData } from 'mmolike_rpg-domain/ecs/systems/PersistenceSystem';
 import { DepletionSystem } from 'mmolike_rpg-domain/ecs/systems/DepletionSystem';
+import { DenSystem } from 'mmolike_rpg-domain/ecs/systems/DenSystem';
 
 
 // Import Component types for creating the DTO
@@ -388,8 +389,9 @@ export class GameService {
             new AISystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
             new StatusEffectSystem(this.world, this.eventBus, this.content),
             new CampSystem(this.world, this.eventBus),
-            new ExplorationSystem(this.world, this.eventBus, this.contentIdToEntityIdMap),
-            new DepletionSystem(this.world, this.eventBus)
+            new ExplorationSystem(this.world, this.eventBus, this.contentIdToEntityIdMap, this.content),
+            new DepletionSystem(this.world, this.eventBus),
+            new DenSystem(this.world, this.eventBus, this.content),
         );
 
         this.world.addSystem(scheduleSystem);

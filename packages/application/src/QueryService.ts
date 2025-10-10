@@ -136,5 +136,14 @@ export class QueryService {
             console.log(`[QueryService] Heard 'partyUpdated'. Publishing to stores.`);
             this.publish('partyUpdated', payload);
         });
+        this.domainEventBus.on('denRunUpdated', (payload) => {
+            this.publish('denState', payload);
+        });
+        this.domainEventBus.on('denRunCompleted', (payload) => {
+            this.publish('denState', { ...payload, status: 'COMPLETED' });
+        });
+        this.domainEventBus.on('denRunFailed', (payload) => {
+            this.publish('denState', { ...payload, status: 'FAILED' });
+        });
     }
 }

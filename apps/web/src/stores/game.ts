@@ -49,6 +49,7 @@ interface TrainerSkill {
 }
 
 
+
 export const useGameStore = defineStore('game', () => {
     const timeOfDay = ref<'Morning' | 'Afternoon' | 'Evening' | 'Night'>('Morning'); // <-- NEW STATE
     const dialogue = ref<DialogueState | null>(null);
@@ -68,10 +69,19 @@ export const useGameStore = defineStore('game', () => {
     const vendorItems = ref<VendorItem[]>([]);
     const trainerSkills = ref<TrainerSkill[]>([]);
     const vendorUnsubscribe = ref<(() => void) | null>(null);
+    const denState = ref<{ denId: string; denName: string; currentStage: number; totalStages: number; status?: string } | null>(null);
 
 
     async function initialize() {
         await App.isReady;
+
+        App.queries.subscribe<any>('denState', (newState) => {
+            denState.value = newState;
+        });
+
+        App.queries.subscribe('combatEnded', () => {
+            setTimeout(() => denState.value = null, 3000); // Clear after a delay
+        });
 
         timeOfDayUnsubscribe.value = App.queries.subscribe<{ newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' }>('timeOfDayChanged', (payload) => {
             if (payload) {
@@ -181,6 +191,9 @@ export const useGameStore = defineStore('game', () => {
         combatLog.value = [];
     }
 
+    function clearDenState() {
+        denState.value = null;
+    }
 
     return {
         timeOfDay,
@@ -196,5 +209,7 @@ export const useGameStore = defineStore('game', () => {
         selectDialogueResponse,
         clearActiveService,
         clearCombatState,
+        denState,
+        clearDenState,
     };
 });

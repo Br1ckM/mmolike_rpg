@@ -1,3 +1,5 @@
+// apps/web/src/stores/party.ts
+
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { App } from 'mmolike_rpg-application';
@@ -19,30 +21,34 @@ export const usePartyStore = defineStore('party', () => {
     const activeParty = computed(() => companions.value.filter(c => c.inActiveParty));
     const benchedCompanions = computed(() => companions.value.filter(c => !c.inActiveParty));
 
+    // --- NEW: Extracted refresh logic ---
+    function refreshPartyState() {
+        const playerState = App.game.getPlayerState();
+        console.log("[PartyStore] Refreshing party state with:", playerState);
+
+        if (playerState && playerState.companions) {
+            companions.value = playerState.companions.map((c: any) => ({
+                id: c.id,
+                name: c.InfoComponent.name,
+                avatarUrl: c.InfoComponent.avatarUrl,
+                inActiveParty: c.CompanionComponent.inActiveParty,
+            }));
+        } else {
+            companions.value = [];
+        }
+    }
+
     // --- Actions ---
     async function initialize() {
         await App.isReady;
         if (unsubscribe.value) unsubscribe.value();
 
-        unsubscribe.value = App.queries.subscribe<any>('partyUpdated', () => {
-            const playerState = App.game.getPlayerState();
+        // --- MODIFIED: Use the extracted function ---
+        // 1. Subscribe to future updates
+        unsubscribe.value = App.queries.subscribe<any>('partyUpdated', refreshPartyState);
 
-            // --- FIX: Log the variable *after* it's defined ---
-            console.log("[PartyStore] Heard 'partyUpdated' and fetched new playerState:", playerState);
-            // --- END FIX ---
-
-            if (playerState && playerState.companions) {
-                companions.value = playerState.companions.map((c: any) => ({
-                    id: c.id,
-                    name: c.InfoComponent.name,
-                    avatarUrl: c.InfoComponent.avatarUrl,
-                    inActiveParty: c.CompanionComponent.inActiveParty,
-                }));
-            } else {
-                // Handle case where there are no companions
-                companions.value = [];
-            }
-        });
+        // 2. Immediately fetch the current state
+        refreshPartyState();
     }
 
     return {

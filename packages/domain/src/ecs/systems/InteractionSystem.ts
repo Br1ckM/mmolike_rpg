@@ -48,6 +48,12 @@ export class InteractionSystem extends GameSystem { // Extend GameSystem
                         encounterId: interactionTarget.targetId,
                     });
                     break;
+                case 'Den':
+                    this.eventBus.emit('denEnterRequested', {
+                        characterId: payload.characterId,
+                        denId: interactionTarget.targetId,
+                    });
+                    break;
             }
         }
     }

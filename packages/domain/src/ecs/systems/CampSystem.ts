@@ -2,18 +2,15 @@ import { EventBus } from '../EventBus';
 import ECS, { Entity } from 'ecs-lib';
 import { HealthComponent, ManaComponent, ControllableComponent } from '../components/character';
 import { CompanionComponent } from '../components/npc';
-import { GameSystem } from './GameSystem'; // <-- Import the new base class
+import { GameSystem } from './GameSystem';
 
 /**
  * Handles non-combat, camp-related activities like resting.
  */
-export class CampSystem extends GameSystem { // <-- Extend GameSystem
+export class CampSystem extends GameSystem {
 
     constructor(world: ECS, eventBus: EventBus) {
-        // Pass an empty array since this system doesn't iterate entities in an update loop
         super(world, eventBus, []);
-
-        // Use the built-in subscribe method
         this.subscribe('restRequested', this.handleRest.bind(this));
     }
 
@@ -29,7 +26,6 @@ export class CampSystem extends GameSystem { // <-- Extend GameSystem
 
         const partyToRest: Entity[] = [playerEntity];
 
-        // Find all active companions to include them in the rest action
         const allEntities = (this.world as any).entities as Entity[];
         allEntities.forEach(entity => {
             const companion = CompanionComponent.oneFrom(entity)?.data;
@@ -38,18 +34,26 @@ export class CampSystem extends GameSystem { // <-- Extend GameSystem
             }
         });
 
-        // Restore health and mana for each party member
+        // --- REVISED HEALING LOGIC ---
         partyToRest.forEach(character => {
             const health = HealthComponent.oneFrom(character)?.data;
             const mana = ManaComponent.oneFrom(character)?.data;
 
-            if (health) {
+            if (health && health.current < health.max) {
+                const amountToHeal = health.max - health.current;
                 health.current = health.max;
+                this.eventBus.emit('healthHealed', {
+                    healerId: character.id.toString(), // The character is healing themselves by resting
+                    targetId: character.id.toString(),
+                    amount: amountToHeal
+                });
             }
+
             if (mana) {
                 mana.current = mana.max;
             }
         });
+        // --- END REVISED LOGIC ---
 
         console.log('[CampSystem] Active party has rested. Health and mana restored.');
 

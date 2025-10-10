@@ -164,3 +164,16 @@
     interactionTarget:
       type: "Gather"
       targetId: "loottable_sunpetal"
+
+- id: "node_to_lesser_den"
+  components:
+    node:
+      name: "Goblin Den Entrance"
+      description: "A foul-smelling cave that serves as an outpost for the Timberfang goblins. It looks dangerous."
+      discovered: true # Or false, to be discovered via exploration
+      position:
+        top: "40%"
+        left: "50%"
+    interactionTarget:
+      type: "Den"  # <-- Set the type to "Den"
+      targetId: "den_timberfang_lesser"

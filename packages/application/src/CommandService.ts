@@ -141,4 +141,13 @@ export class CommandService {
         // Pass the import string and tell it to save the imported data
         this.gameService.importSave(jsonString, true);
     }
+
+    public dev_dealDamage(amount: number): void {
+        if (this.gameService.player) {
+            this.domainEventBus.emit('dev_dealDamageToPlayer', {
+                characterId: this.gameService.player.id,
+                amount: amount
+            });
+        }
+    }
 }

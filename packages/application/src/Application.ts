@@ -35,7 +35,8 @@ import archetypes from '../../content/src/archetypes.yaml';
 import spawnPools from '../../content/src/spawn_pools.yaml';
 import config from '../../content/src/config.yaml';
 import ancestries from '../../content/src/ancestries.yaml';
-
+import explorationEvents from '../../content/src/exploration_events.yaml'
+import dens from '../../content/src/dens.yaml'
 
 class Application {
     public game!: GameService;
@@ -84,7 +85,9 @@ class Application {
             tiers,
             archetypes,
             spawnPools,
+            dens,
             config,
+            explorationEvents,
             baseItems: combinedBaseItemsArray,
             mobs: [playerTemplate, ...npcs, ...mobs]
         };

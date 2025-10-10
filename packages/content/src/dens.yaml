@@ -1,0 +1,12 @@
+- id: "den_timberfang_lesser"
+  name: "Lesser Timberfang Den"
+  description: "A small, forward outpost for the Timberfang goblin tribe."
+  encounters: # An ordered list of encounter IDs from encounters.yaml
+    - "enc_goblin_scouts_wave1"
+    - "enc_goblin_scouts_wave2"
+    - "enc_goblin_brute_miniboss"
+  rewards:
+    experience: 500
+    gold: 150
+    itemIds:
+      - "baseitem_iron_helm"

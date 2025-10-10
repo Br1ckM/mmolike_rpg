@@ -25,6 +25,7 @@ export class QuestTrackingSystem extends GameSystem { // Extend GameSystem
         // Use the inherited 'subscribe' method
         this.subscribe('enemyDefeated', this.onEnemyDefeated.bind(this));
         this.subscribe('itemPickedUp', this.onItemPickedUp.bind(this));
+        this.subscribe('explorationQuestEventTriggered', this.onExplorationQuestEvent.bind(this));
     }
 
     /**
@@ -84,5 +85,36 @@ export class QuestTrackingSystem extends GameSystem { // Extend GameSystem
                 }
             });
         }
+    }
+
+    private onExplorationQuestEvent(payload: { characterId: number; questId: string; objectiveTargetId: string; }): void {
+        const character = this.world.getEntity(payload.characterId);
+        if (!character) return;
+
+        const questStatus = QuestStatusComponent.allFrom(character)
+            .find(q => q.data.questId === payload.questId && q.data.status === 'in_progress');
+
+        if (!questStatus) return;
+
+        const questEntityId = this.contentIdToEntityIdMap.get(questStatus.data.questId);
+        const questEntity = questEntityId ? this.world.getEntity(questEntityId) : undefined;
+        if (!questEntity) return;
+
+        const objectives = QuestObjectiveComponent.oneFrom(questEntity)?.data;
+        if (!objectives) return;
+
+        // Find the objective that matches the event's target
+        objectives.forEach((objective, index) => {
+            // Here we assume a new 'explore' objective type, or re-use an existing one
+            // Let's assume a quest can have an objective like { type: 'kill', targetId: 'mob_wolf' } and our event fulfils it.
+            if (objective.targetId === payload.objectiveTargetId) {
+                this.questLogSystem.updateObjectiveProgress(
+                    character,
+                    payload.questId,
+                    index,
+                    1 // Increment progress by 1
+                );
+            }
+        });
     }
 }

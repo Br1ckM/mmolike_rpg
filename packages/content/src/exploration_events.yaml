@@ -1,0 +1,32 @@
+# Defines pools of random events that can be triggered by the "Explore" action in a zone.
+# The `id` should correspond to a zone's location ID, prefixed with `pool_`.
+
+- id: "pool_timberbrook_fields"
+  events:
+    # --- LORE EVENT ---
+    - type: "LORE"
+      weight: 40 # High weight, common event
+      payload:
+        title: "A Weathered Signpost"
+        text: "The sign is old and faded. You can barely make out the words '...watch for wolves...'"
+
+    # --- TRAP EVENT ---
+    - type: "TRAP"
+      weight: 15 # Lower weight, less common
+      payload:
+        title: "A Snare!"
+        text: "You step into a crudely made poacher's snare! You manage to free yourself but take minor damage."
+        damage: 5 # The system can use this to apply damage
+
+    # --- QUEST-LOCKED EVENT ---
+    - type: "QUEST_OBJECTIVE"
+      weight: 100 # Very high weight, making it likely to happen if conditions are met
+      prerequisites:
+        - type: "QUEST_STATUS"
+          questId: "quest_a_growing_concern" # From quests.yaml
+          status: "in_progress"
+      payload:
+        questId: "quest_a_growing_concern" # Required for the QuestTrackingSystem
+        objectiveTargetId: "mob_wolf" # Matches the targetId in quests.yaml
+        title: "Signs of a Hunt"
+        text: "You find fresh wolf tracks and discarded bones—clear signs the pack has been hunting in this area."

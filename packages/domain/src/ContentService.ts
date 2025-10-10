@@ -52,6 +52,8 @@ export interface GameContent {
     spawnPools: Map<string, any>;
     config: GameConfig;
     ancestries: Map<string, AncestryData>;
+    explorationEvents: Map<string, any>;
+    dens: Map<string, any>;
 }
 
 // The raw input from YAML imports will be an object where each value is an array OR an object for config.
@@ -94,6 +96,8 @@ export class ContentService implements GameContent {
     public spawnPools!: Map<string, any>;
     public config!: GameConfig;
     public ancestries!: Map<string, AncestryData>;
+    public explorationEvents!: Map<string, any>;
+    public dens!: Map<string, any>;
 
     constructor(rawContent: RawGameContent) {
         this.loadAllContent(rawContent);

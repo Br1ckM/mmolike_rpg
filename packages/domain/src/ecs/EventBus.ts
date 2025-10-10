@@ -126,6 +126,17 @@ interface EventMap {
     'restRequested': { characterId: number };
     'exploreRequested': { characterId: number; zoneId: string; };
     'nodeDiscovered': { characterId: number; nodeId: number; nodeName: string; };
+    'explorationQuestEventTriggered': {
+        characterId: number;
+        questId: string;
+        objectiveTargetId: string;
+    };
+
+    // Dens
+    'denEnterRequested': { characterId: number; denId: string; };
+    'denRunUpdated': { denId: string; denName: string; currentStage: number; totalStages: number; };
+    'denRunCompleted': { denId: string; };
+    'denRunFailed': { denId: string; };
 
     // Content filter / Preferences
     'contentFilterChanged': { showNsfwContent: boolean; showVoreContent: boolean; };

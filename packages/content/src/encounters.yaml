@@ -85,3 +85,42 @@
     - pool: "pool_poacher_elite" # Pool should include 'poa-700' plus a few high-end Poachers
       count: [1, 3]
       level: [11, 12] # Peaks the Poacher arc before handing off to Wolfkin
+
+# --- Den Gauntlet Encounters for "den_timberfang_lesser" ---
+
+# Wave 1: A simple patrol at the entrance.
+- id: "enc_goblin_scouts_wave1"
+  name: "Den Patrol"
+  level: 2 # Low-level entry fight
+  composition:
+    - protoId: "goblin_scout"
+      initialRow: "Front"
+    - protoId: "goblin_scout"
+      initialRow: "Front"
+
+# Wave 2: A slightly larger group of sentries deeper in.
+- id: "enc_goblin_scouts_wave2"
+  name: "Den Sentries"
+  level: 3
+  composition:
+    - protoId: "goblin_scout"
+      initialRow: "Front"
+    - protoId: "goblin_scout"
+      initialRow: "Front"
+    - protoId: "goblin_scout"
+      initialRow: "Back" # Adding a back-row enemy increases tactical variety.
+
+# Wave 3: The leader of this small outpost.
+- id: "enc_goblin_brute_miniboss"
+  name: "Goblin War-Caller"
+  level: 4 # Base level for the minions
+  composition:
+    # The "miniboss" is a higher-level scout, making it more dangerous.
+    - protoId: "goblin_scout"
+      initialRow: "Back"
+      level: 5 # Explicitly set a higher level for the leader.
+    # Supported by two regular scouts.
+    - protoId: "goblin_scout"
+      initialRow: "Front"
+    - protoId: "goblin_scout"
+      initialRow: "Front"
