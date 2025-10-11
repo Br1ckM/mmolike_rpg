@@ -10,27 +10,18 @@ import {
     ItemInfoComponent
 } from '../components/item';
 import { type GameContent, type GameConfig } from '../../ContentService';
-import { GameSystem } from './GameSystem'; // Import the new base class
+import { GameSystem } from './GameSystem';
 
-// A simple utility function for rolling random numbers in a range.
 const randomNumber = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-/**
- * Listens for `generateItemRequest` events and handles the logic
- * of creating a new item entity with random properties like rarity and affixes.
- */
-export class ItemGenerationSystem extends GameSystem { // Extend GameSystem
+export class ItemGenerationSystem extends GameSystem {
     private content: GameContent;
     private config: GameConfig;
 
     constructor(world: ECS, eventBus: EventBus, loadedContent: GameContent) {
-        // This system is event-driven.
         super(world, eventBus, []);
-
         this.content = loadedContent;
         this.config = loadedContent.config;
-
-        // Use the inherited 'subscribe' method
         this.subscribe('generateItemRequest', this.onGenerateItemRequest.bind(this));
     }
 
@@ -45,7 +36,7 @@ export class ItemGenerationSystem extends GameSystem { // Extend GameSystem
                 return rarity as ItemRarity;
             }
         }
-        return 'Common'; // Fallback
+        return 'Common';
     }
 
     private onGenerateItemRequest(payload: { baseItemId: string; characterId: number; itemLevel: number }): void {
@@ -90,34 +81,45 @@ export class ItemGenerationSystem extends GameSystem { // Extend GameSystem
             }
         }
 
-        const newItemData: ItemData = { ...baseComponents, info: { ...baseComponents.info, rarity }, affixes: affixesToApply };
+        const newItemData: ItemData = { ...baseComponents, info: { ...baseComponents.info, rarity } };
 
         const { base, per_level } = this.content.config.player_progression.gear_stat_budget;
         const targetBudget = base + (per_level * (itemLevel - 1));
 
         let currentStatValue = 0;
         if (newItemData.equipable) {
-            currentStatValue = Object.values(newItemData.equipable.baseStats).reduce((sum, val) => sum + val, 0);
-            for (const affix of affixesToApply) {
-                for (const effect of affix.effects) {
-                    currentStatValue += Math.abs(effect.value);
-                }
+            currentStatValue += Object.values(newItemData.equipable.baseStats).reduce((sum, val) => sum + val, 0);
+        }
+        for (const affix of affixesToApply) {
+            for (const effect of affix.effects) {
+                currentStatValue += Math.abs(effect.value);
             }
         }
 
         const scalingFactor = targetBudget / Math.max(1, currentStatValue);
+
+        // --- REVISED LOGIC ---
+        // 1. Scale the base stats in place.
         if (newItemData.equipable) {
             for (const stat in newItemData.equipable.baseStats) {
                 newItemData.equipable.baseStats[stat] = Math.round(newItemData.equipable.baseStats[stat] * scalingFactor);
             }
-            for (const affix of affixesToApply) {
-                for (const effect of affix.effects) {
-                    newItemData.equipable.baseStats[effect.stat] = (newItemData.equipable.baseStats[effect.stat] || 0) + Math.round(effect.value * scalingFactor);
-                }
-            }
         }
 
-        newItemData.info.name = this.generateItemName(baseComponents.info.name, affixesToApply as any);
+        // 2. Create a new array of SCALED affixes, but DO NOT merge them into baseStats.
+        const scaledAffixes = affixesToApply.map(affix => {
+            const scaledAffix = JSON.parse(JSON.stringify(affix));
+            for (const effect of scaledAffix.effects) {
+                effect.value = Math.round(effect.value * scalingFactor);
+            }
+            return scaledAffix;
+        });
+
+        // 3. Assign the scaled affixes to the new item data.
+        newItemData.affixes = scaledAffixes;
+        // --- END REVISED LOGIC ---
+
+        newItemData.info.name = this.generateItemName(baseComponents.info.name, scaledAffixes as any);
 
         const itemEntity = new Item(newItemData);
         this.world.addEntity(itemEntity);

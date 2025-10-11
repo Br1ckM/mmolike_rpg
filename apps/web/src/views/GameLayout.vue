@@ -8,11 +8,10 @@ import DenOverlay from '@/components/DenOverlay.vue';
   <div class="bg-surface-900 min-h-screen font-sans flex h-screen w-screen overflow-x-hidden">
     <Sidebar />
 
-    <main class="flex-1 overflow-y-auto relative">
+    <main class="flex-1 overflow-y-auto">
       <RouterView />
-      <DenOverlay />
     </main>
     <CombatModal />
-
+    <DenOverlay />
   </div>
 </template>

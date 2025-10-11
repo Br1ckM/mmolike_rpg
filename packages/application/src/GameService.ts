@@ -125,6 +125,9 @@ const getEntityDTO = (entity: Entity | null) => {
     checkAndAddComponent(VoreComponent, 'VoreComponent');
     checkAndAddComponent(CompanionComponent, 'CompanionComponent');
     checkAndAddComponent(InventoryComponent, 'InventoryComponent');
+    checkAndAddComponent(AffixesComponent, 'AffixesComponent');
+    checkAndAddComponent(ModSlotsComponent, 'ModSlotsComponent');
+    checkAndAddComponent(ModsComponent, 'ModsComponent');
 
     // Item Components
     checkAndAddComponent(ItemInfoComponent, 'ItemInfoComponent');
@@ -408,7 +411,7 @@ export class GameService {
             new DialogueSystem(this.world, this.eventBus, this.content),
             new VendorSystem(this.world, this.eventBus),
             new TrainerSystem(this.world, this.eventBus),
-            new LootResolutionSystem(this.world, this.eventBus, this.content, this.contentIdToEntityIdMap),
+            new LootResolutionSystem(this.world, this.eventBus, this.content),
             new EncounterSystem(this.world, this.eventBus, this.content, mobGenSystem),
             new TraitSystem(this.world, this.eventBus, this.content),
             new WorldClockSystem(this.world, this.eventBus, this.worldEntity!),

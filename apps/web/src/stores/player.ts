@@ -8,6 +8,15 @@ import { App } from 'mmolike_rpg-application';
  */
 export type UIVoreRole = 'Neither' | 'Prey' | 'Predator' | 'Both';
 
+const rarityOrder: { [key: string]: number } = {
+  'Legendary': 6,
+  'Epic': 5,
+  'Rare': 4,
+  'Uncommon': 3,
+  'Common': 2,
+  'Junk': 1,
+};
+
 export interface UIItem {
   id: number;
   name: string;
@@ -16,6 +25,12 @@ export interface UIItem {
   maxStack?: number;
   quality: string;
   type: string;
+  itemLevel?: number;
+  baseStats?: { [key: string]: number };
+  affixes?: { name: string; type: 'prefix' | 'suffix'; effects: { stat: string, value: number }[] }[]; // Pass full affix data
+  modSlots?: ('filled' | 'empty')[];
+  modSlotsCount?: number;
+  equipmentSlot?: string;
   [key: string]: any;
 }
 
@@ -87,6 +102,8 @@ interface ActiveQuest {
   objectives: QuestObjective[];
 }
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 /**
  * Calculate experience required for a given level
  */
@@ -140,6 +157,21 @@ export const usePlayerStore = defineStore('player', () => {
     return { level, current: currentXp, required: requiredXp, percentage, display: `${currentXp} / ${requiredXp}` };
   });
 
+  const inventoryFilterText = ref('');
+  const inventorySortBy = ref<'default' | 'name' | 'type' | 'rarity'>('default');
+
+  // --- NEW ACTIONS ---
+  function setInventoryFilter(text: string) {
+    inventoryFilterText.value = text.toLowerCase();
+  }
+  function setInventorySort(sortBy: 'default' | 'name' | 'type' | 'rarity') {
+    inventorySortBy.value = sortBy;
+  }
+  function clearInventorySortAndFilter() {
+    inventoryFilterText.value = '';
+    inventorySortBy.value = 'default';
+  }
+
   const bags = computed((): UIBag[] => {
     if (!inventory.value?.bags) return [];
     return inventory.value.bags.map((bagData: any) => {
@@ -149,19 +181,86 @@ export const usePlayerStore = defineStore('player', () => {
         slots: bagData.SlotsComponent?.size ?? 0,
         items: (bagData.items ?? []).map((itemData: any | null): UIItem | null => {
           if (!itemData) return null;
+
+          const mods = itemData.ModsComponent?.modIds || [];
+          const modSlotsCount = itemData.ModSlotsComponent?.count || 0;
+          const modSlots: ('filled' | 'empty')[] = [];
+          for (let i = 0; i < modSlotsCount; i++) {
+            modSlots.push(i < mods.length ? 'filled' : 'empty');
+          }
+
           return {
             id: itemData.id,
-            name: itemData.ItemInfoComponent?.name ?? 'Item',
+            name: itemData.ItemInfoComponent?.name ?? 'Item', // Name is now set by backend
             icon: `pi pi-${itemData.ItemInfoComponent?.iconName?.toLowerCase() || 'box'}`,
-            quality: itemData.ItemInfoComponent?.rarity ?? 'common',
+            quality: capitalize(itemData.ItemInfoComponent?.rarity ?? 'common'),
             type: itemData.ItemInfoComponent?.itemType ?? 'unknown',
+            itemLevel: 1, // Placeholder
             stackSize: itemData.StackableComponent?.current,
             maxStack: itemData.StackableComponent?.maxStack,
+            baseStats: itemData.EquipableComponent?.baseStats ?? {},
+            affixes: itemData.AffixesComponent ?? [], // Pass the full affix array
+            modSlots: modSlots,
+            modSlotsCount: modSlotsCount,
+            equipmentSlot: itemData.EquipableComponent?.slot, // Map the slot data
             ...itemData,
           };
         }),
       };
     });
+  });
+
+  const displayBags = computed((): UIBag[] => {
+    // If no sort or filter, return the original bags
+    if (inventorySortBy.value === 'default' && inventoryFilterText.value === '') {
+      return bags.value;
+    }
+
+    // 1. Flatten all items from all bags into a single list
+    let allItems: (UIItem | null)[] = bags.value.flatMap(bag => bag.items);
+
+    // 2. Apply filtering
+    if (inventoryFilterText.value) {
+      allItems = allItems.filter(item =>
+        item &&
+        (item.name.toLowerCase().includes(inventoryFilterText.value) ||
+          item.type.toLowerCase().includes(inventoryFilterText.value))
+      );
+    }
+
+    // 3. Apply sorting
+    if (inventorySortBy.value !== 'default') {
+      allItems.sort((a, b) => {
+        if (!a) return 1;
+        if (!b) return -1;
+        switch (inventorySortBy.value) {
+          case 'name':
+            return a.name.localeCompare(b.name);
+          case 'type':
+            return a.type.localeCompare(b.type);
+          case 'rarity':
+            return (rarityOrder[b.quality] || 0) - (rarityOrder[a.quality] || 0);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    // 4. Re-bucket the processed items back into bag structures
+    const newBags = JSON.parse(JSON.stringify(bags.value)); // Deep copy structure
+    let currentItemIndex = 0;
+
+    for (const bag of newBags) {
+      for (let i = 0; i < bag.slots; i++) {
+        if (currentItemIndex < allItems.length) {
+          bag.items[i] = allItems[currentItemIndex];
+          currentItemIndex++;
+        } else {
+          bag.items[i] = null; // Fill remaining slots with null
+        }
+      }
+    }
+    return newBags;
   });
 
   const wallet = computed(() => inventory.value?.wallet ?? { Gold: 0 });
@@ -338,6 +437,15 @@ export const usePlayerStore = defineStore('player', () => {
     voreRole,
     voreContents,
     ancestry,
+
+    // Inventory State
+
+    inventoryFilterText, // <-- Expose state for UI binding
+    inventorySortBy, // <-- Expose state for UI binding
+    setInventoryFilter,
+    displayBags,
+    setInventorySort,
+    clearInventorySortAndFilter,
 
     // Inspector State
     itemToInspect,
