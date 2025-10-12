@@ -50,7 +50,8 @@ onMounted(async () => {
 
   await settingsStore.initialize();
 
-  const saveDataExists = localStorage.getItem('player_save_exists');
+  // Treat only the explicit string 'true' as indicating a save exists.
+  const saveDataExists = localStorage.getItem('player_save_exists') === 'true';
 
   if (!saveDataExists) {
     uiStore.displayCharacterCreation();

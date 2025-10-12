@@ -42,6 +42,9 @@ export class Application {
 
     // make start async so we can await service initializers (optional)
     async start(): Promise<void> {
+        // Load and cache content first
+        await this.loadContent();
+
         // instantiate concrete services (replace with DI/factory if needed)
         const cmd = new CommandService();
         const qry = new QueryService();
@@ -74,6 +77,16 @@ export class Application {
         }
 
         this._readyResolve?.();
+    }
+
+    private async loadContent(): Promise<void> {
+        // In web environments, content loading should be handled by the web layer
+        // The application layer should receive content through dependency injection
+        // For now, we'll skip preloading and let the QueryService handle it
+        console.log('[Application] Content loading deferred to QueryService');
+
+        // Set up global reference for modules
+        (globalThis as any).__gameApp = this;
     }
 
     // helper to expose typed retrieval and allow test injection

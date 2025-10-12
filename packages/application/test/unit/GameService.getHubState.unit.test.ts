@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameService } from '../../src/services/GameService';
-import getEntityDTO from '../../src/services/utils/getEntityDTO';
+import getEntityDTO from '../../src/utils/getEntityDTO';
 
 // Minimal helpers to create fake entities and world
 function makeEntity(id: number, containerIds: string[] = []) {

@@ -1,5 +1,6 @@
 <template>
     <Dialog
+        v-bind="$attrs"
         unstyled
         :pt="theme"
         :ptOptions="{

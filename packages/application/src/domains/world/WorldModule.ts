@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../../utils/EventEmitter';
 import type { ICommandService, IQueryService } from '../../services';
 import type { IGameService } from '../../types';
 
@@ -42,24 +42,14 @@ export class WorldModule extends EventEmitter {
     }
 
     getStaticContent(key: string): any[] {
-        // Return mock static content based on key
-        const staticContent: Record<string, any[]> = {
-            locations: [
-                { id: 'hub', name: 'Hub Area', description: 'Central hub location' },
-                { id: 'camp', name: 'Camp', description: 'Rest area for players' },
-                { id: 'dungeon', name: 'Dungeon', description: 'Dangerous area with monsters' }
-            ],
-            zones: [
-                { id: 'zone1', name: 'Starting Zone', level: 1 },
-                { id: 'zone2', name: 'Forest Zone', level: 5 }
-            ],
-            npcs: [
-                { id: 'merchant', name: 'Merchant', role: 'shop' },
-                { id: 'guide', name: 'Guide', role: 'quest' }
-            ]
-        };
+        // Get content from the content provider injected by the web layer
+        const gameApp = (globalThis as any).__gameApp;
+        if (gameApp && gameApp._contentProvider) {
+            return gameApp._contentProvider.getContent(key);
+        }
 
-        return staticContent[key] || [];
+        console.warn(`[WorldModule] Content key '${key}' requested, but no content provider available.`);
+        return [];
     }
 
     // Convenience factory to build from the centralized Application instance

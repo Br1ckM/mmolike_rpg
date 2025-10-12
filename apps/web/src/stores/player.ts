@@ -375,8 +375,13 @@ export const usePlayerStore = defineStore('player', () => {
     // Resolve PlayerService (preferred). Fall back to legacy App.queries.subscribe if missing.
     const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
 
+    console.log('[DEBUG - PlayerStore] PlayerService available:', !!playerSvc);
+    console.log('[DEBUG - PlayerStore] PlayerService.subscribePlayerState available:', !!(playerSvc && typeof playerSvc.subscribePlayerState === 'function'));
+
     if (playerSvc && typeof playerSvc.subscribePlayerState === 'function') {
+      console.log('[DEBUG - PlayerStore] ==> Setting up player state subscription');
       unsubscribe.value = playerSvc.subscribePlayerState((newState: PlayerState) => {
+        console.log('[DEBUG - PlayerStore] ==> Player state update received:', newState);
         if (!newState) {
           // Reset state when player is null
           playerId.value = null;

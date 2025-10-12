@@ -108,9 +108,40 @@ export class CommandService implements ICommandService {
         return Promise.resolve(null);
     }
 
-    async createCharacter(payload: { name: string; pronouns: string; ancestryId: string }) {
-        console.log('[CommandService] createCharacter:', payload);
-        return Promise.resolve(null);
+    async createCharacter(options: any) {
+        console.log('[DEBUG - CommandService] ==> createCharacter called with options:', options);
+
+        // Emit character creation request event for GameService to handle
+        const gameApp = (globalThis as any).__gameApp;
+        console.log('[DEBUG - CommandService] Global gameApp available:', !!gameApp);
+
+        if (gameApp) {
+            const gameService = gameApp.getService('GameService');
+            console.log('[DEBUG - CommandService] GameService available:', !!gameService);
+            console.log('[DEBUG - CommandService] GameService has emit method:', !!(gameService && gameService.emit));
+
+            if (gameService && gameService.emit) {
+                // First emit the creation request so GameService can create the player entity
+                const eventData = {
+                    name: options.name,
+                    ancestryId: options.ancestryId,
+                    pronouns: options.pronouns
+                };
+                console.log('[DEBUG - CommandService] ==> Emitting characterCreationRequested with data:', eventData);
+
+                gameService.emit('characterCreationRequested', eventData);
+                console.log('[DEBUG - CommandService] ✓ characterCreationRequested event emitted successfully');
+
+                // The GameService will emit playerStateModified after creating the player
+            } else {
+                console.error('[DEBUG - CommandService] ❌ GameService or emit method not available');
+            }
+        } else {
+            console.error('[DEBUG - CommandService] ❌ Global gameApp not available');
+        }
+
+        console.log('[DEBUG - CommandService] ==> Returning success response');
+        return Promise.resolve({ success: true, characterId: 1 });
     }
 
     // Content Filters

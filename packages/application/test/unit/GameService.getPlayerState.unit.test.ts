@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GameService } from '../../src/services/GameService';
-import getEntityDTO from '../../src/services/utils/getEntityDTO';
+import getEntityDTO from '../../src/utils/getEntityDTO';
 
 // Lightweight mocked component accessors and a fake world to simulate the ECS
 function makeInfoComponent(name: string) {

@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../../utils/EventEmitter';
 import type { ICommandService, IQueryService } from '../../services';
 import type { IGameService } from '../../types';
 

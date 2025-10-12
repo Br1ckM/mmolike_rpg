@@ -13,7 +13,11 @@ export default defineConfig({
     vue(),
     vueJsx(),
     vueDevTools(),
-    yaml(),
+    yaml({
+      // Configure YAML plugin to handle all YAML files
+      include: '**/*.yaml',
+      documentMode: 'single'
+    }),
   ],
   resolve: {
     alias: [

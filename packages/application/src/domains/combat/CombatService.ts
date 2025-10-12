@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../../utils/EventEmitter';
 import type { CombatDTO } from './types';
 
 // Minimal facade for combat domain within the Application package.

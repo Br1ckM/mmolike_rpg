@@ -30,7 +30,16 @@ const pronounOptions = ['he/him', 'she/her', 'they/them'];
 
 onMounted(async () => {
     await App.isReady;
-    ancestryOptions.value = App.directQueries.getStaticContent('ancestries');
+    try {
+        const res = App.directQueries.getStaticContent('ancestries');
+        if (res && typeof (res as any).then === 'function') {
+            ancestryOptions.value = (await res) || [];
+        } else {
+            ancestryOptions.value = (res as any) || [];
+        }
+    } catch (err) {
+        ancestryOptions.value = [];
+    }
 });
 
 const selectedAncestry = computed(() => {

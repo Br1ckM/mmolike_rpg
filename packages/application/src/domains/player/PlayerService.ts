@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../../utils/EventEmitter';
 import { ICommandService, IQueryService } from '../../services';
 import type { IGameService } from '../../types';
 
@@ -13,18 +13,45 @@ export class PlayerService extends EventEmitter {
         private gameService?: IGameService
     ) {
         super();
+        // If a GameService is available, listen for modifications and fetch the full snapshot
+        // so subscribers receive complete PlayerState DTOs instead of minimal change events.
+        const gsAny = this.gameService as any;
+        if (gsAny && typeof gsAny.subscribe === 'function' && typeof gsAny.getPlayerState === 'function') {
+            gsAny.subscribe('playerStateModified', async (payload: any) => {
+                try {
+                    const id = payload?.characterId ?? payload?.playerId;
+                    if (id == null) return;
+                    const state = await gsAny.getPlayerState(String(id));
+                    if (state) this.emit('playerState', state);
+                } catch (err) {
+                    // ignore errors from snapshotting; do not crash event loop
+                    console.warn('[PlayerService] Failed to fetch player snapshot after modification', err);
+                }
+            });
+        }
     }
 
-    // Subscription helper - re-emits events on this instance for domain consumers
+    // Subscription helper - consumers subscribe to this PlayerService instance.
+    // Returns an unsubscribe function. This bridges QueryService updates into
+    // the PlayerService emitter and also listens for GameService events (when available).
     subscribePlayerState(handler: (state: any) => void) {
-        // QueryService.subscribe returns an unsubscribe function in the original codebase,
-        // mirror that contract here.
-        const unsubscribe = this.queries.subscribe<any>('playerState', (s: any) => {
-            // re-emit on domain emitter for any local listeners
-            this.emit('playerState', s);
-            handler(s);
-        });
-        return unsubscribe;
+        // Register the handler on this emitter so callers receive emitted DTOs.
+        this.on('playerState', handler as any);
+
+        // Also subscribe to underlying QueryService (if implemented) and re-emit
+        // updates coming from it so both sources produce a single unified stream.
+        let queriesUnsub: (() => void) | null = null;
+        if (this.queries && typeof this.queries.subscribe === 'function') {
+            queriesUnsub = this.queries.subscribe<any>('playerState', (s: any) => {
+                this.emit('playerState', s);
+            });
+        }
+
+        // Return an unsubscribe that removes both this handler and the query subscription.
+        return () => {
+            this.off('playerState', handler as any);
+            if (queriesUnsub) queriesUnsub();
+        };
     }
 
     // Direct query for player snapshot (if supported by QueryService)
