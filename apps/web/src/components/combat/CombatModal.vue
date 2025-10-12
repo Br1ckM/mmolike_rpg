@@ -11,7 +11,7 @@ import { useGameStore } from '@/stores/game';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 const gameStore = useGameStore();
 const playerStore = usePlayerStore();
@@ -167,7 +167,7 @@ const onVoreActionSelected = (action: { id: string, name: string, target: string
 
 const onItemInBeltSelected = ({ item, index }: { item: any; index: number }) => {
     if (!playerId.value || !combat.value) return;
-    App.commands.useItemInBelt(playerId.value, index, combat.value.combatEntityId);
+    App.commands.useItemInBelt(playerId.value, index);
     cancelSelection();
 };
 

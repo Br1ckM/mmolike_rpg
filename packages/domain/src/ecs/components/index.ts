@@ -9,3 +9,4 @@ export * from './quest';
 export * from './skill';
 export * from './traits';
 export * from './world';
+export * from './den';

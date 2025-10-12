@@ -18,7 +18,12 @@ interface EventMap {
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The player's party
         team2: { entityId: string; initialRow: 'Front' | 'Back'; }[]; // e.g., The enemy group
     };
-    'enemyDefeated': { enemyId: string; characterId: number; level: number; }; // <-- restored here
+    'enemyDefeated': {
+        protoId: string;
+        characterId: number;
+        level: number;
+        lootTableIds: string[];
+    };
     'combatStarted': { combatEntityId: string; combatants: string[]; };
     'roundStarted': { combatEntityId: string; roundNumber: number; };
     'turnStarted': { combatEntityId: string; activeCombatantId: string; };
@@ -48,6 +53,7 @@ interface EventMap {
     'turnEnded': { combatEntityId: string; endedTurnForId: string; };
     'fleeAttempt': { combatEntityId: string; actorId: string; };
     'combatEnded': { combatEntityId: string; winningTeamId: string; };
+    'combatResumed': { combatEntityId: string; activeCombatantId: string; };
     'startEncounterRequest': {
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[];
         encounterId: string; // The ID of the encounter to be spawned
@@ -146,6 +152,7 @@ interface EventMap {
 
     // Notifications / Misc
     'notification': { type: 'info' | 'success' | 'error' | 'warn'; message: string; };
+    'gameLoaded': {};
 
     // Vore-related events
     'preyDevoured': { predatorId: number; preyId: number; };

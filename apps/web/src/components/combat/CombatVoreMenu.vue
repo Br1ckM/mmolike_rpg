@@ -2,7 +2,7 @@
 import Button from '@/volt/Button.vue';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 const playerStore = usePlayerStore();
 const { playerId } = storeToRefs(playerStore);

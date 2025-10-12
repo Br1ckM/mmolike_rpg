@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
+import { PlayerService } from 'mmolike_rpg-application/domains/player';
 
 /**
  * UI-specific Types
@@ -21,13 +22,15 @@ export interface UIItem {
   id: number;
   name: string;
   icon: string;
+  iconUrl?: string;
   stackSize?: number;
   maxStack?: number;
   quality: string;
   type: string;
   itemLevel?: number;
+  level?: number;
   baseStats?: { [key: string]: number };
-  affixes?: { name: string; type: 'prefix' | 'suffix'; effects: { stat: string, value: number }[] }[]; // Pass full affix data
+  affixes?: { name: string; type: 'prefix' | 'suffix'; effects: { stat: string, value: number }[] }[];
   modSlots?: ('filled' | 'empty')[];
   modSlotsCount?: number;
   equipmentSlot?: string;
@@ -81,6 +84,8 @@ interface PlayerState {
   consumableBelt?: { itemIds: (string | null)[] };
   quests: any[];
   equipment: { [key: string]: string | null };
+  // Add equippedItems coming from GameService.getPlayerState()
+  equippedItems?: { [key: string]: any };
   skillBook: { knownSkills: UISkill[] } | null;
   AppearanceComponent?: { attributes: { name: string, value: string | number, label: string, unit?: string }[] };
   VoreRoleComponent?: { role: UIVoreRole };
@@ -135,6 +140,8 @@ export const usePlayerStore = defineStore('player', () => {
   const voreRole = ref<UIVoreRole>('Neither');
   const voreContents = ref<any[]>([]);
   const ancestry = ref<any>(null);
+  const equippedItemsData = ref<{ [key: string]: any }>({});
+
 
   // Inspector State
   const itemToInspect = ref<UIItem | null>(null);
@@ -189,26 +196,31 @@ export const usePlayerStore = defineStore('player', () => {
             modSlots.push(i < mods.length ? 'filled' : 'empty');
           }
 
+          const iconName = itemData.ItemInfoComponent?.iconName?.toLowerCase() || 'box';
+
           return {
             id: itemData.id,
-            name: itemData.ItemInfoComponent?.name ?? 'Item', // Name is now set by backend
-            icon: `pi pi-${itemData.ItemInfoComponent?.iconName?.toLowerCase() || 'box'}`,
+            name: itemData.ItemInfoComponent?.name ?? 'Item',
+            icon: `pi pi-${iconName}`,
+            iconUrl: itemData.ItemInfoComponent?.iconUrl, // Add iconUrl if available from backend
             quality: capitalize(itemData.ItemInfoComponent?.rarity ?? 'common'),
             type: itemData.ItemInfoComponent?.itemType ?? 'unknown',
-            itemLevel: 1, // Placeholder
+            itemLevel: itemData.ItemInfoComponent?.level || 1, // Use actual level from backend
+            level: itemData.ItemInfoComponent?.level || 1, // Add level property
             stackSize: itemData.StackableComponent?.current,
             maxStack: itemData.StackableComponent?.maxStack,
             baseStats: itemData.EquipableComponent?.baseStats ?? {},
-            affixes: itemData.AffixesComponent ?? [], // Pass the full affix array
+            affixes: itemData.AffixesComponent ?? [],
             modSlots: modSlots,
             modSlotsCount: modSlotsCount,
-            equipmentSlot: itemData.EquipableComponent?.slot, // Map the slot data
+            equipmentSlot: itemData.EquipableComponent?.slot,
             ...itemData,
           };
         }),
       };
     });
   });
+
 
   const displayBags = computed((): UIBag[] => {
     // If no sort or filter, return the original bags
@@ -304,17 +316,37 @@ export const usePlayerStore = defineStore('player', () => {
   const passiveSkills = computed(() => allSkills.value.filter(skill => skill.type === 'passive'));
 
   const equippedItems = computed(() => {
-    if (!equipment.value) return [];
-    const allItemsById = new Map<number, UIItem>();
-    bags.value.forEach(bag => {
-      bag.items.forEach(item => {
-        if (item) allItemsById.set(item.id, item);
-      });
+    const equipped: { [slot: string]: UIItem | null } = {};
+
+    // Ensure all expected slots exist in the returned object.
+    // Prefer slots provided by backend (equipment), otherwise fall back to a default set.
+    const backendSlots = Object.keys(equipment.value || {});
+    const defaultSlots = ['helm', 'amulet', 'mainHand', 'armor', 'offHand', 'gloves', 'belt', 'cape', 'ring1', 'boots', 'ring2', 'charm1', 'charm2', 'charm3'];
+    const slotList = backendSlots.length ? backendSlots : defaultSlots;
+    slotList.forEach(slotKey => (equipped[slotKey] = null));
+
+    // Populate equipped slots with full UIItem data when available
+    Object.entries(equippedItemsData.value).forEach(([slotType, itemData]) => {
+      if (itemData) {
+        const iconName = itemData.ItemInfoComponent?.iconName?.toLowerCase() || 'box';
+
+        equipped[slotType] = {
+          id: itemData.id,
+          name: itemData.ItemInfoComponent?.name ?? 'Item',
+          icon: `pi pi-${iconName}`,
+          iconUrl: itemData.ItemInfoComponent?.iconUrl,
+          quality: capitalize(itemData.ItemInfoComponent?.rarity ?? 'common'),
+          type: itemData.ItemInfoComponent?.itemType ?? 'unknown',
+          level: itemData.ItemInfoComponent?.level || 1,
+          baseStats: itemData.EquipableComponent?.baseStats ?? {},
+          equipmentSlot: itemData.EquipableComponent?.slot,
+          // include original DTO so components/CSS that rely on ItemInfoComponent.rarity work
+          ...itemData,
+        };
+      }
     });
-    return Object.values(equipment.value)
-      .filter((itemId): itemId is string => !!itemId)
-      .map(itemId => allItemsById.get(parseInt(itemId, 10)))
-      .filter((item): item is UIItem => !!item);
+
+    return equipped;
   });
 
   const appearanceAttributes = computed((): UIAppearanceAttribute[] => {
@@ -340,69 +372,156 @@ export const usePlayerStore = defineStore('player', () => {
     await App.isReady;
     if (unsubscribe.value) unsubscribe.value();
 
-    unsubscribe.value = App.queries.subscribe<PlayerState>('playerState', (newState) => {
-      if (!newState) {
-        // Reset state when player is null
-        playerId.value = null;
-        playerName.value = '';
-        health.value = { current: 0, max: 1 };
-        mana.value = { current: 0, max: 1 };
-        progression.value = { level: 1, xp: 0 };
-        inventory.value = null;
-        equipment.value = {};
-        coreStats.value = { strength: 0, dexterity: 0, intelligence: 0 };
-        derivedStats.value = {};
-        skillBook.value = null;
-        consumableBelt.value = null;
-        quests.value = [];
-        appearance.value = null;
-        voreRole.value = 'Neither';
-        voreContents.value = [];
-        ancestry.value = null;
-        return;
-      }
+    // Resolve PlayerService (preferred). Fall back to legacy App.queries.subscribe if missing.
+    const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
 
-      // Update state with new values from backend
-      playerId.value = newState.id;
-      playerName.value = newState.name;
-      health.value.current = newState.health.current;
-      health.value.max = newState.health.max;
-      mana.value.current = newState.mana.current;
-      mana.value.max = newState.mana.max;
-      progression.value = newState.progression;
-      inventory.value = newState.inventory;
-      equipment.value = newState.equipment;
-      coreStats.value = newState.coreStats;
-      derivedStats.value = newState.derivedStats;
-      skillBook.value = newState.skillBook;
-      consumableBelt.value = newState.consumableBelt ?? null;
-      quests.value = newState.quests ?? [];
-      appearance.value = newState.AppearanceComponent ?? null;
-      voreRole.value = newState.VoreRoleComponent?.role ?? 'Neither';
-      voreContents.value = newState.vore?.contents ?? [];
-      ancestry.value = newState.ancestry;
-
-      // Sync persisted vore role on first load
-      if (!isInitialized.value) {
-        isInitialized.value = true;
-
-        const savedRole = localStorage.getItem('playerVoreRole') as UIVoreRole | null;
-        const currentRole = newState.VoreRoleComponent?.role || 'Neither';
-
-        if (savedRole && savedRole !== currentRole) {
-          App.commands.setPlayerVoreRole(newState.id, savedRole);
+    if (playerSvc && typeof playerSvc.subscribePlayerState === 'function') {
+      unsubscribe.value = playerSvc.subscribePlayerState((newState: PlayerState) => {
+        if (!newState) {
+          // Reset state when player is null
+          playerId.value = null;
+          playerName.value = '';
+          health.value = { current: 0, max: 1 };
+          mana.value = { current: 0, max: 1 };
+          progression.value = { level: 1, xp: 0 };
+          inventory.value = null;
+          equipment.value = {};
+          equippedItemsData.value = {}; // <-- reset DTOs
+          coreStats.value = { strength: 0, dexterity: 0, intelligence: 0 };
+          derivedStats.value = {};
+          skillBook.value = null;
+          consumableBelt.value = null;
+          quests.value = [];
+          appearance.value = null;
+          voreRole.value = 'Neither';
+          voreContents.value = [];
+          ancestry.value = null;
+          return;
         }
-      }
-    });
+
+        // Update state with new values from backend
+        playerId.value = newState.id;
+        playerName.value = newState.name;
+        health.value.current = newState.health.current;
+        health.value.max = newState.health.max;
+        mana.value.current = newState.mana.current;
+        mana.value.max = newState.mana.max;
+        progression.value = newState.progression;
+        inventory.value = newState.inventory;
+        equipment.value = newState.equipment;
+        // copy full equipped item DTOs (if provided)
+        equippedItemsData.value = newState.equippedItems ?? {};
+        coreStats.value = newState.coreStats;
+        derivedStats.value = newState.derivedStats;
+        skillBook.value = newState.skillBook;
+        consumableBelt.value = newState.consumableBelt ?? null;
+        quests.value = newState.quests ?? [];
+        appearance.value = newState.AppearanceComponent ?? null;
+        voreRole.value = newState.VoreRoleComponent?.role ?? 'Neither';
+        voreContents.value = newState.vore?.contents ?? [];
+        ancestry.value = newState.ancestry;
+
+        // Sync persisted vore role on first load
+        if (!isInitialized.value) {
+          isInitialized.value = true;
+
+          const savedRole = localStorage.getItem('playerVoreRole') as UIVoreRole | null;
+          const currentRole = newState.VoreRoleComponent?.role || 'Neither';
+
+          if (savedRole && savedRole !== currentRole) {
+            App.commands.setPlayerVoreRole(newState.id, savedRole);
+          }
+        }
+      });
+    } else {
+      // Legacy fallback
+      unsubscribe.value = App.queries.subscribe<PlayerState>('playerState', (newState: PlayerState | null) => {
+        if (!newState) {
+          // Reset state when player is null
+          playerId.value = null;
+          playerName.value = '';
+          health.value = { current: 0, max: 1 };
+          mana.value = { current: 0, max: 1 };
+          progression.value = { level: 1, xp: 0 };
+          inventory.value = null;
+          equipment.value = {};
+          equippedItemsData.value = {}; // <-- reset DTOs
+          coreStats.value = { strength: 0, dexterity: 0, intelligence: 0 };
+          derivedStats.value = {};
+          skillBook.value = null;
+          consumableBelt.value = null;
+          quests.value = [];
+          appearance.value = null;
+          voreRole.value = 'Neither';
+          voreContents.value = [];
+          ancestry.value = null;
+          return;
+        }
+
+        // Update state with new values from backend
+        playerId.value = newState.id;
+        playerName.value = newState.name;
+        health.value.current = newState.health.current;
+        health.value.max = newState.health.max;
+        mana.value.current = newState.mana.current;
+        mana.value.max = newState.mana.max;
+        progression.value = newState.progression;
+        inventory.value = newState.inventory;
+        equipment.value = newState.equipment;
+        // copy full equipped item DTOs (if provided)
+        equippedItemsData.value = newState.equippedItems ?? {};
+        coreStats.value = newState.coreStats;
+        derivedStats.value = newState.derivedStats;
+        skillBook.value = newState.skillBook;
+        consumableBelt.value = newState.consumableBelt ?? null;
+        quests.value = newState.quests ?? [];
+        appearance.value = newState.AppearanceComponent ?? null;
+        voreRole.value = newState.VoreRoleComponent?.role ?? 'Neither';
+        voreContents.value = newState.vore?.contents ?? [];
+        ancestry.value = newState.ancestry;
+
+        // Sync persisted vore role on first load
+        if (!isInitialized.value) {
+          isInitialized.value = true;
+
+          const savedRole = localStorage.getItem('playerVoreRole') as UIVoreRole | null;
+          const currentRole = newState.VoreRoleComponent?.role || 'Neither';
+
+          if (savedRole && savedRole !== currentRole) {
+            App.commands.setPlayerVoreRole(newState.id, savedRole);
+          }
+        }
+      });
+    }
   }
 
   function equipItem(itemId: number) {
     if (!playerId.value) return;
+    const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
+    if (playerSvc && typeof playerSvc.equipItem === 'function') {
+      playerSvc.equipItem(playerId.value, itemId);
+      return;
+    }
     App.commands.equipItem(playerId.value, itemId);
+  }
+
+  function unequipItem(slotId: string) {
+    if (!playerId.value) return;
+    const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
+    if (playerSvc && typeof playerSvc.unequipItem === 'function') {
+      playerSvc.unequipItem(playerId.value, slotId);
+      return;
+    }
+    App.commands.unequipItem(playerId.value, slotId);
   }
 
   function useConsumable(slotIndex: number) {
     if (!playerId.value) return;
+    const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
+    if (playerSvc && typeof playerSvc.useItemInBelt === 'function') {
+      playerSvc.useItemInBelt(playerId.value, slotIndex);
+      return;
+    }
     App.commands.useItemInBelt(playerId.value, slotIndex);
   }
 
@@ -416,6 +535,11 @@ export const usePlayerStore = defineStore('player', () => {
 
   function moveItem(source: { bagId: number, slotIndex: number }, target: { bagId: number, slotIndex: number }) {
     if (!playerId.value) return;
+    const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
+    if (playerSvc && typeof playerSvc.moveInventoryItem === 'function') {
+      playerSvc.moveInventoryItem(playerId.value, source, target);
+      return;
+    }
     App.commands.moveInventoryItem(playerId.value, source, target);
   }
 
@@ -474,6 +598,7 @@ export const usePlayerStore = defineStore('player', () => {
     // Actions
     initialize,
     equipItem,
+    unequipItem,
     useConsumable,
     inspectItem,
     closeInspector,

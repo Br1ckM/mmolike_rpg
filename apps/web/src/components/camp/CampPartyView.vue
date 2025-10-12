@@ -5,7 +5,7 @@ import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import Button from '@/volt/Button.vue';
 import Avatar from '@/volt/Avatar.vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 const props = defineProps<{ companionId: number }>();
 

@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import { useHubStore } from '@/stores/hub';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 // --- Get Live Data from Store ---
 const hubStore = useHubStore();

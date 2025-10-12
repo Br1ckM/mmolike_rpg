@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia';
 import { onMounted, computed, ref } from 'vue';
 import Button from '@/volt/Button.vue'; // Used for Save Management
 import SelectButton from '@/volt/SelectButton.vue'; // Used for Vore Role selector
-import { App } from 'mmolike_rpg-application'; // Used for persistence commands
+import { App } from 'mmolike_rpg-application/core'; // Used for persistence commands
 
 // --- SETTINGS STORE (Content Filters) ---
 const settingsStore = useSettingsStore();

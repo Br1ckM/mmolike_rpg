@@ -1,5 +1,5 @@
 //
-br1ckm/mmolike_rpg/mmolike_rpg-b7e7d77de824d1e8e8ed1813aa329e612229de49/apps/web/src/components/inventory/InventoryBags.vue
+br1ckm/mmolike_rpg/mmolike_rpg-e3815c14253d82f086ebb67b045f10843c5d38d1/apps/web/src/components/inventory/InventoryBags.vue
 <script setup lang="ts">
 import InventoryItemSlot from './InventoryItemSlot.vue';
 import { usePlayerStore, type UIItem } from '@/stores/player';
@@ -8,18 +8,35 @@ import ItemInspectorModal from './ItemInspectorModal.vue';
 import { ref, computed } from 'vue';
 
 const playerStore = usePlayerStore();
-// --- UPDATED: Use displayBags and get sort/filter state ---
 const { displayBags, totalSlots, usedSlots, inventorySortBy, inventoryFilterText } = storeToRefs(playerStore);
 
 const isSortOrFilterActive = computed(() => inventorySortBy.value !== 'default' || inventoryFilterText.value !== '');
 
 const draggedOverSlot = ref<{ bagId: number, index: number } | null>(null);
 
-// --- DRAG & DROP LOGIC ---
+// --- DRAG & DROP LOGIC (MODIFIED) ---
 function onDragStart(event: DragEvent, bagId: number, slotIndex: number) {
-    if (isSortOrFilterActive.value) return; // Disable drag
+    if (isSortOrFilterActive.value) {
+        event.preventDefault();
+        return;
+    }
+
+    const bag = displayBags.value.find(b => b.id === bagId);
+    const item = bag?.items[slotIndex];
+    if (!item) {
+        event.preventDefault();
+        return;
+    }
+
     if (event.dataTransfer) {
-        const payload = JSON.stringify({ sourceBagId: bagId, sourceSlotIndex: slotIndex });
+        const payload = JSON.stringify({
+            // For moving items within the inventory
+            sourceBagId: bagId,
+            sourceSlotIndex: slotIndex,
+            // For equipping items
+            itemId: item.id,
+            itemSlotType: item.equipmentSlot
+        });
         event.dataTransfer.setData('application/json', payload);
         event.dataTransfer.effectAllowed = 'move';
     }
@@ -31,10 +48,13 @@ function onDrop(event: DragEvent, targetBagId: number, targetSlotIndex: number) 
         if (!payload) return;
 
         const sourceData = JSON.parse(payload);
-        playerStore.moveItem(
-            { bagId: sourceData.sourceBagId, slotIndex: sourceData.sourceSlotIndex },
-            { bagId: targetBagId, slotIndex: targetSlotIndex }
-        );
+        // Ensure source data exists for an inventory move
+        if (sourceData.sourceBagId !== undefined && sourceData.sourceSlotIndex !== undefined) {
+            playerStore.moveItem(
+                { bagId: sourceData.sourceBagId, slotIndex: sourceData.sourceSlotIndex },
+                { bagId: targetBagId, slotIndex: targetSlotIndex }
+            );
+        }
     }
     draggedOverSlot.value = null; // Clear visual feedback on drop
 }
@@ -45,7 +65,20 @@ function onDragEnter(bagId: number, index: number) {
 // --- END DRAG & DROP LOGIC ---
 
 
-const getBagIcon = (bagName: string) => { /* ... unchanged ... */ };
+const getBagIcon = (bagName: string) => {
+    const name = (bagName || '').toLowerCase();
+    const icons: Record<string, string> = {
+        backpack: '🎒',
+        pouch: '👝',
+        satchel: '👜',
+        quiver: '🏹',
+        chest: '🧰',
+        reagent: '🔮',
+        coin: '🪙',
+        default: '📦'
+    };
+    return icons[name] ?? icons.default;
+};
 
 const openInspector = (item: UIItem | null) => {
     if (item) {

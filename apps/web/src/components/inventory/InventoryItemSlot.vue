@@ -7,6 +7,9 @@ const props = defineProps<{
     size?: 'default' | 'large';
 }>();
 
+// --- NEW: declare click emit so parent listeners are accepted ---
+const emit = defineEmits<{ (e: 'click', ev: MouseEvent): void }>();
+
 // --- NEW: State and functions for the teleported tooltip ---
 const tooltip = ref({
     visible: false,
@@ -47,13 +50,15 @@ const qualityColorClasses = computed(() => {
 </script>
 
 <template>
-    <div ref="itemSlotRef" @mouseenter="showTooltip" @mouseleave="hideTooltip" :draggable="!!props.item" :class="[
-        'w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center relative shadow-md transition-colors duration-150',
-        props.item ? 'cursor-grab' : 'cursor-default',
-        props.item
-            ? qualityColorClasses
-            : 'border-dashed border-surface-600 bg-surface-700/50 hover:border-surface-400'
-    ]">
+    <!-- forward native click from the visible root element to the parent -->
+    <div ref="itemSlotRef" @mouseenter="showTooltip" @mouseleave="hideTooltip" @click="(e) => emit('click', e)"
+        :draggable="!!props.item" :class="[
+            'w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center relative shadow-md transition-colors duration-150',
+            props.item ? 'cursor-grab' : 'cursor-default',
+            props.item
+                ? qualityColorClasses
+                : 'border-dashed border-surface-600 bg-surface-700/50 hover:border-surface-400'
+        ]">
         <i v-if="props.item" :class="[props.item.icon, 'text-3xl', qualityColorClasses.split(' ')[1]]"></i>
         <i v-else class="pi pi-plus text-surface-600 text-2xl"></i>
 

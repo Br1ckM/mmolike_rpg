@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { ContentService } from 'mmolike_rpg-domain/ContentService';
-import { GameService } from 'mmolike_rpg-application/GameService';
-import { EventBus } from 'mmolike_rpg-domain/ecs/EventBus';
+import { GameService } from 'mmolike_rpg-application/services';
 
 // Import content used by the Simulator (kept aligned with Simulator.vue)
 import affixes from 'mmolike_rpg-content/affixes.yaml';
@@ -76,10 +75,23 @@ function buildContentService() {
     return new ContentService(allContent as any);
 }
 
-onMounted(() => {
+onMounted(async () => {
     const contentService = buildContentService();
-    gameService = new GameService(contentService, new EventBus());
-    gameService.startGame();
+
+    // GameService constructor no longer accepts content/events; use default constructor
+    gameService = new GameService();
+
+    // Start the service (init/start are async); ignore errors for the inspector
+    try {
+        // attach the constructed content service for preview fallback
+        (gameService as any)._testContentService = contentService;
+
+        await gameService.start();
+    } catch (err) {
+        // Starting the GameService may fail if domain modules are unavailable — inspector can still work
+        // eslint-disable-next-line no-console
+        console.warn('GameService.start() failed in MobInspector:', err);
+    }
 
     // select first mob proto if available
     const mobList = contentService.mobs ? Array.from(contentService.mobs.keys()) : [];
@@ -117,7 +129,7 @@ async function generatePreview() {
             <div class="flex items-end">
                 <button @click="generatePreview" :disabled="isLoading"
                     class="w-full bg-primary-500 hover:bg-primary-600 text-white py-2 rounded">{{ isLoading ?
-                    'Generating...' : 'Generate' }}</button>
+                        'Generating...' : 'Generate' }}</button>
             </div>
         </div>
 

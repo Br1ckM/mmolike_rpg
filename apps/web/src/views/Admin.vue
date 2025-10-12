@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 import Button from '@/volt/Button.vue';
 
 const playerStore = usePlayerStore();
@@ -14,7 +14,7 @@ const strugglePower = ref(5);
 
 const addPrey = () => {
     if (playerId.value) {
-        App.commands.dev_addPreyToStomach(playerId.value, {
+        App.commands.dev_addPreyToStomach?.(playerId.value, {
             name: preyName.value,
             digestionTime: digestionTime.value,
             strugglePower: strugglePower.value,

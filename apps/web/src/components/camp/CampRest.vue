@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 import { usePlayerStore } from '@/stores/player';
 import { usePartyStore } from '@/stores/party';
 import { storeToRefs } from 'pinia';

@@ -2,7 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 // Define the shape of a companion DTO
 export interface UICompanion {
@@ -23,19 +23,30 @@ export const usePartyStore = defineStore('party', () => {
 
     // --- NEW: Extracted refresh logic ---
     function refreshPartyState() {
-        const playerState = App.game.getPlayerState();
-        console.log("[PartyStore] Refreshing party state with:", playerState);
+        // Try PlayerService first (preferred), then legacy App.game, then queries.get('playerState')
+        const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
 
-        if (playerState && playerState.companions) {
-            companions.value = playerState.companions.map((c: any) => ({
-                id: c.id,
-                name: c.InfoComponent.name,
-                avatarUrl: c.InfoComponent.avatarUrl,
-                inActiveParty: c.CompanionComponent.inActiveParty,
-            }));
-        } else {
-            companions.value = [];
-        }
+        const getPlayerState = async () => {
+            if (playerSvc && typeof playerSvc.getPlayerState === 'function') return playerSvc.getPlayerState();
+            if ((App as any).game && typeof (App as any).game.getPlayerState === 'function') return (App as any).game.getPlayerState();
+            if (App.queries && typeof App.queries.get === 'function') return App.queries.get('playerState');
+            return null;
+        };
+
+        getPlayerState().then((playerState: any) => {
+            console.log('[PartyStore] Refreshing party state with:', playerState);
+
+            if (playerState && playerState.companions) {
+                companions.value = playerState.companions.map((c: any) => ({
+                    id: c.id,
+                    name: c.InfoComponent.name,
+                    avatarUrl: c.InfoComponent.avatarUrl,
+                    inActiveParty: c.CompanionComponent.inActiveParty,
+                }));
+            } else {
+                companions.value = [];
+            }
+        });
     }
 
     // --- Actions ---
@@ -43,9 +54,13 @@ export const usePartyStore = defineStore('party', () => {
         await App.isReady;
         if (unsubscribe.value) unsubscribe.value();
 
-        // --- MODIFIED: Use the extracted function ---
-        // 1. Subscribe to future updates
-        unsubscribe.value = App.queries.subscribe<any>('partyUpdated', refreshPartyState);
+        // 1. Subscribe to future updates (prefer GameService)
+        const gameSvc: any = App.getService && App.getService('GameService');
+        if (gameSvc && typeof gameSvc.subscribe === 'function') {
+            unsubscribe.value = gameSvc.subscribe('partyUpdated', () => refreshPartyState());
+        } else {
+            unsubscribe.value = App.queries.subscribe<any>('partyUpdated', () => refreshPartyState());
+        }
 
         // 2. Immediately fetch the current state
         refreshPartyState();

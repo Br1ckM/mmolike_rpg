@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 import type { UIVoreRole } from './player';
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -51,7 +51,12 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     function setPlayerVoreRole(playerId: number, newRole: UIVoreRole) {
-        App.commands.setPlayerVoreRole(playerId, newRole);
+        const playerSvc: any = App.playerService ?? (App.getService && App.getService('PlayerService'));
+        if (playerSvc && typeof playerSvc.setPlayerVoreRole === 'function') {
+            playerSvc.setPlayerVoreRole(playerId, newRole);
+        } else {
+            App.commands.setPlayerVoreRole(playerId, newRole);
+        }
         // --- START FIX: Persist the user's choice ---
         localStorage.setItem('playerVoreRole', newRole);
         // --- END FIX ---

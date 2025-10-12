@@ -2,7 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 // Define types for the data we expect from the backend
 export interface HubNpc {
@@ -57,21 +57,41 @@ export const useHubStore = defineStore('hub', () => {
         await App.isReady;
         if (unsubscribe.value) unsubscribe.value();
 
-        unsubscribe.value = App.queries.subscribe<HubState>('hubState', (newHubState) => {
-            console.log('[DEBUG Frontend Store] Hub store received new state:', newHubState);
+        const gameSvc: any = App.getService && App.getService('GameService');
 
-            if (newHubState) {
-                zoneId.value = newHubState.zoneId;
-                location.value = newHubState.location;
-                npcs.value = newHubState.npcs;
-                nodes.value = newHubState.nodes || [];
-            } else {
-                zoneId.value = '';
-                location.value = null;
-                npcs.value = [];
-                nodes.value = [];
-            }
-        });
+        if (gameSvc && typeof gameSvc.subscribe === 'function') {
+            unsubscribe.value = gameSvc.subscribe('hubState', (newHubState: HubState | null) => {
+                console.log('[DEBUG Frontend Store] Hub store received new state:', newHubState);
+
+                if (newHubState) {
+                    zoneId.value = newHubState.zoneId;
+                    location.value = newHubState.location;
+                    npcs.value = newHubState.npcs;
+                    nodes.value = newHubState.nodes || [];
+                } else {
+                    zoneId.value = '';
+                    location.value = null;
+                    npcs.value = [];
+                    nodes.value = [];
+                }
+            });
+        } else {
+            unsubscribe.value = App.queries.subscribe('hubState', (newHubState: HubState | null) => {
+                console.log('[DEBUG Frontend Store] Hub store received new state:', newHubState);
+
+                if (newHubState) {
+                    zoneId.value = newHubState.zoneId;
+                    location.value = newHubState.location;
+                    npcs.value = newHubState.npcs;
+                    nodes.value = newHubState.nodes || [];
+                } else {
+                    zoneId.value = '';
+                    location.value = null;
+                    npcs.value = [];
+                    nodes.value = [];
+                }
+            });
+        }
     }
 
     return {

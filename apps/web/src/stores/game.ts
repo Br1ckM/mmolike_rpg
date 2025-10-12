@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 interface HistoryEntry {
     speaker: 'NPC' | 'Player';
@@ -75,21 +75,41 @@ export const useGameStore = defineStore('game', () => {
     async function initialize() {
         await App.isReady;
 
-        App.queries.subscribe<any>('denState', (newState) => {
-            denState.value = newState;
-        });
+        // Prefer domain-level GameService when available
+        const gameSvc: any = App.getService && App.getService('GameService');
 
-        App.queries.subscribe('combatEnded', () => {
-            setTimeout(() => denState.value = null, 3000); // Clear after a delay
-        });
+        if (gameSvc && typeof gameSvc.subscribe === 'function') {
+            // Use GameService subscription API
+            gameSvc.subscribe('denState', (newState: any) => {
+                denState.value = newState;
+            });
 
-        timeOfDayUnsubscribe.value = App.queries.subscribe<{ newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' }>('timeOfDayChanged', (payload) => {
-            if (payload) {
-                timeOfDay.value = payload.newTime;
-            }
-        });
+            gameSvc.subscribe('combatEnded', () => {
+                setTimeout(() => denState.value = null, 3000);
+            });
 
-        dialogueUnsubscribe.value = App.queries.subscribe<any>('dialogueState', (newDialogueData) => {
+            timeOfDayUnsubscribe.value = gameSvc.subscribe('timeOfDayChanged', (payload: { newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' }) => {
+                if (payload) {
+                    timeOfDay.value = payload.newTime;
+                }
+            });
+        } else {
+            App.queries.subscribe<any>('denState', (newState: any) => {
+                denState.value = newState;
+            });
+
+            App.queries.subscribe('combatEnded', () => {
+                setTimeout(() => denState.value = null, 3000); // Clear after a delay
+            });
+
+            timeOfDayUnsubscribe.value = App.queries.subscribe<{ newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' }>('timeOfDayChanged', (payload: { newTime: 'Morning' | 'Afternoon' | 'Evening' | 'Night' } | null) => {
+                if (payload) {
+                    timeOfDay.value = payload.newTime;
+                }
+            });
+        }
+
+        dialogueUnsubscribe.value = (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('dialogueState', (newDialogueData: any) => {
             if (newDialogueData) {
                 dialogue.value = {
                     npcName: newDialogueData.npcName,
@@ -102,14 +122,30 @@ export const useGameStore = defineStore('game', () => {
             } else {
                 dialogue.value = null;
             }
-        });
+        }) : App.queries.subscribe('dialogueState', (newDialogueData: any) => {
+            if (newDialogueData) {
+                dialogue.value = {
+                    npcName: newDialogueData.npcName,
+                    npcImage: newDialogueData.npcAvatarUrl,
+                    text: newDialogueData.text,
+                    responses: newDialogueData.responses,
+                    history: newDialogueData.history
+                };
+                activeService.value = null;
+            } else {
+                dialogue.value = null;
+            }
+        }));
 
-        App.queries.subscribe('vendorScreenOpened', () => {
+        (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('vendorScreenOpened', () => {
             dialogue.value = null;
             activeService.value = 'Shop';
-        });
+        }) : App.queries.subscribe('vendorScreenOpened', () => {
+            dialogue.value = null;
+            activeService.value = 'Shop';
+        }));
 
-        App.queries.subscribe('trainingScreenOpened', () => {
+        (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('trainingScreenOpened', () => {
             dialogue.value = null;
             activeService.value = 'Trainer';
             // Placeholder data until TrainerSystem is fully implemented
@@ -117,40 +153,67 @@ export const useGameStore = defineStore('game', () => {
                 { id: 'skill_power_strike', name: 'Power Strike', cost: 100, description: 'A powerful overhead swing.' },
                 { id: 'skill_fortify', name: 'Fortify', cost: 250, description: 'Temporarily increases defense.' },
             ];
-        });
+        }) : App.queries.subscribe('trainingScreenOpened', () => {
+            dialogue.value = null;
+            activeService.value = 'Trainer';
+            // Placeholder data until TrainerSystem is fully implemented
+            trainerSkills.value = [
+                { id: 'skill_power_strike', name: 'Power Strike', cost: 100, description: 'A powerful overhead swing.' },
+                { id: 'skill_fortify', name: 'Fortify', cost: 250, description: 'Temporarily increases defense.' },
+            ];
+        }));
 
         // --- NEW SUBSCRIPTION ---
-        vendorUnsubscribe.value = App.queries.subscribe<any>('vendorInventoryUpdated', (payload) => {
+        vendorUnsubscribe.value = (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('vendorInventoryUpdated', (payload: any) => {
             vendorItems.value = payload.vendorItems;
-        });
+        }) : App.queries.subscribe<any>('vendorInventoryUpdated', (payload: any) => {
+            vendorItems.value = payload.vendorItems;
+        }));
 
-        combatUnsubscribe.value = App.queries.subscribe<CombatState>('combatState', (newCombatState) => {
+        combatUnsubscribe.value = (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('combatState', (newCombatState: CombatState) => {
             combat.value = newCombatState;
             if (newCombatState) {
                 // Reset result when new combat starts
                 combatResult.value = null;
             }
-        });
+        }) : App.queries.subscribe<CombatState>('combatState', (newCombatState: CombatState | null) => {
+            combat.value = newCombatState;
+            if (newCombatState) {
+                combatResult.value = null;
+            }
+        }));
 
-        combatResultUnsubscribe.value = App.queries.subscribe<CombatResult>('combatResult', (result) => {
+        combatResultUnsubscribe.value = (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('combatResult', (result: CombatResult) => {
             combatResult.value = result;
-        });
+        }) : App.queries.subscribe<CombatResult>('combatResult', (result: CombatResult | null) => {
+            combatResult.value = result;
+        }));
 
-        playerLeveledUpUnsubscribe.value = App.queries.subscribe<{ newLevel: number }>('playerLeveledUp', ({ newLevel }) => {
+        playerLeveledUpUnsubscribe.value = (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('playerLeveledUp', ({ newLevel }: { newLevel: number }) => {
             notifications.value.push({
                 type: 'success',
                 message: `Congratulations! You have reached Level ${newLevel}!`,
             });
-        });
+        }) : App.queries.subscribe<{ newLevel: number }>('playerLeveledUp', ({ newLevel }: { newLevel: number }) => {
+            notifications.value.push({
+                type: 'success',
+                message: `Congratulations! You have reached Level ${newLevel}!`,
+            });
+        }));
 
-        notificationUnsubscribe.value = App.queries.subscribe<{ message: string, type: string }>('notification', (notification) => {
+        notificationUnsubscribe.value = (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('notification', (notification: { message: string, type: string }) => {
             notifications.value.push(notification);
             if (notifications.value.length > 5) {
                 notifications.value.shift();
             }
-        });
+        }) : App.queries.subscribe<{ message: string, type: string }>('notification', (notification: { message: string, type: string }) => {
+            notifications.value.push(notification);
+            if (notifications.value.length > 5) {
+                notifications.value.shift();
+            }
+        }));
 
-        App.queries.subscribe('damageDealt', (payload: { targetId: string; damage: number, isCritical: boolean }) => {
+        (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('damageDealt', (payload: { targetId: string; damage: number, isCritical: boolean }) => {
             const event: CombatLogEvent = {
                 id: Date.now() + Math.random(),
                 targetId: payload.targetId,
@@ -161,9 +224,20 @@ export const useGameStore = defineStore('game', () => {
             setTimeout(() => {
                 combatLog.value = combatLog.value.filter(e => e.id !== event.id);
             }, 1500);
-        });
+        }) : App.queries.subscribe('damageDealt', (payload: { targetId: string; damage: number, isCritical: boolean }) => {
+            const event: CombatLogEvent = {
+                id: Date.now() + Math.random(),
+                targetId: payload.targetId,
+                amount: payload.damage,
+                type: payload.isCritical ? 'crit' : 'damage',
+            };
+            combatLog.value.push(event);
+            setTimeout(() => {
+                combatLog.value = combatLog.value.filter(e => e.id !== event.id);
+            }, 1500);
+        }));
 
-        App.queries.subscribe('healthHealed', (payload: { targetId: string; amount: number }) => {
+        (gameSvc && typeof gameSvc.subscribe === 'function' ? gameSvc.subscribe('healthHealed', (payload: { targetId: string; amount: number }) => {
             const event: CombatLogEvent = {
                 id: Date.now() + Math.random(),
                 targetId: payload.targetId,
@@ -174,10 +248,26 @@ export const useGameStore = defineStore('game', () => {
             setTimeout(() => {
                 combatLog.value = combatLog.value.filter(e => e.id !== event.id);
             }, 1500);
-        });
+        }) : App.queries.subscribe('healthHealed', (payload: { targetId: string; amount: number }) => {
+            const event: CombatLogEvent = {
+                id: Date.now() + Math.random(),
+                targetId: payload.targetId,
+                amount: payload.amount,
+                type: 'heal',
+            };
+            combatLog.value.push(event);
+            setTimeout(() => {
+                combatLog.value = combatLog.value.filter(e => e.id !== event.id);
+            }, 1500);
+        }));
     }
 
     function selectDialogueResponse(index: number) {
+        const gameSvc: any = App.getService && App.getService('GameService');
+        if (gameSvc && typeof gameSvc.selectDialogueResponse === 'function') {
+            gameSvc.selectDialogueResponse(index);
+            return;
+        }
         App.commands.selectDialogueResponse(index);
     }
 

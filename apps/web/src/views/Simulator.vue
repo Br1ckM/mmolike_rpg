@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import Button from '@/volt/Button.vue';
-import { GameService } from 'mmolike_rpg-application/GameService';
+import { GameService } from 'mmolike_rpg-application/services';
 import { ContentService } from 'mmolike_rpg-domain/ContentService';
 import { AISystem } from 'mmolike_rpg-domain/ecs/systems/combat/AISystem';
 import { CombatSystem } from 'mmolike_rpg-domain/ecs/systems/combat/CombatSystem';
@@ -71,12 +71,28 @@ const isRunning = ref(false);
 const results = ref<any>(null);
 const encounterOptions = ref<{ id: string, name: string }[]>([]);
 
+// Local GameService instance used by dev tools (optional)
+let localGameService: any | null = null;
+
+// Factory that creates a fresh GameService wired to the given ContentService
+function createGameService(contentService: any): any {
+    // EventBus comes from domain package import earlier
+    const bus = new EventBus();
+    // GameService constructor/signature differs across packages; cast to any to use internals in the simulator
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const GsCtor: any = GameService as any;
+    const gs = new GsCtor(contentService, bus);
+    return gs as any;
+}
+
 // --- Simulation Logic ---
 
 // This function runs a single, headless combat simulation.
-async function runSingleCombat(contentService: ContentService) {
-    const gameService = new GameService(contentService, new EventBus()); // Pass a new EventBus
-    gameService.startGame();
+async function runSingleCombat(createGS: (cs: ContentService) => any, contentService: ContentService) {
+    const gameService: any = createGS(contentService);
+    // startGame may be async depending on implementation; await if it returns a promise
+    const maybePromise = gameService.startGame?.();
+    if (maybePromise instanceof Promise) await maybePromise;
 
     // --- START FIX: Manually Create Player for Simulation ---
 
@@ -96,7 +112,7 @@ async function runSingleCombat(contentService: ContentService) {
 
     // --- END FIX ---
     const progression = ProgressionComponent.oneFrom(player)!.data;
-    const statCalcSystem = gameService.systems.find(s => s instanceof StatCalculationSystem);
+    const statCalcSystem = gameService.systems.find((s: any) => s instanceof StatCalculationSystem);
 
     const levelDifference = playerLevel.value - progression.level;
     if (levelDifference > 0) {
@@ -131,16 +147,17 @@ async function runSingleCombat(contentService: ContentService) {
         player.add(new ManaComponent({ ...manaData, current: manaData.max }));
     }
 
-    const combatSystem = gameService.systems.find(s => s instanceof CombatSystem);
+    const combatSystem = gameService.systems.find((s: any) => s instanceof CombatSystem);
 
     const damageDealtBy: { [id: string]: { name: string, total: number } } = {};
     let overkillDamage = 0;
     const combatLog: string[] = [];
     const subscriptions: (() => void)[] = [];
 
-    const onDamageDealt = gameService.eventBus.on('damageDealt', ({ attackerId, targetId, damage }) => {
-        const attacker = gameService.world.getEntity(parseInt(attackerId, 10));
-        const target = gameService.world.getEntity(parseInt(targetId, 10));
+    const onDamageDealt = gameService.eventBus.on('damageDealt', (payload: any) => {
+        const { attackerId, targetId, damage } = payload as any;
+        const attacker = gameService.world.getEntity(parseInt(String(attackerId), 10));
+        const target = gameService.world.getEntity(parseInt(String(targetId), 10));
         if (!attacker || !target) return;
 
         const attackerName = InfoComponent.oneFrom(attacker)!.data.name;
@@ -160,20 +177,21 @@ async function runSingleCombat(contentService: ContentService) {
     });
     subscriptions.push(onDamageDealt);
 
-    const onRoundStarted = gameService.eventBus.on('roundStarted', ({ roundNumber }) => {
+    const onRoundStarted = gameService.eventBus.on('roundStarted', (payload: any) => {
+        const { roundNumber } = payload as any;
         combatLog.push(`--- Round ${roundNumber} ---`);
     });
     subscriptions.push(onRoundStarted);
 
     const playerAI = (combatEntityId: string, actorId: string) => {
-        const combatEntity = gameService.world.getEntity(parseInt(combatEntityId, 10));
+        const combatEntity = gameService.world.getEntity(parseInt(String(combatEntityId), 10));
         if (!combatEntity) return;
 
         const combatants = CombatComponent.oneFrom(combatEntity)!.data.combatants;
-        const enemyIds = combatants.filter(id => CombatantComponent.oneFrom(gameService.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team2');
+        const enemyIds = combatants.filter((id: any) => CombatantComponent.oneFrom(gameService.world.getEntity(parseInt(String(id), 10))!)?.data.teamId === 'team2');
 
         const firstEnemy = enemyIds
-            .map(id => gameService.world.getEntity(parseInt(id, 10))!)
+            .map((id: any) => gameService.world.getEntity(parseInt(String(id), 10))!)
             .find(e => HealthComponent.oneFrom(e)!.data.current > 0);
 
         if (firstEnemy) {
@@ -188,7 +206,7 @@ async function runSingleCombat(contentService: ContentService) {
     };
 
     return new Promise(resolve => {
-        const onCombatEnded = gameService.eventBus.on('combatEnded', (payload) => {
+        const onCombatEnded = gameService.eventBus.on('combatEnded', (payload: any) => {
             const combatEntity = gameService.world.getEntity(parseInt(payload.combatEntityId, 10));
             const roundNumber = CombatComponent.oneFrom(combatEntity!)?.data.roundNumber || 0;
             const playerHealth = HealthComponent.oneFrom(player)!.data;
@@ -209,8 +227,9 @@ async function runSingleCombat(contentService: ContentService) {
             });
         });
 
-        const onTurnStarted = gameService.eventBus.on('turnStarted', ({ combatEntityId, activeCombatantId }) => {
-            const combatant = gameService.world.getEntity(parseInt(activeCombatantId, 10));
+        const onTurnStarted = gameService.eventBus.on('turnStarted', (payload: any) => {
+            const { combatEntityId, activeCombatantId } = payload as any;
+            const combatant = gameService.world.getEntity(parseInt(String(activeCombatantId), 10));
             const combatantName = InfoComponent.oneFrom(combatant!)!.data.name;
             const combatEntity = (gameService.world as any).entities.find((e: Entity) => CombatComponent.oneFrom(e));
             const combat = CombatComponent.oneFrom(combatEntity!)!.data;
@@ -268,13 +287,26 @@ async function runSimulation() {
         nodes, quests, skills, tiers, traits, spawnPools, config,
     };
     const contentService = new ContentService(allContent as any);
+    // Prepare a local reusable GameService instance for dev tools and a factory for sims
+    if (!localGameService) {
+        try {
+            localGameService = createGameService(contentService);
+            const p = localGameService.startGame?.();
+            if (p instanceof Promise) await p;
+            // attach test content service for dev-inspector compatibility
+            (localGameService as any)._testContentService = contentService;
+        } catch (err) {
+            console.warn('[Simulator] could not start localGameService:', err);
+            localGameService = null;
+        }
+    }
     // --- END: Declarations moved ---
 
 
     for (let i = 0; i < numSims; i++) {
         // We no longer need to modify the player template here.
         // runSingleCombat will handle leveling the player for each simulation run.
-        const result: any = await runSingleCombat(contentService);
+        const result: any = await runSingleCombat(createGameService, contentService);
 
         if (result.winner === 'team1') {
             playerWins++;

@@ -25,24 +25,17 @@ export class LootResolutionSystem extends GameSystem {
         this.subscribe('gatherResourceRequested', this.onGatherResource.bind(this));
     }
 
-    private onEnemyDefeated(payload: { enemyId: string; characterId: number; level: number }): void {
-        console.log(`[LootResolutionSystem] onEnemyDefeated received: ${payload.enemyId} (char ${payload.characterId}) level ${payload.level}`);
+    private onEnemyDefeated(payload: { protoId: string, characterId: number; level: number; lootTableIds: string[] }): void {
+        console.log(`[LootResolutionSystem] onEnemyDefeated received for: ${payload.protoId}`);
 
-        const enemyEntity = this.world.getEntity(parseInt(payload.enemyId, 10));
-        if (!enemyEntity) {
-            console.error(`[LootResolutionSystem] Could not find defeated enemy entity with ID: ${payload.enemyId}`);
-            return;
+        // --- REVISED LOGIC ---
+        // Directly use the loot table IDs from the event payload.
+        // No need to fetch the entity from the world anymore.
+        if (!payload.lootTableIds || payload.lootTableIds.length === 0) {
+            return; // No loot tables for this mob.
         }
 
-        const lootComponent = LootTableComponent.oneFrom(enemyEntity)?.data;
-        if (!lootComponent || !lootComponent.tableIds || lootComponent.tableIds.length === 0) {
-            // No loot tables for this mob, which is valid.
-            return;
-        }
-
-        // --- START: Refactored Loot Logic ---
-        // Process every loot table attached to the mob (from its family, tier, etc.)
-        for (const tableId of lootComponent.tableIds) {
+        for (const tableId of payload.lootTableIds) {
             const lootTableData = this.content.lootTables.get(tableId);
             if (!lootTableData) {
                 console.warn(`[LootResolutionSystem] Could not find loot table with ID: ${tableId}`);
@@ -52,18 +45,15 @@ export class LootResolutionSystem extends GameSystem {
             for (const entry of lootTableData.entries) {
                 if (Math.random() <= entry.chance) {
                     if (entry.type === 'generated_item') {
-                        // Fire the specific event for the ItemGenerationSystem to handle
                         this.eventBus.emit('generateItemRequest', {
                             baseItemId: entry.id,
                             characterId: payload.characterId,
-                            itemLevel: payload.level, // Pass the mob's level
+                            itemLevel: payload.level,
                         });
                     }
-                    // ... handle currency or static item drops here
                 }
             }
         }
-        // --- END: Refactored Loot Logic ---
     }
 
     private onGatherResource(payload: { characterId: number; lootTableId: string }): void {

@@ -3,73 +3,55 @@ import { computed } from 'vue';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import EquipmentSlot from '@/components/character/EquipmentSlot.vue';
-import type { UIItem } from '@/stores/player';
 
 const playerStore = usePlayerStore();
-const { equipment, bags } = storeToRefs(playerStore);
+const { equippedItems } = storeToRefs(playerStore); // Use the new equippedItems from store
 
-const equippedItems = computed(() => {
-    const allItemsById = new Map<number, UIItem>();
-    bags.value.forEach(bag =>
-        bag.items.forEach(item => {
-            if (item) allItemsById.set(item.id, item);
-        })
-    );
+type EquipmentSlotKey = 'helm' | 'cape' | 'amulet' | 'armor' | 'belt' | 'gloves' | 'mainHand' | 'offHand' | 'ring1' | 'ring2' | 'boots' | 'charm1' | 'charm2' | 'charm3';
 
-    // Use the exact list of slots from your domain model
-    const allSlots = [
-        'helm', 'cape', 'amulet', 'armor', 'belt', 'gloves',
-        'mainHand', 'offHand', 'ring1', 'ring2', 'boots',
-        'charm1', 'charm2', 'charm3'
-    ];
+// Defines the structure and order of all slots to render
+const equipmentSlots: { key: EquipmentSlotKey, name: string }[] = [
+    { key: 'helm', name: 'Helm' },
+    { key: 'amulet', name: 'Amulet' },
+    { key: 'mainHand', name: 'Main Hand' },
+    { key: 'armor', name: 'Armor' },
+    { key: 'offHand', name: 'Off Hand' },
+    { key: 'gloves', name: 'Gloves' },
+    { key: 'belt', name: 'Belt' },
+    { key: 'cape', name: 'Cape' },
+    { key: 'ring1', name: 'Ring 1' },
+    { key: 'boots', name: 'Boots' },
+    { key: 'ring2', name: 'Ring 2' },
+    { key: 'charm1', name: 'Charm 1' },
+    { key: 'charm2', name: 'Charm 2' },
+    { key: 'charm3', name: 'Charm 3' }
+];
 
-    const equipped: { [slot: string]: UIItem | null } = {};
-    const equipmentData = equipment.value || {};
+// grid-template-areas for paper-doll placement (3 columns wide)
+const templateAreas = `
+    "charm1 charm2 charm3"
+    "cape helm amulet"
+    "mainHand armor offHand"
+    "gloves belt ."
+    "ring1 boots ring2"
 
-    allSlots.forEach(slot => {
-        const itemId = equipmentData[slot];
-        if (itemId) {
-            equipped[slot] = allItemsById.get(parseInt(itemId, 10)) || null;
-        } else {
-            equipped[slot] = null;
-        }
-    });
-
-    return equipped;
-});
+`.trim();
 </script>
 
 <template>
-    <div class="equipment-grid">
-        <EquipmentSlot :slot-name="'Helm'" :item="equippedItems['helm']" style="grid-area: helm" />
-        <EquipmentSlot :slot-name="'Amulet'" :item="equippedItems['amulet']" style="grid-area: amulet" />
-        <EquipmentSlot :slot-name="'Cape'" :item="equippedItems['cape']" style="grid-area: cape" />
-        <EquipmentSlot :slot-name="'Main Hand'" :item="equippedItems['mainHand']" style="grid-area: mainHand" />
-        <EquipmentSlot :slot-name="'Armor'" :item="equippedItems['armor']" style="grid-area: armor" />
-        <EquipmentSlot :slot-name="'Off Hand'" :item="equippedItems['offHand']" style="grid-area: offHand" />
-        <EquipmentSlot :slot-name="'Gloves'" :item="equippedItems['gloves']" style="grid-area: gloves" />
-        <EquipmentSlot :slot-name="'Belt'" :item="equippedItems['belt']" style="grid-area: belt" />
-        <EquipmentSlot :slot-name="'Ring 1'" :item="equippedItems['ring1']" style="grid-area: ring1" />
-        <EquipmentSlot :slot-name="'Boots'" :item="equippedItems['boots']" style="grid-area: boots" />
-        <EquipmentSlot :slot-name="'Ring 2'" :item="equippedItems['ring2']" style="grid-area: ring2" />
-        <EquipmentSlot :slot-name="'Charm 1'" :item="equippedItems['charm1']" style="grid-area: charm1" />
-        <EquipmentSlot :slot-name="'Charm 2'" :item="equippedItems['charm2']" style="grid-area: charm2" />
-        <EquipmentSlot :slot-name="'Charm 3'" :item="equippedItems['charm3']" style="grid-area: charm3" />
+    <div class="bg-surface-800 rounded-lg shadow-lg p-4">
+        <h3 class="text-xl font-semibold text-surface-0 mb-4 border-b border-surface-700 pb-2">Equipment</h3>
+
+        <!-- paper-doll grid using template-areas; responsive behaviour still possible via CSS classes/media queries -->
+        <div class="equipment-grid gap-3" :style="{
+            display: 'grid',
+            gridTemplateAreas: templateAreas,
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gridAutoRows: '4.5rem',
+            gap: '0.75rem'
+        }">
+            <EquipmentSlot v-for="slot in equipmentSlots" :key="slot.key" :slot-name="slot.name" :slot-type="slot.key"
+                :item="equippedItems[slot.key]" :style="{ gridArea: slot.key }" />
+        </div>
     </div>
 </template>
-
-<style scoped>
-.equipment-grid {
-    display: grid;
-    justify-content: center;
-    grid-template-columns: repeat(3, 80px);
-    gap: 0.5rem;
-    /* This layout "draws" the character shape using all 14 slots. */
-    grid-template-areas:
-        ".        helm      amulet"
-        "mainHand armor     offHand"
-        "gloves   belt      cape"
-        "ring1    boots     ring2"
-        "charm1   charm2    charm3";
-}
-</style>

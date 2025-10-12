@@ -7,6 +7,7 @@ import { ProgressionComponent } from '../../components/skill';
 import { SkillComponent, type SkillCost, type TargetPattern, type SkillEffectData } from '../../components/skill';
 import { type GameConfig } from '../../../ContentService';
 import { GameSystem } from '../GameSystem'; // Import the new base class
+import { MobComponent, LootTableComponent } from '../../components/mob'
 
 
 /**
@@ -30,6 +31,7 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
         this.subscribe('combatStarted', this.onCombatStarted.bind(this));
         this.subscribe('actionTaken', this.onActionTaken.bind(this));
         this.subscribe('fleeAttempt', this.onFleeAttempt.bind(this));
+
     }
 
     private onCombatStarted(payload: { combatEntityId: string; combatants: string[]; }): void {
@@ -37,7 +39,14 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
         if (!combatEntity) return;
 
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
-        combat.turnQueue = payload.combatants.sort((aId, bId) => {
+
+        const validCombatantIds = payload.combatants.filter(id => {
+            const entity = this.world.getEntity(parseInt(id, 10));
+            // Ensure the entity exists and has both a Combatant and Health component.
+            return entity && CombatantComponent.oneFrom(entity) && HealthComponent.oneFrom(entity);
+        });
+
+        combat.turnQueue = validCombatantIds.sort((aId, bId) => { // <-- Use the filtered list
             const a = this.world.getEntity(parseInt(aId, 10));
             const b = this.world.getEntity(parseInt(bId, 10));
             return CombatantComponent.oneFrom(b!)!.data.initiative - CombatantComponent.oneFrom(a!)!.data.initiative;
@@ -371,56 +380,66 @@ export class CombatSystem extends GameSystem { // Extend GameSystem
 
     private endCombat(combatEntity: Entity, winningTeamId: string): void {
         const combat = CombatComponent.oneFrom(combatEntity)!.data;
+        const losingTeamId = winningTeamId === 'team1' ? 'team2' : 'team1';
 
-        // --- Prepare enemyDefeated payloads BEFORE removing components/entities ---
-        const defeatedPayloads: { enemyEventId: string; characterId: number; level: number }[] = [];
+        // --- MODIFIED SECTION: Now creates a richer payload ---
+        const defeatedPayloads: {
+            protoId: string;
+            characterId: number;
+            level: number;
+            lootTableIds: string[];
+        }[] = [];
+        // --- END MODIFICATION ---
+
         const playerId = combat.combatants.find(id =>
             CombatantComponent.oneFrom(this.world.getEntity(parseInt(id, 10))!)?.data.teamId === 'team1'
         );
+        const entitiesToRemove: Entity[] = [];
 
         for (const id of combat.combatants) {
             const ent = this.world.getEntity(parseInt(id, 10));
             if (!ent) continue;
             const c = CombatantComponent.oneFrom(ent)?.data;
-            if (c?.teamId === 'team2') {
+
+            if (c?.teamId === losingTeamId) {
                 const level = ProgressionComponent.oneFrom(ent)?.data.level ?? 1;
+                // --- MODIFIED SECTION: Extract data before entity is queued for removal ---
+                const mobComp = MobComponent.oneFrom(ent)?.data;
+                const lootComp = LootTableComponent.oneFrom(ent)?.data;
 
-                // Try to map numeric entity id back to content id using the contentIdToEntityIdMap
-                let contentId: string | undefined;
-                const numericId = parseInt(id, 10);
-                for (const [cid, entId] of this.contentIdToEntityIdMap.entries()) {
-                    if (entId === numericId) { contentId = cid; break; }
+                if (losingTeamId === 'team2' && mobComp) {
+                    defeatedPayloads.push({
+                        protoId: mobComp.protoId,
+                        characterId: parseInt(playerId ?? '0', 10),
+                        level,
+                        lootTableIds: lootComp?.tableIds || [],
+                    });
                 }
-                const enemyEventId = contentId ?? id; // prefer content id (loot table key), fallback to entity id
-
-                defeatedPayloads.push({
-                    enemyEventId,
-                    characterId: parseInt(playerId ?? '0', 10),
-                    level
-                });
+                // --- END MODIFICATION ---
+                entitiesToRemove.push(ent);
             }
         }
 
-        // --- Cleanup combat components / entity ---
+        // ... cleanup logic remains the same ...
         combat.combatants.forEach(id => {
-            const entity = this.world.getEntity(parseInt(id, 10))!;
+            const entity = this.world.getEntity(parseInt(id, 10));
+            if (!entity) return;
             const combatantComp = CombatantComponent.oneFrom(entity);
             if (combatantComp) {
                 entity.remove(combatantComp);
             }
         });
         this.world.removeEntity(combatEntity);
+        entitiesToRemove.forEach(entity => {
+            console.log(`[CombatSystem] Removing defeated entity ${entity.id} from the world.`);
+            this.world.removeEntity(entity);
+        });
 
-        // Emit combatEnded
         this.eventBus.emit('combatEnded', { combatEntityId: combatEntity.id.toString(), winningTeamId });
 
-        // Emit enemyDefeated for each defeated enemy using the prepared payloads
+        // Emit the richer payloads
         for (const p of defeatedPayloads) {
-            this.eventBus.emit('enemyDefeated', {
-                enemyId: p.enemyEventId,
-                characterId: p.characterId,
-                level: p.level
-            });
+            this.eventBus.emit('enemyDefeated', p);
         }
     }
 

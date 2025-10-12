@@ -6,7 +6,7 @@ import { useHubStore, type HubNpc } from '@/stores/hub';
 import { useGameStore } from '@/stores/game';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 const hubStore = useHubStore();
 const gameStore = useGameStore();

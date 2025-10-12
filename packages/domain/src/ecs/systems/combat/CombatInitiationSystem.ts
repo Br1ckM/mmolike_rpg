@@ -1,4 +1,5 @@
 import ECS from 'ecs-lib';
+import { Entity } from 'ecs-lib';
 import { EventBus } from '../../EventBus';
 import { Combat } from '../../entities/combat';
 import { CombatantComponent, CombatComponent } from '../../components/combat';
@@ -19,12 +20,19 @@ export class CombatInitiationSystem extends GameSystem { // Extend GameSystem
     }
 
     private onStartCombatEncounter(payload: {
+
+
         team1: { entityId: string; initialRow: 'Front' | 'Back'; }[];
         team2: { entityId: string; initialRow: 'Front' | 'Back'; }[];
     }): void {
         const allParticipants = [...payload.team1, ...payload.team2];
         const combatantIds: string[] = [];
 
+        const existingCombat = (this.world as any).entities.find((e: Entity) => CombatComponent.oneFrom(e));
+        if (existingCombat) {
+            console.warn('[CombatInitiationSystem] A combat is already in progress. Ignoring "startEncounterRequest".');
+            return;
+        }
         // --- Step 1: Add CombatantComponent to all participants ---
         for (const participant of allParticipants) {
             const entity = this.world.getEntity(parseInt(participant.entityId, 10));

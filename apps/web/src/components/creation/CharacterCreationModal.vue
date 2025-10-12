@@ -7,7 +7,7 @@ import { usePlayerStore } from '@/stores/player';
 import { useGameStore } from '@/stores/game';
 import { useHubStore } from '@/stores/hub';
 import { usePartyStore } from '@/stores/party'
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 
 interface Ancestry {
     id: string;

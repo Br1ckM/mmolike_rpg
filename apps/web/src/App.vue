@@ -1,5 +1,3 @@
-// apps/web/src/App.vue
-
 <script setup lang="ts">
 import { onMounted, watch } from 'vue';
 import { useUIStore } from './stores/ui';
@@ -9,12 +7,15 @@ import { useGameStore } from './stores/game';
 import { useHubStore } from './stores/hub';
 import { useSettingsStore } from './stores/settings';
 import { usePartyStore } from './stores/party';
-import { App } from 'mmolike_rpg-application';
+import { App } from 'mmolike_rpg-application/core';
 import { storeToRefs } from 'pinia';
+
+// --- IMPORTS for Toast ---
 import Toast from '@/volt/Toast.vue';
 import { useToast } from 'primevue/usetoast';
-
 const toast = useToast();
+// --- END IMPORTS ---
+
 let autoSaveInterval: number | undefined;
 
 onMounted(async () => {
@@ -22,6 +23,7 @@ onMounted(async () => {
   const settingsStore = useSettingsStore();
   const { autoSaveEnabled } = storeToRefs(settingsStore);
 
+  // Watch for changes to the auto-save setting
   watch(autoSaveEnabled, (newValue) => {
     if (newValue) {
       startAutoSave();
@@ -30,49 +32,46 @@ onMounted(async () => {
     }
   });
 
-  await App.isReady;
+  // Subscribe to Global Notifications and show Toast
+  App.isReady.then(() => {
+    App.queries.subscribe<any>('notification', (payload) => {
+      if (!payload) return;
 
-  // Subscribe to global notifications first
-  App.queries.subscribe<any>('notification', (payload) => {
-    if (!payload) return;
-    const severity = payload.type === 'success' ? 'success' : payload.type === 'error' ? 'error' : 'info';
-    toast.add({
-      severity: severity,
-      summary: severity.charAt(0).toUpperCase() + severity.slice(1),
-      detail: payload.message,
-      life: 3000
+      const severity = payload.type === 'success' ? 'success' : payload.type === 'error' ? 'error' : 'info';
+
+      toast.add({
+        severity: severity,
+        summary: severity.charAt(0).toUpperCase() + severity.slice(1),
+        detail: payload.message,
+        life: 3000
+      });
     });
   });
 
-  // --- REFACTORED INITIALIZATION LOGIC ---
-
-  // 1. Initialize all stores so their subscriptions are active.
   await settingsStore.initialize();
-  await usePlayerStore().initialize();
-  await useGameStore().initialize();
-  await useHubStore().initialize();
-  await usePartyStore().initialize();
 
-  // 2. Now, check for save data and load the game.
   const saveDataExists = localStorage.getItem('player_save_exists');
 
   if (!saveDataExists) {
     uiStore.displayCharacterCreation();
   } else {
-    // By calling loadGame() now, the initialized stores will correctly
-    // receive the events emitted during the load process.
+    // --- AUTO-LOAD ---
     App.commands.loadGame();
+
+    // Initialize all stores to sync with the loaded data
+    usePlayerStore().initialize();
+    useGameStore().initialize();
+    useHubStore().initialize();
+    usePartyStore().initialize();
   }
 
-  // --- END REFACTOR ---
-
+  // Start auto-save if enabled on boot
   if (autoSaveEnabled.value) {
     startAutoSave();
   }
 });
 
 function startAutoSave() {
-  // ... function remains the same
   if (autoSaveInterval) clearInterval(autoSaveInterval);
   autoSaveInterval = setInterval(() => {
     App.commands.saveGame();
@@ -81,7 +80,6 @@ function startAutoSave() {
 }
 
 function stopAutoSave() {
-  // ... function remains the same
   if (autoSaveInterval) {
     clearInterval(autoSaveInterval);
     autoSaveInterval = undefined;

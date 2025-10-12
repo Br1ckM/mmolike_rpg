@@ -5,7 +5,7 @@ import App from './App.vue'
 import router from './router'
 import PrimeVue from './primevue';
 import ToastService from 'primevue/toastservice';
-import { App as GameApp } from 'mmolike_rpg-application';
+import { App as GameApp } from 'mmolike_rpg-application/core';
 
 // Import Tailwind CSS
 import './assets/main.css';
